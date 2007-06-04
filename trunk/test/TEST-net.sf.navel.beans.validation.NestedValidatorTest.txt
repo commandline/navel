@@ -1,0 +1,6 @@
+Testsuite: net.sf.navel.beans.validation.NestedValidatorTest
+Tests run: 3, Failures: 0, Errors: 0, Time elapsed: 0.056 sec
+
+Testcase: testInit took 0.046 sec
+Testcase: testNestedTooDeep took 0.001 sec
+Testcase: testFlatten took 0.009 sec

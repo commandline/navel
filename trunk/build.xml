@@ -1,0 +1,123 @@
+<project name="navel"
+         default="compile"
+         basedir=".">
+  <path id="compile.classpath">
+    <fileset dir="lib"
+             includes="*.jar" />
+  </path>
+  <path id="pmd.classpath">
+    <fileset dir="lib/pmd"
+             includes="*.jar" />
+  </path>
+  <target name="clean"
+          description="Clean up generated files.">
+    <delete dir="build" />
+    <delete dir="dist" />
+    <delete dir="log" />
+    <delete dir="test" />
+    <delete dir="docs" />
+    <delete file="navel-src.jar" />
+  </target>
+  <!-- compile -->
+  <target name="compile"
+          depends="init"
+          description="Compile Java sources.">
+    <javac srcdir="src"
+           debug="on"
+           classpathref="compile.classpath"
+           destdir="build" />
+  </target>
+  <!-- run unit tests -->
+  <target name="test"
+          depends="compile"
+          description="Run automated unit tests.">
+    <junit printsummary="yes"
+           haltonfailure="yes">
+      <classpath>
+        <pathelement location="conf" />
+        <pathelement location="build" />
+        <path refid="compile.classpath" />
+      </classpath>
+      <formatter type="plain" />
+      <batchtest todir="test">
+        <fileset dir="src">
+          <include name="**/*Test.java" />
+          <include name="**/test/**" />
+          <exclude name="**/PropertyNames*.*" />
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+  <!-- package for distribution -->
+  <target name="dist"
+          description="Package the project up for distribution."
+          depends="compile">
+    <jar destfile="dist/navel.jar">
+      <fileset dir="build">
+        <include name="**/*.class" />
+        <exclude name="**/*Test.class" />
+        <exclude name="**/test/**" />
+        <exclude name="**/example/**" />
+      </fileset>
+    </jar>
+  </target>
+  <!-- package sources -->
+  <target name="source"
+          description="Package up clean sources."
+          depends="clean">
+    <jar destfile="navel-src.jar">
+      <fileset dir=".">
+        <include name="**" />
+      </fileset>
+    </jar>
+  </target>
+  <!-- generate JavaDocs -->
+  <target name="docs"
+          description="Generate API documentation."
+          depends="init">
+    <javadoc sourcepath="src"
+             destdir="docs"
+             packagenames="net.sf.navel.beans.*"
+             classpathref="compile.classpath" />
+  </target>
+  <!-- audit code for warnings -->
+  <target name="pmd"
+          depends="init"
+          description="Run static code analysis tool, PMD.">
+    <taskdef name="pmd"
+             classname="net.sourceforge.pmd.ant.PMDTask"
+             classpathref="pmd.classpath" />
+    <pmd shortFilenames="true"
+         targetjdk="1.5">
+      <classpath>
+        <path refid="pmd.classpath" />
+      </classpath>
+      <ruleset>basic</ruleset>
+      <ruleset>braces</ruleset>
+      <ruleset>codesize</ruleset>
+      <ruleset>coupling</ruleset>
+      <ruleset>design</ruleset>
+      <ruleset>imports</ruleset>
+      <ruleset>conf/rulesets/naming.xml</ruleset>
+      <ruleset>strictexception</ruleset>
+      <ruleset>strings</ruleset>
+      <ruleset>unusedcode</ruleset>
+      <formatter type="html"
+                 toFile="docs/pmd_report.html"
+                 linkPrefix="http://pmd.sourceforge.net/xref/" />
+      <fileset dir="src">
+        <include name="**/*.java" />
+        <exclude name="**/*Test.java" />
+        <exclude name="**/test/**" />
+      </fileset>
+    </pmd>
+  </target>
+  <!-- internal targets -->
+  <target name="init">
+    <mkdir dir="build" />
+    <mkdir dir="dist" />
+    <mkdir dir="log" />
+    <mkdir dir="test" />
+    <mkdir dir="docs" />
+  </target>
+</project>

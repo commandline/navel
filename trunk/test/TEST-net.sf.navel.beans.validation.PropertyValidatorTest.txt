@@ -1,0 +1,8 @@
+Testsuite: net.sf.navel.beans.validation.PropertyValidatorTest
+Tests run: 1, Failures: 0, Errors: 0, Time elapsed: 0.087 sec
+------------- Standard Output ---------------
+2007-02-28 10:52:23,496 DEBUG [net.sf.navel.beans.PropertyBeanHandler] Invoking getParentID
+2007-02-28 10:52:23,496 DEBUG [net.sf.navel.beans.PropertyBeanHandler] Invoking getChildID
+------------- ---------------- ---------------
+
+Testcase: testValidateData took 0.087 sec
