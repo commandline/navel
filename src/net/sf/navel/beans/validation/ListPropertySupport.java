@@ -1,0 +1,163 @@
+/**
+ * Copyright (c) 2003, Thomas Gideon
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright notice,
+ *       this list of conditions and the following disclaimer in the documentation
+ *       and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the Navel project team nor the names of its
+ *       contributors may be used to endorse or promote products derived from this
+ *       software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package net.sf.navel.beans.validation;
+
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import net.sf.navel.beans.AbstractPropertyManipulator;
+import net.sf.navel.beans.CollectionType;
+
+/**
+ * Utility class to aid introspecting List typed properties.
+ * 
+ * @author cmdln
+ * 
+ */
+class ListPropertySupport
+{
+
+    private static final ListPropertySupport SINGLETON = new ListPropertySupport();
+
+    private ListPropertySupport()
+    {
+        // enforce Singleton pattern
+    }
+
+    /**
+     * Identify the properties that are of type List that Navel can support,
+     * associating the type of the elements within the List in the resulting
+     * Map.
+     */
+    static Map<String, Class<?>> introspectListTypes(Class<?> beanClass)
+    {
+        return SINGLETON.getElementTypes(beanClass);
+    }
+
+    /**
+     * For all the list properties on the bean class, find the specific types
+     * meant to be contained within the list by locating alternate accessors who
+     * take a single int or Integer argument that is the index for a get call
+     * into the List itself.
+     */
+    private Map<String, Class<?>> getElementTypes(Class<?> beanClass)
+    {
+        PropertyDescriptor[] descriptors = AbstractPropertyManipulator
+                .getProperties(beanClass);
+
+        Map<String, Class<?>> elementTypes = new HashMap<String, Class<?>>();
+
+        for (PropertyDescriptor descriptor : descriptors)
+        {
+            addFromAnnotation(elementTypes, descriptor);
+            addFromAlternateAccessor(beanClass, elementTypes, descriptor);
+        }
+
+        return elementTypes;
+    }
+
+    private void addFromAnnotation(Map<String, Class<?>> elementTypes,
+            PropertyDescriptor descriptor)
+    {
+        if (descriptor.getReadMethod() == null)
+        {
+            return;
+        }
+
+        CollectionType collectionType = descriptor.getReadMethod()
+                .getAnnotation(CollectionType.class);
+
+        if (null == collectionType)
+        {
+            return;
+        }
+
+        elementTypes.put(descriptor.getName(), collectionType.value());
+    }
+
+    private void addFromAlternateAccessor(Class<?> beanClass,
+            Map<String, Class<?>> elementTypes, PropertyDescriptor descriptor)
+    {
+        Class<?> propertyType = descriptor.getPropertyType();
+
+        if (propertyType != null && !List.class.isAssignableFrom(propertyType))
+        {
+            return;
+        }
+
+        Method readMethod = findRead(beanClass, descriptor.getName(), true);
+
+        if (null == readMethod)
+        {
+            return;
+        }
+
+        elementTypes.put(descriptor.getName(), readMethod.getReturnType());
+    }
+
+    private Method findRead(Class<?> beanClass, String name,
+            boolean primitiveArgument)
+    {
+        String methodName = "get";
+        methodName = methodName.concat(name.substring(0, 1).toUpperCase());
+        methodName = methodName.concat(name.substring(1));
+
+        try
+        {
+            if (primitiveArgument)
+            {
+                return beanClass.getMethod(methodName, int.class);
+            }
+            else
+            {
+                return beanClass.getMethod(methodName, Integer.class);
+            }
+        }
+        catch (SecurityException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+        catch (NoSuchMethodException e)
+        {
+            if (primitiveArgument)
+            {
+                return findRead(beanClass, name, false);
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
+
+}

@@ -1,0 +1,4 @@
+Testsuite: net.sf.navel.beans.SimplePropertyManipulatorTest
+Tests run: 1, Failures: 0, Errors: 0, Time elapsed: 0.091 sec
+
+Testcase: testNullWrapper took 0.091 sec

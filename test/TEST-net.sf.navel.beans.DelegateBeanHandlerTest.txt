@@ -1,0 +1,36 @@
+Testsuite: net.sf.navel.beans.DelegateBeanHandlerTest
+Tests run: 5, Failures: 0, Errors: 0, Time elapsed: 0.034 sec
+------------- Standard Output ---------------
+2007-02-28 10:52:22,838 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,838 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+2007-02-28 10:52:22,841 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,841 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+2007-02-28 10:52:22,841 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Implemented interface, net.sf.navel.example.Delegated, needs to be a simple bean description or have an appropriate delegate.
+2007-02-28 10:52:22,845 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking doThis
+2007-02-28 10:52:22,845 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking property handling in super class.
+2007-02-28 10:52:22,845 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Delegating to java.lang.Object.
+2007-02-28 10:52:22,845 DEBUG [net.sf.navel.beans.PropertyBeanHandler] Proxying method, doThis with arguments (java.lang.Object, java.lang.Object) to underlying Map.
+2007-02-28 10:52:22,846 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,846 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+2007-02-28 10:52:22,846 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking doThis
+2007-02-28 10:52:22,855 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,856 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking doThis
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking getReadWrite
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking property handling in super class.
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.PropertyBeanHandler] Invoking getReadWrite
+2007-02-28 10:52:22,857 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking doThat
+2007-02-28 10:52:22,858 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking getReadWrite
+2007-02-28 10:52:22,858 DEBUG [net.sf.navel.beans.DelegateBeanHandler] Invoking property handling in super class.
+2007-02-28 10:52:22,858 DEBUG [net.sf.navel.beans.PropertyBeanHandler] Invoking getReadWrite
+2007-02-28 10:52:22,859 DEBUG [net.sf.navel.beans.validation.DelegateValidator] Delegated interfaces:
+2007-02-28 10:52:22,859 DEBUG [net.sf.navel.beans.validation.DelegateValidator] [interface java.io.Serializable, interface net.sf.navel.example.Delegated]
+------------- ---------------- ---------------
+
+Testcase: testConstructionValidation took 0.015 sec
+Testcase: testLenientValidation took 0.014 sec
+Testcase: testInitialValues took 0.001 sec
+Testcase: testDelegation took 0.002 sec
+Testcase: testWithInheritance took 0.002 sec

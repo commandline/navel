@@ -1,0 +1,1 @@
+[ERROR] ListBuilderTest: net.sf.navel.beans.InvalidPropertyValueException: Extra values found in initial value map that do not match any known property for bean type net.sf.navel.example.ListBean: [foo, bar]

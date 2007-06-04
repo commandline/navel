@@ -1,0 +1,10 @@
+Testsuite: net.sf.navel.beans.validation.ListBuilderTest
+Tests run: 4, Failures: 0, Errors: 0, Time elapsed: 0.052 sec
+------------- Standard Output ---------------
+[ERROR] ListBuilderTest: net.sf.navel.beans.InvalidPropertyValueException: Extra values found in initial value map that do not match any known property for bean type net.sf.navel.example.ListBean: [foo, bar]
+------------- ---------------- ---------------
+
+Testcase: testFilter took 0.04 sec
+Testcase: testAdding took 0.009 sec
+Testcase: testAnnotated took 0.001 sec
+Testcase: testBad took 0.002 sec
