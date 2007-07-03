@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import net.sf.navel.beans.PropertyBeanHandler;
+import net.sf.navel.beans.ListBuilder;
+import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.ListBean;
 import net.sf.navel.example.TypesBean;
 
@@ -63,9 +64,9 @@ public class ListBuilderTest
     {
         Map<String, Object> rawValues = new TreeMap<String, Object>();
 
-        TypesBean second = new PropertyBeanHandler<TypesBean>(TypesBean.class)
+        TypesBean second = new PropertyHandler<TypesBean>(TypesBean.class)
                 .getProxy();
-        TypesBean third = new PropertyBeanHandler<TypesBean>(TypesBean.class)
+        TypesBean third = new PropertyHandler<TypesBean>(TypesBean.class)
                 .getProxy();
 
         rawValues.put("typesList[0].boolean", true);
@@ -73,7 +74,7 @@ public class ListBuilderTest
         rawValues.put("typesList[?]", third);
 
         ListBuilder builder = new ListBuilder(
-                new PropertyBeanHandler<ListBean>(ListBean.class, rawValues,
+                new PropertyHandler<ListBean>(ListBean.class, rawValues,
                         true));
 
         Map<String, ?> filteredValues = builder.handler.getValues();
@@ -109,7 +110,7 @@ public class ListBuilderTest
         rawValues.put("typesList[].integer", 1);
         rawValues.put("typesList[].boolean", true);
 
-        PropertyBeanHandler<ListBean> listHandler = new PropertyBeanHandler<ListBean>(
+        PropertyHandler<ListBean> listHandler = new PropertyHandler<ListBean>(
                 ListBean.class, rawValues, true);
 
         ListBean listBean = listHandler.getProxy();
@@ -163,7 +164,7 @@ public class ListBuilderTest
         rawValues.put("annotated[].integer", 1);
         rawValues.put("annotated[].boolean", true);
 
-        PropertyBeanHandler<ListBean> listHandler = new PropertyBeanHandler<ListBean>(
+        PropertyHandler<ListBean> listHandler = new PropertyHandler<ListBean>(
                 ListBean.class, rawValues, true);
 
         ListBean listBean = listHandler.getProxy();
@@ -193,7 +194,7 @@ public class ListBuilderTest
 
         try
         {
-            new PropertyBeanHandler<ListBean>(ListBean.class, values, true);
+            new PropertyHandler<ListBean>(ListBean.class, values, true);
             Assert
                     .fail("List handling should not affect failing against bad property names.");
         }

@@ -27,7 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -42,9 +42,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sf.navel.beans.BeanManipulator;
-import net.sf.navel.beans.DelegateBeanHandler;
-import net.sf.navel.beans.PropertyBeanHandler;
+import net.sf.navel.beans.support.ListPropertySupport;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -65,13 +63,9 @@ class ListBuilder implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(ListBuilder.class);
 
-    final PropertyBeanHandler<?> handler;
-
-    ListBuilder(PropertyBeanHandler<?> handler)
+    ListBuilder()
     {
         // prevent instantiation outside this package
-
-        this.handler = handler;
     }
 
     /**
@@ -83,10 +77,10 @@ class ListBuilder implements Serializable
      * accepts an int or Integer argument and returns the type of the elements
      * within the List.
      */
-    void filter()
+    void filter(Map<String, Object> values)
     {
         final Map<String, Object> original = Collections
-                .unmodifiableMap(handler.getValues());
+                .unmodifiableMap(values);
 
         // create a copy that can be modified as the original is iterated
         Map<String, Object> copy = new HashMap<String, Object>(original);
@@ -343,7 +337,7 @@ class ListBuilder implements Serializable
         {
             if (elementType.isInterface())
             {
-                PropertyBeanHandler<?> handler = new DelegateBeanHandler(
+                PropertyHandler<?> handler = new MethodHandler(
                         elementType, rawValues, true, false);
 
                 return handler.getProxy();

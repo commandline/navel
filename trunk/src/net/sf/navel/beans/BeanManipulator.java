@@ -34,7 +34,6 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -139,7 +138,7 @@ public class BeanManipulator
      *            new layer of bean properties.
      * @return Null or the resolved value.
      */
-    public static Object resolveValue(String name, Map<String, Object> values)
+    public static Object get(String name, Map<String, Object> values)
     {
         int dotIndex = name.indexOf(".");
 
@@ -159,68 +158,7 @@ public class BeanManipulator
         String subName = name.substring(dotIndex + 1, name.length());
         Map<String, Object> subValues = SINGLETON.describeBean(subBean, false);
 
-        return resolveValue(subName, subValues);
-    }
-
-    /**
-     * A convenience method to get the underlying Navel bean handler, if the
-     * passed in object is a Navel bean. The bean argument is tested and if any
-     * of the tests to figure out if it is a Navel bean fail, null is returned.
-     * 
-     * @param bean
-     *            Object to test for being a Navel bean.
-     * @return Null if the bean argument is not a Navel bean, otherwise, the
-     *         Navel handler for the bean proxy.
-     */
-    public static PropertyBeanHandler<?> getNavelHandler(Object bean)
-    {
-        if (null == bean || !Proxy.isProxyClass(bean.getClass()))
-        {
-            return null;
-        }
-
-        Object handler = Proxy.getInvocationHandler(bean);
-
-        if (!(handler instanceof PropertyBeanHandler))
-        {
-            return null;
-        }
-
-        PropertyBeanHandler<?> propertyHandler = (PropertyBeanHandler<?>) handler;
-
-        return propertyHandler;
-    }
-
-    /**
-     * More type specific overload, when the classing for which the handler is
-     * proxying is known at compile time.
-     * 
-     * @param proxyFor
-     *            Class the handler is supporting.
-     * @param bean
-     *            Object to test for being a Navel bean.
-     * @return Null if the bean argument is not a Navel bean, otherwise, the
-     *         Navel handler for the bean proxy.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> PropertyBeanHandler<T> getNavelHandler(Class<T> proxyFor,
-            Object bean)
-    {
-        if (!Proxy.isProxyClass(bean.getClass()))
-        {
-            return null;
-        }
-
-        Object handler = Proxy.getInvocationHandler(bean);
-
-        if (!(handler instanceof PropertyBeanHandler))
-        {
-            return null;
-        }
-
-        PropertyBeanHandler<T> propertyHandler = (PropertyBeanHandler<T>) handler;
-
-        return propertyHandler;
+        return get(subName, subValues);
     }
 
     /**
@@ -235,31 +173,108 @@ public class BeanManipulator
      */
     public static boolean clear(Object bean, String property)
     {
-        PropertyBeanHandler<?> handler = getNavelHandler(bean);
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
         if (null == handler)
         {
             throw new IllegalArgumentException("Bean must be a Navel bean!");
         }
 
-        if (!isPropertyOf(handler.getProxiedClass(), property))
+        if (!isPropertyOf(handler, property))
         {
-            throw new IllegalArgumentException("The property, " + property
-                    + ", is not a valid one for the bean of type, "
-                    + handler.getProxiedClass().getName() + ".");
+            throw new IllegalArgumentException(
+                    "The property, "
+                            + property
+                            + ", is not a valid one for the bean that implements the types, "
+                            + handler.proxiedInterfaces + ".");
         }
 
-        if (!handler.values.containsKey(property))
+        if (!handler.propertyHandler.values.containsKey(property))
         {
             return true;
         }
 
-        Object value = handler.remove(property);
+        Object value = handler.propertyHandler.values.remove(property);
 
         return (value != null);
     }
 
-    static void expandNestedBeans(Map<String, Object> values)
+    /**
+     * Support method to help in dealing with introspection, reflection of
+     * JavaBeans.
+     * 
+     * @param beanType
+     *            Target bean type, be careful not to pass the <em>proxy</em>
+     *            type from a dynamic proxy backing a bean.
+     * @param propertyName
+     *            Name of a property to check via introspection.
+     * @return Whether the named property belongs to the bean class.
+     */
+    public static boolean isPropertyOf(Object bean, String propertyName)
+    {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException(
+                    "Cannot check against a null reference!");
+        }
+
+        Class<?>[] interfaceTypes = bean.getClass().getInterfaces();
+
+        for (Class<?> interfaceType : interfaceTypes)
+        {
+            if (isPropertyOf(interfaceType, propertyName))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isPropertyOf(Class<?> interfaceType,
+            String propertyName)
+    {
+        int dotIndex = propertyName.indexOf('.');
+
+        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
+                .substring(0, dotIndex);
+
+        try
+        {
+            BeanInfo beanInfo = Introspector.getBeanInfo(interfaceType);
+
+            for (PropertyDescriptor propertyDescriptor : beanInfo
+                    .getPropertyDescriptors())
+            {
+                // keep going if this is not the property we are looking for or
+                // a parent property
+                if (!propertyDescriptor.getName().equals(shallowProperty))
+                {
+                    continue;
+                }
+
+                // if this is a leafy property, we're done
+                if (-1 == dotIndex)
+                {
+                    return true;
+                }
+
+                // otherwise, recurse on the nested property
+                return isPropertyOf(propertyDescriptor.getPropertyType(),
+                        propertyName.substring(dotIndex + 1));
+            }
+
+            return false;
+        }
+        catch (IntrospectionException e)
+        {
+            throw new IllegalStateException(
+                    "Could not introspect bean of type, "
+                            + interfaceType.getName() + ".");
+        }
+    }
+
+    private static void expandNestedBeans(Map<String, Object> values)
     {
         // to allow modification of the original map
         Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
@@ -270,14 +285,15 @@ public class BeanManipulator
         {
             Entry<String, Object> entry = entryIter.next();
 
-            PropertyBeanHandler<?> handler = getNavelHandler(entry.getValue());
+            JavaBeanHandler handler = ProxyFactory.getHandler(entry.getValue());
 
             if (null == handler)
             {
                 continue;
             }
 
-            expandNestedBean(values, entry.getKey(), handler.getValues());
+            SINGLETON.expandNestedBean(values, entry.getKey(), handler.propertyHandler
+                    .values);
         }
     }
 
@@ -408,7 +424,7 @@ public class BeanManipulator
         }
     }
 
-    private static void expandNestedBean(Map<String, Object> values,
+    private void expandNestedBean(Map<String, Object> values,
             String key, Map<String, Object> nested)
     {
         for (Iterator<Entry<String, Object>> entryIter = nested.entrySet()
@@ -420,57 +436,5 @@ public class BeanManipulator
         }
 
         values.remove(key);
-    }
-
-    /**
-     * Support method to help in dealing with introspection, reflection of
-     * JavaBeans.
-     * 
-     * @param beanType
-     *            Target bean type, be careful not to pass the <em>proxy</em>
-     *            type from a dynamic proxy backing a bean.
-     * @param propertyName
-     *            Name of a property to check via introspection.
-     * @return Whether the named property belongs to the bean class.
-     */
-    public static boolean isPropertyOf(Class<?> beanType, String propertyName)
-    {
-        int dotIndex = propertyName.indexOf('.');
-        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
-                .substring(0, dotIndex);
-
-        try
-        {
-            BeanInfo beanInfo = Introspector.getBeanInfo(beanType);
-
-            for (PropertyDescriptor propertyDescriptor : beanInfo
-                    .getPropertyDescriptors())
-            {
-                // keep going if this is not the property we are looking for or
-                // a parent property
-                if (!propertyDescriptor.getName().equals(shallowProperty))
-                {
-                    continue;
-                }
-
-                // if this is a leafy property, we're done
-                if (-1 == dotIndex)
-                {
-                    return true;
-                }
-
-                // otherwise, recurse on the nested property
-                return isPropertyOf(propertyDescriptor.getPropertyType(),
-                        propertyName.substring(dotIndex + 1));
-            }
-
-            return false;
-        }
-        catch (IntrospectionException e)
-        {
-            throw new IllegalStateException(
-                    "Could not introspect bean of type, " + beanType.getName()
-                            + ".");
-        }
     }
 }

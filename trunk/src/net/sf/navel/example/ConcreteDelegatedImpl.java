@@ -31,7 +31,7 @@ package net.sf.navel.example;
 
 import org.apache.log4j.Logger;
 
-import net.sf.navel.beans.DelegateBeanHandler;
+import net.sf.navel.beans.MethodHandler;
 
 /**
  * Force a heirarchy where the interfaces are not declared directly on the end
@@ -42,9 +42,9 @@ import net.sf.navel.beans.DelegateBeanHandler;
 public class ConcreteDelegatedImpl extends AbstractDelegatedImpl
 {
     private static final Logger LOGGER = Logger.getLogger(ConcreteDelegatedImpl.class);
-    private transient DelegateBeanHandler handler;
+    private transient MethodHandler handler;
 
-    public void setDelegationSource(DelegateBeanHandler handler)
+    public void setDelegationSource(MethodHandler handler)
     {
         this.handler = handler;
     }

@@ -86,11 +86,9 @@ public class DelegateBeanHandlerTest
     {
         try
         {
-            BadBeanImpl badDelegate = new BadBeanImpl();
-
-            new DelegateBeanHandler<DelegatedBean>(DelegatedBean.class,
-                    new DelegationTarget[]
-                    { badDelegate });
+            Object bean = ProxyFactory.createAs(DelegatedBean.class);
+            ProxyFactory.attach(bean, new BadBeanImpl());
+            
             Assert
                     .fail("Construction should fail if the delegate doesn't implement the delegated interface.");
         }
@@ -111,8 +109,8 @@ public class DelegateBeanHandlerTest
     @Test
     public void testLenientValidation()
     {
-        DelegateBeanHandler<DelegatedBean> handler = new DelegateBeanHandler<DelegatedBean>(
-                DelegatedBean.class, DelegateBeanHandler.DEFAULT_RESOLVE, false);
+        MethodHandler<DelegatedBean> handler = new MethodHandler<DelegatedBean>(
+                DelegatedBean.class, DelegateBeanHandMethodHandler, false);
 
         Assert.assertNotNull(handler.getProxy(),
                 "Lenient construction should work.");
@@ -163,7 +161,7 @@ public class DelegateBeanHandlerTest
 
         try
         {
-            new DelegateBeanHandler<DelegatedBean>(DelegatedBean.class, values,
+            new MethodHandler<DelegatedBean>(DelegatedBean.class, values,
                     delegate);
         }
         catch (Exception e)
@@ -191,7 +189,7 @@ public class DelegateBeanHandlerTest
 
         // supports the combined property and function interface via the
         // delegation handler
-        DelegateBeanHandler<DelegatedBean> handler = new DelegateBeanHandler<DelegatedBean>(
+        MethodHandler<DelegatedBean> handler = new MethodHandler<DelegatedBean>(
                 DelegatedBean.class, delegate);
 
         // our bean with properties plus delegated methods
@@ -236,7 +234,7 @@ public class DelegateBeanHandlerTest
 
         try
         {
-            new DelegateBeanHandler<DelegatedBean>(DelegatedBean.class, values,
+            new MethodHandler<DelegatedBean>(DelegatedBean.class, values,
                     new DelegationTarget[]
                     { delegate });
         }

@@ -29,7 +29,7 @@
  */
 package net.sf.navel.example;
 
-import net.sf.navel.beans.DelegateBeanHandler;
+import net.sf.navel.beans.MethodHandler;
 import net.sf.navel.beans.DelegationTarget;
 
 
@@ -45,7 +45,7 @@ public class BadBeanImpl implements BadPropertyBean, DelegationTarget
 
     private static final long serialVersionUID = -2188450661346952639L;
 
-    public void setDelegationSource(DelegateBeanHandler handler)
+    public void setDelegationSource(MethodHandler handler)
     {
         // purposeful does nothing
     }

@@ -31,7 +31,7 @@ package net.sf.navel.example;
 
 import org.apache.log4j.Logger;
 
-import net.sf.navel.beans.DelegateBeanHandler;
+import net.sf.navel.beans.MethodHandler;
 import net.sf.navel.beans.DelegationTarget;
 
 
@@ -51,9 +51,9 @@ import net.sf.navel.beans.DelegationTarget;
 public class DelegatedImpl implements Delegated, DelegationTarget<DelegatedBean>
 {
     private static final Logger LOGGER = Logger.getLogger(DelegatedImpl.class);
-    private transient DelegateBeanHandler handler;
+    private transient MethodHandler handler;
 
-    public void setDelegationSource(DelegateBeanHandler handler)
+    public void setDelegationSource(MethodHandler handler)
     {
         this.handler = handler;
     }
