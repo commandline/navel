@@ -35,7 +35,6 @@ import static net.sf.navel.beans.BeanManipulator.populate;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
 import net.sf.navel.example.BadBeanImpl;
 import net.sf.navel.example.IndexedBean;
 import net.sf.navel.example.NestedBean;
@@ -46,21 +45,18 @@ import net.sf.navel.example.TypesBean;
 import net.sf.navel.test.PropertyNames;
 
 import org.apache.log4j.Logger;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Exercises the two primary activities of the bean manipulator.
  * 
  * @author cmdln
  */
-public class BeanManipulatorTest extends TestCase
+public class BeanManipulatorTest
 {
     private static final Logger LOGGER = Logger
             .getLogger(BeanManipulatorTest.class);
-
-    public BeanManipulatorTest(String name)
-    {
-        super(name);
-    }
 
     /**
      * Exercise bean description on the ReadWriteBean backed by the
@@ -71,6 +67,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Not testing construction, error on problem.
      */
+    @Test
     public void testDescribeReadWrite() throws InvalidPropertyValueException,
             UnsupportedFeatureException
     {
@@ -89,23 +86,24 @@ public class BeanManipulatorTest extends TestCase
 
         Map<String, Object> descriptions = describe(bean);
 
-        assertEquals("Description should match initial values.", values,
-                descriptions);
+        Assert.assertEquals(values, descriptions,
+                "Description should match initial values.");
     }
 
     /**
      * Test that BeanManipulator doesn't return a null Map from describe when
      * there is nothing to describe.
      */
+    @Test
     public void testNoProperties()
     {
         BadBeanImpl bean = new BadBeanImpl();
 
         Map<String, Object> values = describe(bean);
 
-        assertNotNull("Describe should never return null.", values);
-        assertTrue("Describe should return empty map when there's a problem.",
-                values.isEmpty());
+        Assert.assertNotNull(values, "Describe should never return null.");
+        Assert.assertTrue(values.isEmpty(),
+                "Describe should return empty map when there's a problem.");
     }
 
     /**
@@ -117,6 +115,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws InvalidPropertyValueException
      *             Not testing construction, error on problem.
      */
+    @Test
     public void testPopulateReadWrite() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -131,19 +130,22 @@ public class BeanManipulatorTest extends TestCase
 
         populate(bean, values);
 
-        assertEquals("Bean read only should not be set.", 0, bean.getReadOnly());
+        Assert.assertEquals(0, bean.getReadOnly(),
+                "Bean read only should not be set.");
         values = handler.getValues();
         LOGGER.debug(values);
-        assertNotNull("Bean write only should be set.", values
-                .get(PropertyNames.WO_PROP));
-        assertEquals("Bean write only should be set correctly.",
-                new Integer(2), values.get(PropertyNames.WO_PROP));
-        assertEquals("bean read/write should be set.", 3, bean.getReadWrite());
+        Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
+                "Bean write only should be set.");
+        Assert.assertEquals(new Integer(2), values.get(PropertyNames.WO_PROP),
+                "Bean write only should be set correctly.");
+        Assert.assertEquals(3, bean.getReadWrite(),
+                "bean read/write should be set.");
     }
 
     /**
      * Test extracting from and inject into concrete beans.
      */
+    @Test
     public void testFromBeanToBean()
     {
         byte fooSource = (byte) 64;
@@ -165,15 +167,15 @@ public class BeanManipulatorTest extends TestCase
 
         Map<String, Object> values = describe(sourceBean);
 
-        assertNotNull("Extracted values should be set.", values);
-        assertEquals("Check source foo.", new Byte(fooSource), values
-                .get("foo"));
-        assertEquals("Check source bar.", new Short(barSource), values
-                .get("bar"));
-        assertEquals("Check source baz.", new Integer(bazSource), values
-                .get("baz"));
-        assertEquals("Check source quux.", new Float(quuxSource), values
-                .get("quux"));
+        Assert.assertNotNull(values, "Extracted values should be set.");
+        Assert.assertEquals(new Byte(fooSource), values.get("foo"),
+                "Check source foo.");
+        Assert.assertEquals(new Short(barSource), values.get("bar"),
+                "Check source bar.");
+        Assert.assertEquals(new Integer(bazSource), values.get("baz"),
+                "Check source baz.");
+        Assert.assertEquals(new Float(quuxSource), values.get("quux"),
+                "Check source quux.");
 
         TargetBean targetBean = new TargetBean();
 
@@ -184,11 +186,17 @@ public class BeanManipulatorTest extends TestCase
 
         populate(targetBean, values);
 
-        assertEquals("Check target foo.", fooTarget, targetBean.getFoo());
-        assertEquals("Check target bar.", barSource, targetBean.getBar());
-        assertEquals("Check target baz.", bazSource, targetBean.getBaz());
-        assertEquals("Check target quux.", quuxTarget, targetBean.getQuux(),
-                0.0d);
+        Assert
+                .assertEquals(fooTarget, targetBean.getFoo(),
+                        "Check target foo.");
+        Assert
+                .assertEquals(barSource, targetBean.getBar(),
+                        "Check target bar.");
+        Assert
+                .assertEquals(bazSource, targetBean.getBaz(),
+                        "Check target baz.");
+        Assert.assertEquals(quuxTarget, targetBean.getQuux(), 0.0d,
+                "Check target quux.");
     }
 
     /**
@@ -199,6 +207,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Ignore construction errors.
      */
+    @Test
     public void testPopulateNested() throws InvalidPropertyValueException,
             UnsupportedFeatureException
     {
@@ -214,7 +223,8 @@ public class BeanManipulatorTest extends TestCase
                 NestedBean.class, values, false);
         NestedBean bean = handler.getProxy();
 
-        assertNotNull("Nested bean should not be null.", bean.getNested());
+        Assert.assertNotNull(bean.getNested(),
+                "Nested bean should not be null.");
 
         values.clear();
 
@@ -224,10 +234,10 @@ public class BeanManipulatorTest extends TestCase
 
         populate(bean, values);
 
-        assertEquals("Nested boolean should be set correctly.", true, bean
-                .getNested().getBoolean());
-        assertEquals("Nested long should be set correctly.", 128L, bean
-                .getNested().getLong());
+        Assert.assertEquals(true, bean.getNested().getBoolean(),
+                "Nested boolean should be set correctly.");
+        Assert.assertEquals(128L, bean.getNested().getLong(),
+                "Nested long should be set correctly.");
 
         values = handler.getValues();
         LOGGER.debug(values);
@@ -242,6 +252,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Ignore construction errors.
      */
+    @Test
     public void testPopulateIndexed() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -268,19 +279,19 @@ public class BeanManipulatorTest extends TestCase
 
         populate(indexedBean, values);
 
-        assertEquals("First String element should be set correctly.", "foo",
-                indexedBean.getArray(0));
-        assertEquals("Second String element should be set correctly.", "bar",
-                indexedBean.getArray(1));
+        Assert.assertEquals("foo", indexedBean.getArray(0),
+                "First String element should be set correctly.");
+        Assert.assertEquals("bar", indexedBean.getArray(1),
+                "Second String element should be set correctly.");
 
-        assertEquals("First float element should be set correctly.", 32.0,
-                indexedBean.getFloats(0), 0);
-        assertEquals("Second float element should be set correctly.", 64.0,
-                indexedBean.getFloats(1), 0);
+        Assert.assertEquals(32.0, indexedBean.getFloats(0), 0,
+                "First float element should be set correctly.");
+        Assert.assertEquals(64.0, indexedBean.getFloats(1), 0,
+                "Second float element should be set correctly.");
 
-        assertEquals(
-                "Boolean property of first types element should be set correctly.",
-                true, indexedBean.getTypes(0).getBoolean());
+        Assert
+                .assertEquals(true, indexedBean.getTypes(0).getBoolean(),
+                        "Boolean property of first types element should be set correctly.");
     }
 
     /**
@@ -292,6 +303,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Ignore construction errors.
      */
+    @Test
     public void testBadIndexed() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -313,18 +325,18 @@ public class BeanManipulatorTest extends TestCase
 
         populate(indexedBean, values);
 
-        assertNull("First String element should not be set.", indexedBean
-                .getArray(0));
-        assertNull("Second String element should not be set.", indexedBean
-                .getArray(1));
+        Assert.assertNull(indexedBean.getArray(0),
+                "First String element should not be set.");
+        Assert.assertNull(indexedBean.getArray(1),
+                "Second String element should not be set.");
 
-        assertEquals("First float element should not be set.", 0.0, indexedBean
-                .getFloats(0), 0);
-        assertEquals("Second float element should not be set.", 0.0,
-                indexedBean.getFloats(1), 0);
+        Assert.assertEquals(0.0, indexedBean.getFloats(0), 0,
+                "First float element should not be set.");
+        Assert.assertEquals(0.0, indexedBean.getFloats(1), 0,
+                "Second float element should not be set.");
 
-        assertNull("First types element should not be set", indexedBean
-                .getTypes(0));
+        Assert.assertNull(indexedBean.getTypes(0),
+                "First types element should not be set");
     }
 
     /**
@@ -335,6 +347,7 @@ public class BeanManipulatorTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Ignore construction errors.
      */
+    @Test
     public void testStringConversion() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -355,19 +368,23 @@ public class BeanManipulatorTest extends TestCase
 
         populate(bean, values);
 
-        assertEquals("Boolean should be set correctly.", true, bean
-                .getBoolean());
+        Assert.assertEquals(true, bean.getBoolean(),
+                "Boolean should be set correctly.");
     }
 
+    @Test
     public void testIsProperty()
     {
-        assertTrue("Should correctly identify name as valid.", BeanManipulator
-                .isPropertyOf(TypesBean.class, "boolean"));
-        assertFalse("Should correctly identify name as invalid.", BeanManipulator
-                .isPropertyOf(TypesBean.class, "bolean"));
-        assertTrue("Should correctly identify nested as valid.", BeanManipulator
-                .isPropertyOf(NestedBean.class, "nested.boolean"));
-        assertFalse("Should correctly identify nested as invalid.", BeanManipulator
-                .isPropertyOf(NestedBean.class, "nested.bolean"));
+        Assert.assertTrue(BeanManipulator.isPropertyOf(TypesBean.class,
+                "boolean"), "Should correctly identify name as valid.");
+        Assert.assertFalse(BeanManipulator.isPropertyOf(TypesBean.class,
+                "bolean"), "Should correctly identify name as invalid.");
+        Assert
+                .assertTrue(BeanManipulator.isPropertyOf(NestedBean.class,
+                        "nested.boolean"),
+                        "Should correctly identify nested as valid.");
+        Assert.assertFalse(BeanManipulator.isPropertyOf(NestedBean.class,
+                "nested.bolean"),
+                "Should correctly identify nested as invalid.");
     }
 }

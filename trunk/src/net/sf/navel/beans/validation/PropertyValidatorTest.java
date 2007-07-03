@@ -14,31 +14,31 @@ package net.sf.navel.beans.validation;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.navel.beans.PropertyBeanHandler;
+import net.sf.navel.example.ChildBean;
+
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-
-import junit.framework.TestCase;
-import net.sf.navel.beans.PropertyBeanHandler;
-import net.sf.navel.example.ChildBean;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * @author thomas
- *
+ * 
  */
-public class PropertyValidatorTest extends TestCase
+public class PropertyValidatorTest
 {
-    
+
     /**
      * @see junit.framework.TestCase#setUp()
      */
-    @Override
+    @BeforeMethod
     protected void setUp() throws Exception
     {
-        super.setUp();
-
         Logger root = LogManager.getRootLogger();
 
         root.removeAllAppenders();
@@ -49,8 +49,10 @@ public class PropertyValidatorTest extends TestCase
     }
 
     /**
-     * Test method for {@link net.sf.navel.beans.validation.PropertyValidator#validateData(java.beans.BeanInfo)}.
+     * Test method for
+     * {@link net.sf.navel.beans.validation.PropertyValidator#validateData(java.beans.BeanInfo)}.
      */
+    @Test
     public void testValidateData()
     {
         Map<String, Object> values = new HashMap<String, Object>(2);
@@ -62,9 +64,11 @@ public class PropertyValidatorTest extends TestCase
                 ChildBean.class, values, false);
 
         ChildBean bean = handler.getProxy();
-        
-        assertEquals("Inherited properties should work.", 1L, bean.getParentID());
-        assertEquals("Declared properties should work.", 2L, bean.getChildID());
+
+        Assert.assertEquals(1L, bean.getParentID(),
+                "Inherited properties should work.");
+        Assert.assertEquals(2L, bean.getChildID(),
+                "Declared properties should work.");
     }
 
 }

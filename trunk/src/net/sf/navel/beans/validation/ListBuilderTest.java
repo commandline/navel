@@ -34,19 +34,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
-import junit.framework.TestCase;
 import net.sf.navel.beans.PropertyBeanHandler;
 import net.sf.navel.example.ListBean;
 import net.sf.navel.example.TypesBean;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * @author thomas
  * 
  */
-public class ListBuilderTest extends TestCase
+public class ListBuilderTest
 {
 
     private static final Logger LOGGER = LogManager
@@ -57,6 +58,7 @@ public class ListBuilderTest extends TestCase
      * Object>)'
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testFilter()
     {
         Map<String, Object> rawValues = new TreeMap<String, Object>();
@@ -79,24 +81,25 @@ public class ListBuilderTest extends TestCase
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
                 .get("typesList");
 
-        assertNotNull("Should have valid list.", fooList);
-        assertEquals("Filtered list should be the correct size.", 3, fooList
-                .size());
-        assertEquals("First element should be correct.", third, fooList.get(2));
-        assertEquals("Second element should be correct.", second, fooList
-                .get(1));
-        assertNotNull(
-                "Third element should have been instantiated along the way.",
-                fooList.get(2));
-        assertTrue("Third element should have be a valid bean.",
-                fooList.get(0) instanceof TypesBean);
+        Assert.assertNotNull(fooList, "Should have valid list.");
+        Assert.assertEquals(fooList.size(), 3,
+                "Filtered list should be the correct size.");
+        Assert.assertEquals(fooList.get(2), third,
+                "First element should be correct.");
+        Assert.assertEquals(fooList.get(1), second,
+                "Second element should be correct.");
+        Assert.assertNotNull(fooList.get(2),
+                "Third element should have been instantiated along the way.");
+        Assert.assertTrue(fooList.get(0) instanceof TypesBean,
+                "Third element should have be a valid bean.");
 
         TypesBean first = fooList.get(0);
 
-        assertEquals("Nested value on constructed bean should be corrected.",
-                true, first.getBoolean());
+        Assert.assertEquals(first.getBoolean(), true,
+                "Nested value on constructed bean should be corrected.");
     }
 
+    @Test
     public void testAdding()
     {
         Map<String, Object> rawValues = new HashMap<String, Object>();
@@ -111,44 +114,46 @@ public class ListBuilderTest extends TestCase
 
         ListBean listBean = listHandler.getProxy();
 
-        assertNotNull("Bean instance should be valid.", listBean);
-        assertEquals("Identity should be correct.", 1L, listBean.getListID());
-        assertEquals("List property size should be correct.", 1, listBean
-                .getTypesList().size());
+        Assert.assertNotNull(listBean, "Bean instance should be valid.");
+        Assert.assertEquals(listBean.getListID(), 1L,
+                "Identity should be correct.");
+        Assert.assertEquals(listBean.getTypesList().size(), 1,
+                "List property size should be correct.");
 
         TypesBean first = listBean.getTypesList(0);
 
-        assertNotNull("Should have valid first element.", first);
-        assertEquals("Should have correct first integer value.", 1, first
-                .getInteger());
-        assertEquals("Should have correct first boolean value.", true, first
-                .getBoolean());
+        Assert.assertNotNull(first, "Should have valid first element.");
+        Assert.assertEquals(1, first.getInteger(),
+                "Should have correct first integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should have correct first boolean value.");
 
         rawValues.put("typesList[].integer", 2);
         rawValues.put("typesList[].boolean", false);
 
         listHandler.putAll(rawValues);
 
-        assertEquals("List property size should be correct after putAll().", 2,
-                listBean.getTypesList().size());
+        Assert.assertEquals(listBean.getTypesList().size(), 2,
+                "List property size should be correct after putAll().");
 
         first = listBean.getTypesList(0);
 
-        assertNotNull("Should still have valid first element.", first);
-        assertEquals("Should still have correct first integer value.", 1, first
-                .getInteger());
-        assertEquals("Should still have correct first boolean value.", true,
-                first.getBoolean());
+        Assert.assertNotNull(first, "Should still have valid first element.");
+        Assert.assertEquals(first.getInteger(), 1,
+                "Should still have correct first integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should still have correct first boolean value.");
 
         TypesBean second = listBean.getTypesList(1);
 
-        assertNotNull("Should have valid second element.", second);
-        assertEquals("Should have correct second integer value.", 2, second
-                .getInteger());
-        assertEquals("Should have correct second boolean value.", false, second
-                .getBoolean());
+        Assert.assertNotNull(second, "Should have valid second element.");
+        Assert.assertEquals(second.getInteger(), 2,
+                "Should have correct second integer value.");
+        Assert.assertEquals(second.getBoolean(), false,
+                "Should have correct second boolean value.");
     }
 
+    @Test
     public void testAnnotated()
     {
         Map<String, Object> rawValues = new HashMap<String, Object>();
@@ -163,20 +168,22 @@ public class ListBuilderTest extends TestCase
 
         ListBean listBean = listHandler.getProxy();
 
-        assertNotNull("Bean instance should be valid.", listBean);
-        assertEquals("Identity should be correct.", 1L, listBean.getListID());
-        assertEquals("List property size should be correct.", 1, listBean
-                .getAnnotated().size());
+        Assert.assertNotNull(listBean, "Bean instance should be valid.");
+        Assert.assertEquals(listBean.getListID(), 1L,
+                "Identity should be correct.");
+        Assert.assertEquals(listBean.getAnnotated().size(), 1,
+                "List property size should be correct.");
 
         TypesBean first = listBean.getAnnotated().get(0);
 
-        assertNotNull("Should have valid first element.", first);
-        assertEquals("Should have correct first integer value.", 1, first
-                .getInteger());
-        assertEquals("Should have correct first boolean value.", true, first
-                .getBoolean());
+        Assert.assertNotNull(first, "Should have valid first element.");
+        Assert.assertEquals(first.getInteger(), 1,
+                "Should have correct first integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should have correct first boolean value.");
     }
 
+    @Test
     public void testBad()
     {
         Map<String, Object> values = new HashMap<String, Object>();
@@ -187,7 +194,8 @@ public class ListBuilderTest extends TestCase
         try
         {
             new PropertyBeanHandler<ListBean>(ListBean.class, values, true);
-            fail("List handling should not affect failing against bad property names.");
+            Assert
+                    .fail("List handling should not affect failing against bad property names.");
         }
         catch (Exception e)
         {

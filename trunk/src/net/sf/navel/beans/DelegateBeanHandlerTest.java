@@ -32,7 +32,6 @@ package net.sf.navel.beans;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
 import net.sf.navel.example.BadBeanImpl;
 import net.sf.navel.example.ConcreteDelegatedImpl;
 import net.sf.navel.example.DelegatedBean;
@@ -45,6 +44,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * This class exercises the delegation mechanism in the DelegateBeanHandler.
@@ -56,7 +58,7 @@ import org.apache.log4j.PatternLayout;
  * @author cmdln
  * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:23 $
  */
-public class DelegateBeanHandlerTest extends TestCase
+public class DelegateBeanHandlerTest
 {
     private static final Logger LOGGER = Logger
             .getLogger(DelegateBeanHandlerTest.class);
@@ -64,11 +66,9 @@ public class DelegateBeanHandlerTest extends TestCase
     /**
      * @see junit.framework.TestCase#setUp()
      */
-    @Override
+    @BeforeMethod
     protected void setUp() throws Exception
     {
-        super.setUp();
-
         Logger root = LogManager.getRootLogger();
 
         root.removeAllAppenders();
@@ -77,10 +77,11 @@ public class DelegateBeanHandlerTest extends TestCase
                 "%d %-5p [%c] %m%n"), ConsoleAppender.SYSTEM_OUT));
         root.setLevel(Level.DEBUG);
     }
-    
+
     /**
      * Test that construction with a mis-matched DelegationTarget fails.
      */
+    @Test
     public void testConstructionValidation()
     {
         try
@@ -90,7 +91,8 @@ public class DelegateBeanHandlerTest extends TestCase
             new DelegateBeanHandler<DelegatedBean>(DelegatedBean.class,
                     new DelegationTarget[]
                     { badDelegate });
-            fail("Construction should fail if the delegate doesn't implement the delegated interface.");
+            Assert
+                    .fail("Construction should fail if the delegate doesn't implement the delegated interface.");
         }
         catch (UnsupportedFeatureException e)
         {
@@ -106,46 +108,50 @@ public class DelegateBeanHandlerTest extends TestCase
      * Test that construction with a mis-matched DelegationTarget fails.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testLenientValidation()
     {
         DelegateBeanHandler<DelegatedBean> handler = new DelegateBeanHandler<DelegatedBean>(
                 DelegatedBean.class, DelegateBeanHandler.DEFAULT_RESOLVE, false);
 
-        assertNotNull("Lenient construction should work.", handler.getProxy());
+        Assert.assertNotNull(handler.getProxy(),
+                "Lenient construction should work.");
 
         DelegatedBean bean = handler.getProxy();
         try
         {
             bean.doThis(1, 2);
 
-            fail("Should not have been able to execute correctly!");
+            Assert.fail("Should not have been able to execute correctly!");
         }
         catch (UnsupportedFeatureException e)
         {
             String message = e.getMessage();
 
-            assertTrue("Should mention DelegationTarget in the exception message.",
-                    message.indexOf("DelegationTarget") != -1);
+            Assert
+                    .assertTrue(message.indexOf("DelegationTarget") != -1,
+                            "Should mention DelegationTarget in the exception message.");
         }
 
         // implements the functional interface and Delegation handler
         DelegatedImpl delegate = new DelegatedImpl();
-        
+
         handler.attachDelegationTarget(delegate);
-        
+
         try
         {
             bean.doThis(1, 2);
         }
         catch (UnsupportedFeatureException e)
         {
-            fail("Should have been able to execute correctly!");
+            Assert.fail("Should have been able to execute correctly!");
         }
     }
 
     /**
      * Test that construction with initial values still works as expected.
      */
+    @Test
     public void testInitialValues()
     {
         DelegatedImpl delegate = new DelegatedImpl();
@@ -163,8 +169,8 @@ public class DelegateBeanHandlerTest extends TestCase
         catch (Exception e)
         {
             LogHelper.traceError(LOGGER, e);
-            
-            fail("Should not have gotten an exception.");
+
+            Assert.fail("Should not have gotten an exception.");
         }
     }
 
@@ -176,6 +182,7 @@ public class DelegateBeanHandlerTest extends TestCase
      * @throws InvalidPropertyValueException
      *             Not testing construction, fail.
      */
+    @Test
     public void testDelegation() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -195,28 +202,29 @@ public class DelegateBeanHandlerTest extends TestCase
 
         Map<String, Object> values = handler.getValues();
 
-        assertNotNull("Write only should be set.", values
-                .get(PropertyNames.WO_PROP));
-        assertEquals("Write only should be set correctly.", new Integer(1),
-                values.get(PropertyNames.WO_PROP));
-        assertEquals("Read write should be set correctly.", 2, bean
-                .getReadWrite());
+        Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
+                "Write only should be set.");
+        Assert.assertEquals(new Integer(1), values.get(PropertyNames.WO_PROP),
+                "Write only should be set correctly.");
+        Assert.assertEquals(2, bean.getReadWrite(),
+                "Read write should be set correctly.");
 
         Integer result = bean.doThat(new Integer(2), new Integer(3));
 
         // need to fetch values again, since we only every get a shallow copy
         values = handler.getValues();
 
-        assertNotNull("Write only should be set.", values
-                .get(PropertyNames.WO_PROP));
-        assertEquals("Write only should be set correctly.", new Integer(2),
-                values.get(PropertyNames.WO_PROP));
-        assertEquals("Read write should be set correctly.", 3, bean
-                .getReadWrite());
-        assertEquals("Result should come back correctly.", new Integer(5),
-                result);
+        Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
+                "Write only should be set.");
+        Assert.assertEquals(new Integer(2), values.get(PropertyNames.WO_PROP),
+                "Write only should be set correctly.");
+        Assert.assertEquals(3, bean.getReadWrite(),
+                "Read write should be set correctly.");
+        Assert.assertEquals(new Integer(5), result,
+                "Result should come back correctly.");
     }
 
+    @Test
     public void testWithInheritance()
     {
         ConcreteDelegatedImpl delegate = new ConcreteDelegatedImpl();
@@ -235,7 +243,7 @@ public class DelegateBeanHandlerTest extends TestCase
         catch (Exception e)
         {
             LOGGER.error(e);
-            fail("Should not have gotten an exception.");
+            Assert.fail("Should not have gotten an exception.");
         }
     }
 }
