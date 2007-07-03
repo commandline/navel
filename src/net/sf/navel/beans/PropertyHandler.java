@@ -1,0 +1,363 @@
+/**
+ * Copyright (c) 2003, Thomas Gideon
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright notice,
+ *       this list of conditions and the following disclaimer in the documentation
+ *       and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the Navel project team nor the names of its
+ *       contributors may be used to endorse or promote products derived from this
+ *       software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package net.sf.navel.beans;
+
+import static net.sf.navel.beans.PrimitiveSupport.getElement;
+import static net.sf.navel.beans.PrimitiveSupport.handleNull;
+import static net.sf.navel.beans.PrimitiveSupport.isPrimitiveArray;
+import static net.sf.navel.beans.PrimitiveSupport.setElement;
+
+import java.beans.Introspector;
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.apache.log4j.Logger;
+
+/**
+ * All of the property support code and property value storage, encapsulated for
+ * use by the {@see JavaBeanHandler}.
+ * 
+ * @author cmdln
+ */
+public class PropertyHandler implements Serializable
+{
+
+    private static final long serialVersionUID = 8234362825076556906L;
+
+    private static final Logger LOGGER = Logger
+            .getLogger(PropertyHandler.class);
+
+    // verb constants
+    private static final String WRITE = "set";
+
+    private static final String READ = "get";
+
+    private static final String BEING = "is";
+
+    Map<String, Object> values;
+
+    /**
+     * Overload assumes no initial values.
+     */
+    PropertyHandler()
+    {
+        this(new HashMap<String, Object>());
+    }
+
+    /**
+     * Initialized the property value support with a copy of the provided
+     * values.
+     * 
+     * @param values
+     *            Initial values.
+     */
+    PropertyHandler(Map<String, Object> values)
+    {
+        // shallow copy so that edits to the original map
+        // don't affect the bean contents
+        this.values = new HashMap<String, Object>(values);
+    }
+
+    boolean handles(Method method)
+    {
+        String methodName = method.getName();
+
+        if (methodName.startsWith(WRITE))
+        {
+            return true;
+        }
+
+        if (methodName.startsWith(READ))
+        {
+            return true;
+        }
+
+        if (methodName.startsWith(BEING))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The method required by the InvocationHandler interface. The
+     * implementation here just supports manipulating the underlying map via the
+     * bean property methods on the proxied interface.
+     * 
+     * @param proxy
+     *            Class that was original called against.
+     * @param method
+     *            Method being invoked.
+     * @param args
+     *            Argument values.
+     * @return Return value, must be null for void return types.
+     */
+    Object handle(Object proxy, Method method, Object[] args) throws Throwable
+    {
+        String methodName = method.getName();
+
+        if (LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("Invoking " + methodName);
+
+            if (args != null)
+            {
+                LOGGER.debug("Arguments " + Arrays.asList(args));
+            }
+        }
+
+        if (methodName.startsWith(WRITE))
+        {
+            handleWrite(methodName, args);
+
+            return null;
+        }
+        else if (methodName.startsWith(READ))
+        {
+            return handleRead(method, args);
+        }
+        else if (methodName.startsWith(BEING))
+        {
+            return handleBeing(methodName);
+        }
+        else
+        {
+            throw new IllegalStateException(String.format(
+                    "The method, %1$s, is not a property accessor or mutator!",
+                    method.getName()));
+        }
+    }
+
+    Boolean handleEquals(Object value)
+    {
+        if (null == value)
+        {
+            return Boolean.FALSE;
+        }
+
+        // I don't think there is any sensical comparison, if the argument is
+        // not a Proxy, too; maybe at some point iterating the defined fields
+        // and comparing them individually? Too hard to second guess the bean
+        // interface author, I think this is safer until something better occurs
+        // to me
+        if (!Proxy.isProxyClass(value.getClass()))
+        {
+            return Boolean.FALSE;
+        }
+
+        Object other = Proxy.getInvocationHandler(value);
+
+        if (!(other instanceof PropertyHandler))
+        {
+            return Boolean.FALSE;
+        }
+
+        PropertyHandler otherHandler = (PropertyHandler) other;
+
+        return Boolean.valueOf(values.equals(otherHandler.values));
+    }
+
+    String filteredToString()
+    {
+        // create a shallow map to filter out ignored properties, as well as to
+        // consistently sort by the property names
+        Map<String, Object> toPrint = new TreeMap<String, Object>(values);
+
+        // TODO need another mechanism
+        // IgnoreToString ignore = proxiedClass
+        // .getAnnotation(IgnoreToString.class);
+        IgnoreToString ignore = null;
+
+        if (null == ignore)
+        {
+            return toPrint.toString();
+        }
+
+        for (String ignoreName : ignore.value())
+        {
+            toPrint.remove(ignoreName);
+        }
+
+        return toPrint.toString();
+    }
+
+    private void handleWrite(String methodName, Object[] args)
+    {
+        if (null == args)
+        {
+            throw new IllegalArgumentException(
+                    "PropertyBeanHandler needs a value to write to the indicated property.");
+        }
+
+        String propertyName = getPropertyName(methodName, WRITE);
+
+        if (1 == args.length)
+        {
+            values.put(propertyName, args[0]);
+        }
+        else if (2 == args.length)
+        {
+            handleIndexedWrite(propertyName, args);
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "PropertyBeanHandler only supports writing simple and indexed properties.");
+        }
+    }
+
+    private void handleIndexedWrite(String propertyName, Object[] args)
+    {
+        int index = getIndex(args[0], true);
+
+        Object value = values.get(propertyName);
+
+        if (isPrimitiveArray(value.getClass()))
+        {
+            setElement(value, index, args[1]);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) value;
+
+            indexed[index] = args[1];
+        }
+    }
+
+    private Object handleRead(Method method, Object[] args)
+    {
+        String propertyName = getPropertyName(method.getName(), READ);
+
+        if ((null == args) || (0 == args.length))
+        {
+            return handleNull(method.getReturnType(), values.get(propertyName));
+        }
+        else if (1 == args.length)
+        {
+            return handleIndexedRead(propertyName, args);
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "PropertyBeanHandler only supports reading simple and indexed properties.");
+        }
+    }
+
+    private Object handleIndexedRead(String propertyName, Object[] args)
+    {
+        int index = getIndex(args[0], false);
+
+        Object value = values.get(propertyName);
+
+        if (null == value)
+        {
+            LOGGER.warn("Trying to read null array.");
+            return null;
+        }
+
+        if (isPrimitiveArray(value.getClass()))
+        {
+            return getElement(value, index);
+        }
+
+        if (List.class.isAssignableFrom(value.getClass()))
+        {
+            List indexed = (List) values.get(propertyName);
+
+            Object element = indexed.get(index);
+
+            return element;
+        }
+
+        Object[] indexed = (Object[]) values.get(propertyName);
+
+        return indexed[index];
+    }
+
+    private Object handleBeing(String methodName)
+    {
+        String propertyName = getPropertyName(methodName, BEING);
+
+        return handleNull(Boolean.class, values.get(propertyName));
+    }
+
+    private String getPropertyName(String methodName, String prefix)
+    {
+        int firstChar = prefix.length();
+
+        String propertyName = methodName.substring(firstChar);
+
+        propertyName = Introspector.decapitalize(propertyName);
+
+        return propertyName;
+    }
+
+    private int getIndex(Object raw, boolean forWrite)
+    {
+        if ((null == raw) || !(raw instanceof Integer))
+        {
+            if (forWrite)
+            {
+                throw new IllegalArgumentException(
+                        "Index for write is invalid.");
+            }
+            else
+            {
+                throw new IllegalArgumentException("Index for read is invalid.");
+            }
+        }
+
+        Integer indexWrapper = (Integer) raw;
+        int index = indexWrapper.intValue();
+
+        if (index < 0)
+        {
+            if (forWrite)
+            {
+                throw new IllegalArgumentException(
+                        "Index for write must be positive.");
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "Index for read must be positive.");
+            }
+        }
+
+        return index;
+    }
+}

@@ -34,7 +34,7 @@ import static net.sf.navel.beans.BeanManipulator.describe;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.beans.PropertyBeanHandler;
+import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
@@ -58,7 +58,7 @@ public class NestedValidatorTest
         values.put("nested.long", new Long(42));
         values.put("nested.short", new Short((short) 4));
 
-        NestedBean bean = new PropertyBeanHandler<NestedBean>(NestedBean.class,
+        NestedBean bean = new PropertyHandler<NestedBean>(NestedBean.class,
                 values, true).getProxy();
 
         LOGGER.debug(bean);
@@ -82,7 +82,7 @@ public class NestedValidatorTest
 
         try
         {
-            new PropertyBeanHandler<NestedBean>(NestedBean.class, values, true)
+            new PropertyHandler<NestedBean>(NestedBean.class, values, true)
                     .getProxy();
 
             Assert
@@ -98,12 +98,12 @@ public class NestedValidatorTest
     @Test
     public void testFlatten() throws Exception
     {
-        NestedBean bean = new PropertyBeanHandler<NestedBean>(NestedBean.class)
+        NestedBean bean = new PropertyHandler<NestedBean>(NestedBean.class)
                 .getProxy();
 
         bean.setLong(63L);
         bean.setShort((short) 6);
-        bean.setNested(new PropertyBeanHandler<TypesBean>(TypesBean.class)
+        bean.setNested(new PropertyHandler<TypesBean>(TypesBean.class)
                 .getProxy());
         bean.getNested().setLong(42L);
         bean.getNested().setShort((short) 4);

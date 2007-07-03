@@ -37,13 +37,21 @@ package net.sf.navel.beans;
  * 
  * @author cmdln
  */
-public interface DelegationTarget<T>
+public interface DelegationTarget
 {
+
+    /**
+     * Indicate which interface in a proxy this delegate is meant to support.
+     * 
+     * @return Must be an interface, used to help determin how to route a method
+     *         call to this delegate.
+     */
+    Class<?> getDelegatingInterface();
 
     /**
      * You never need to call this method explicitly, it simply allows your
      * implementation to gain access to the InvocationHandler, at runtime, for
      * access to the bean's underlying Map, etc.
      */
-    void setDelegationSource(DelegateBeanHandler<T> handler);
+    void setDelegationSource(JavaBeanHandler handler);
 }

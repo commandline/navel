@@ -41,9 +41,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.sf.navel.beans.DelegateBeanHandler;
+import net.sf.navel.beans.MethodHandler;
 import net.sf.navel.beans.DelegationTarget;
 import net.sf.navel.beans.InvalidPropertyValueException;
+import net.sf.navel.beans.PropertyValidator;
 import net.sf.navel.beans.UnsupportedFeatureException;
 
 import org.apache.log4j.Logger;
@@ -69,11 +70,11 @@ public class DelegateValidator implements Validator, Serializable
 
     private final DelegationTarget[] delegates;
 
-    private final DelegateBeanHandler<?> handler;
+    private final MethodHandler<?> handler;
 
     private final boolean checkOnInit;
 
-    public DelegateValidator(DelegateBeanHandler<?> handler,
+    public DelegateValidator(MethodHandler<?> handler,
             PropertyValidator decorated, boolean checkOnInit)
     {
         this.decorated = decorated;
@@ -160,7 +161,7 @@ public class DelegateValidator implements Validator, Serializable
     public void validateEvents(BeanInfo beanInfo)
             throws UnsupportedFeatureException
     {
-        decorated.validateEvents(beanInfo);
+        decorated.forbidEvents(beanInfo);
     }
 
     public void validateData(BeanInfo beanInfo)

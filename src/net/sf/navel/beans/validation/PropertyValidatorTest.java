@@ -14,7 +14,7 @@ package net.sf.navel.beans.validation;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.beans.PropertyBeanHandler;
+import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.ChildBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -50,7 +50,7 @@ public class PropertyValidatorTest
 
     /**
      * Test method for
-     * {@link net.sf.navel.beans.validation.PropertyValidator#validateData(java.beans.BeanInfo)}.
+     * {@link net.sf.navel.beans.PropertyValidator#validateData(java.beans.BeanInfo)}.
      */
     @Test
     public void testValidateData()
@@ -60,7 +60,7 @@ public class PropertyValidatorTest
         values.put("parentID", 1L);
         values.put("childID", 2L);
 
-        PropertyBeanHandler<ChildBean> handler = new PropertyBeanHandler<ChildBean>(
+        PropertyHandler<ChildBean> handler = new PropertyHandler<ChildBean>(
                 ChildBean.class, values, false);
 
         ChildBean bean = handler.getProxy();

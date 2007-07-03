@@ -27,7 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans.support;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;

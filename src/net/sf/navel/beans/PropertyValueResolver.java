@@ -27,14 +27,13 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans;
 
-import static net.sf.navel.beans.BeanManipulator.getNavelHandler;
 import static net.sf.navel.beans.BeanManipulator.populate;
 
 import java.beans.BeanInfo;
-import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,11 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import net.sf.navel.beans.DelegateBeanHandler;
-import net.sf.navel.beans.InvalidPropertyValueException;
-import net.sf.navel.beans.PropertyBeanHandler;
-import net.sf.navel.beans.UnsupportedFeatureException;
-
 import org.apache.log4j.Logger;
 
 /**
@@ -55,24 +49,22 @@ import org.apache.log4j.Logger;
  * on the initial values and try to finesse them into the Map so they will work
  * properly.
  * 
- * @author lyon
+ * @author cmdln
  * 
  */
-public class NestedValidator extends PropertyValidator
+class PropertyValueResolver
 {
 
     private static final long serialVersionUID = 394546846709604632L;
 
     private static final Logger LOGGER = Logger
-            .getLogger(NestedValidator.class);
+            .getLogger(PropertyValueResolver.class);
 
-    private final ListBuilder listBuilder;
+    private static final PropertyValueResolver SINGLETON = new PropertyValueResolver();
 
-    public NestedValidator(PropertyBeanHandler<?> handler)
+    private PropertyValueResolver()
     {
-        super(handler);
-
-        listBuilder = new ListBuilder(handler);
+        // enforce Singleton pattern
     }
 
     /**
@@ -81,15 +73,21 @@ public class NestedValidator extends PropertyValidator
      * 
      * @param beanInfo
      *            Introspection data about proxied class.
-     * @throws InvalidPropertyValueException
-     *             Thrown in an initial value doesn't match up with the proxied
-     *             class' properties, by name or type.
      */
-    @Override
-    public void validateData(BeanInfo beanInfo)
-            throws InvalidPropertyValueException
+    public static void resolve(BeanInfo beanInfo, Map<String, Object> values)
     {
-        List<PropertyDescriptor> properties = getAllProperties(beanInfo);
+        SINGLETON.resolveValues(beanInfo, values);
+    }
+
+    private void resolveValues(BeanInfo beanInfo, Map<String, Object> values)
+    {
+        if (values.isEmpty())
+        {
+            return;
+        }
+
+        List<PropertyDescriptor> properties = Arrays.asList(beanInfo
+                .getPropertyDescriptors());
 
         if (LOGGER.isTraceEnabled())
         {
@@ -97,70 +95,9 @@ public class NestedValidator extends PropertyValidator
             LOGGER.trace(properties);
         }
 
-        eliminateMatches(properties);
-
-        if (values.isEmpty())
-        {
-            return;
-        }
-
         Map<String, PropertyDescriptor> nameReference = mapNames(properties);
 
-        resolveNested(nameReference);
-
-        listBuilder.filter();
-
-        if (!values.isEmpty())
-        {
-            throw new InvalidPropertyValueException(
-                    "Extra values found in initial value map that do not match any known property for bean type "
-                            + proxiedClass.getName() + ": " + values.keySet());
-        }
-    }
-
-    /**
-     * @see net.sf.navel.beans.validation.PropertyValidator#filterMethods(java.util.Set,
-     *      java.beans.PropertyDescriptor)
-     */
-    @Override
-    protected void filterMethods(Set<String> methodNames,
-            PropertyDescriptor property)
-    {
-        super.filterMethods(methodNames, property);
-
-        if (!(property instanceof IndexedPropertyDescriptor))
-        {
-            return;
-        }
-
-        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
-
-        checkMethod(methodNames, indexedProperty.getIndexedReadMethod());
-        checkMethod(methodNames, indexedProperty.getIndexedWriteMethod());
-    }
-
-    /**
-     * @see net.sf.navel.beans.validation.PropertyValidator#checkValue(PropertyDescriptor,
-     *      java.lang.String, java.lang.Object)
-     */
-    @Override
-    protected void checkValue(PropertyDescriptor propertyDescriptor,
-            String propertyName, Object propertyValue)
-    {
-        if (!(propertyDescriptor instanceof IndexedPropertyDescriptor))
-        {
-            super.checkValue(propertyDescriptor, propertyName, propertyValue);
-
-            return;
-        }
-
-        if (!List.class.isAssignableFrom(propertyValue.getClass()))
-        {
-            throw new InvalidPropertyValueException(propertyValue + " of type "
-                    + propertyValue.getClass().getName()
-                    + " is not a valid value for use with indexed property "
-                    + propertyName + ".");
-        }
+        resolveNested(nameReference, values);
     }
 
     private Map<String, PropertyDescriptor> mapNames(
@@ -177,11 +114,9 @@ public class NestedValidator extends PropertyValidator
         return byNames;
     }
 
-    private void resolveNested(Map<String, PropertyDescriptor> nameReference)
-            throws InvalidPropertyValueException
+    private void resolveNested(Map<String, PropertyDescriptor> nameReference,
+            Map<String, Object> values)
     {
-        // IMPROVE introduce a parameter object similar to a variant for Map or
-        // Bean
         Map<String, Object> collapsed = new HashMap<String, Object>();
         Set<String> toRemove = new HashSet<String>();
 
@@ -214,19 +149,12 @@ public class NestedValidator extends PropertyValidator
             resolveSingleNested(name, entry.getValue(), collapsed, toRemove);
         }
 
-        // avoid the next bit, allow the caller to deal with this error
-        // condition
-        if (!values.isEmpty())
-        {
-            return;
-        }
-
         // this should only remove nested names, like foo.bar
-        handler.removeAll(toRemove);
+        values.keySet().removeAll(toRemove);
 
-        buildNestedBeans(handler.getValues(), nameReference, collapsed);
+        buildNestedBeans(values, nameReference, collapsed);
 
-        handler.putAll(collapsed);
+        values.putAll(collapsed);
     }
 
     @SuppressWarnings("unchecked")
@@ -271,8 +199,6 @@ public class NestedValidator extends PropertyValidator
         }
 
         toRemove.add(name);
-
-        values.remove(name);
     }
 
     @SuppressWarnings("unchecked")
@@ -280,7 +206,7 @@ public class NestedValidator extends PropertyValidator
             Map<String, PropertyDescriptor> nameReference,
             Map<String, Object> collapsed) throws InvalidPropertyValueException
     {
-        // IMPROVE see not where collapsed is initialized
+        // IMPROVE see note where collapsed is initialized
         // copy so we can iterate the copy and use it to modify the original map
         Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
                 collapsed.entrySet());
@@ -311,9 +237,10 @@ public class NestedValidator extends PropertyValidator
             if (!propClass.isInterface())
             {
                 throw new InvalidPropertyValueException(
-                        "Nested property, "
-                                + name
-                                + ", must currently be a Navel bean to allow automatic instantiation.");
+                        String
+                                .format(
+                                        "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
+                                        name, propClass.getName()));
             }
 
             // IMPROVE see note where collapsed is initialized
@@ -334,33 +261,19 @@ public class NestedValidator extends PropertyValidator
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T buildOrReuse(Map<String, Object> parentValues, String name,
-            Class<T> propClass, Map<String, Object> values)
+    private Object buildOrReuse(Map<String, Object> parentValues, String name,
+            Class<?> propClass, Map<String, Object> values)
             throws InvalidPropertyValueException, UnsupportedFeatureException
     {
+        // create a new Navel bean, the parent map doesn't have one, yet
         if (!parentValues.containsKey(name))
         {
-            // following the parent type is a reasonable guess, especially since
-            // the delegation checking can be done leniently, now
-            if (handler instanceof DelegateBeanHandler)
-            {
-                return new DelegateBeanHandler<T>(propClass, values, false,
-                        false).getProxy();
-            }
-            else
-            {
-                return new PropertyBeanHandler<T>(propClass, values, false)
-                        .getProxy();
-            }
+            return ProxyFactory.createAs(propClass, values);
         }
 
-        // if the value is not T, then we are in trouble
-        T nestedValue = (T) parentValues.get(name);
+        Object nestedValue = parentValues.get(name);
 
-        // again, if the handler does not expect the matched type, T, we are
-        // in serious trouble
-        PropertyBeanHandler<T> handler = (PropertyBeanHandler<T>) getNavelHandler(nestedValue);
+        JavaBeanHandler handler = ProxyFactory.getHandler(nestedValue);
 
         if (null == handler)
         {
@@ -368,7 +281,8 @@ public class NestedValidator extends PropertyValidator
         }
         else
         {
-            handler.putAll(values);
+            // TODO use new utility class, when available
+            // handler.putAll(values);
         }
 
         return nestedValue;

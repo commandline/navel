@@ -77,10 +77,7 @@ public class BeanManipulatorTest
         values.put(PropertyNames.WO_PROP, 2);
         values.put(PropertyNames.RW_PROP, 3);
 
-        PropertyBeanHandler<ReadWriteBean> handler = new PropertyBeanHandler<ReadWriteBean>(
-                ReadWriteBean.class, values, false);
-
-        ReadWriteBean bean = handler.getProxy();
+        ReadWriteBean bean = ProxyFactory.createAs(ReadWriteBean.class, values);
 
         values.remove(PropertyNames.WO_PROP);
 
@@ -124,15 +121,13 @@ public class BeanManipulatorTest
         values.put(PropertyNames.WO_PROP, 2);
         values.put(PropertyNames.RW_PROP, 3);
 
-        PropertyBeanHandler<ReadWriteBean> handler = new PropertyBeanHandler<ReadWriteBean>(
-                ReadWriteBean.class);
-        ReadWriteBean bean = handler.getProxy();
+        ReadWriteBean bean = ProxyFactory.createAs(ReadWriteBean.class, values);
 
         populate(bean, values);
 
         Assert.assertEquals(0, bean.getReadOnly(),
                 "Bean read only should not be set.");
-        values = handler.getValues();
+        values = ProxyFactory.getHandler(bean).propertyHandler.values;
         LOGGER.debug(values);
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Bean write only should be set.");
@@ -211,17 +206,13 @@ public class BeanManipulatorTest
     public void testPopulateNested() throws InvalidPropertyValueException,
             UnsupportedFeatureException
     {
-        PropertyBeanHandler<TypesBean> nestedHandler = new PropertyBeanHandler<TypesBean>(
-                TypesBean.class);
-        TypesBean nestedBean = nestedHandler.getProxy();
+        TypesBean nestedBean = ProxyFactory.createAs(TypesBean.class);
 
         Map<String, Object> values = new HashMap<String, Object>(2);
 
         values.put("nested", nestedBean);
 
-        PropertyBeanHandler<NestedBean> handler = new PropertyBeanHandler<NestedBean>(
-                NestedBean.class, values, false);
-        NestedBean bean = handler.getProxy();
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class);
 
         Assert.assertNotNull(bean.getNested(),
                 "Nested bean should not be null.");
@@ -239,9 +230,9 @@ public class BeanManipulatorTest
         Assert.assertEquals(128L, bean.getNested().getLong(),
                 "Nested long should be set correctly.");
 
-        values = handler.getValues();
         LOGGER.debug(values);
-        LOGGER.debug(nestedHandler.getValues());
+        LOGGER.debug(ProxyFactory.getHandler(bean).propertyHandler
+                .values);
     }
 
     /**
@@ -256,13 +247,9 @@ public class BeanManipulatorTest
     public void testPopulateIndexed() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
-        PropertyBeanHandler<IndexedBean> indexedHandler = new PropertyBeanHandler<IndexedBean>(
-                IndexedBean.class);
-        IndexedBean indexedBean = indexedHandler.getProxy();
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
 
-        PropertyBeanHandler<TypesBean> typeHandler = new PropertyBeanHandler<TypesBean>(
-                TypesBean.class);
-        TypesBean typesBean = typeHandler.getProxy();
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class);
 
         indexedBean.setArray(new String[2]);
         indexedBean.setFloats(new float[2]);
@@ -307,9 +294,7 @@ public class BeanManipulatorTest
     public void testBadIndexed() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
-        PropertyBeanHandler<IndexedBean> indexedHandler = new PropertyBeanHandler<IndexedBean>(
-                IndexedBean.class);
-        IndexedBean indexedBean = indexedHandler.getProxy();
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
 
         indexedBean.setArray(new String[2]);
         indexedBean.setFloats(new float[2]);
@@ -351,9 +336,7 @@ public class BeanManipulatorTest
     public void testStringConversion() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
-        PropertyBeanHandler<TypesBean> handler = new PropertyBeanHandler<TypesBean>(
-                TypesBean.class);
-        TypesBean bean = handler.getProxy();
+        TypesBean bean = ProxyFactory.createAs(TypesBean.class);
 
         Map<String, Object> values = new HashMap<String, Object>(8);
 
