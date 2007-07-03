@@ -1,0 +1,14 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="All Tests">
+  <test name="All Tests">
+    <classes>
+      <class name="net.sf.navel.beans.SimplePropertyManipulatorTest"/>
+      <class name="net.sf.navel.beans.validation.ListBuilderTest"/>
+      <class name="net.sf.navel.beans.BeanManipulatorTest"/>
+      <class name="net.sf.navel.beans.validation.NestedValidatorTest"/>
+      <class name="net.sf.navel.beans.PropertyBeanHandlerTest"/>
+      <class name="net.sf.navel.beans.DelegateBeanHandlerTest"/>
+      <class name="net.sf.navel.beans.validation.PropertyValidatorTest"/>
+    </classes>
+  </test>
+</suite>
