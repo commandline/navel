@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
 import net.sf.navel.example.AltBoolean;
 import net.sf.navel.example.BadPropertyBean;
 import net.sf.navel.example.IdentityBean;
@@ -51,18 +50,17 @@ import net.sf.navel.example.ReadWriteBean;
 import net.sf.navel.example.SensitiveBean;
 import net.sf.navel.example.TypesBean;
 
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
 /**
  * Test case for exercises the PropertyBeanHandler, including failure modes.
  * 
  * @author cmdln
  * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:44 $
  */
-public class PropertyBeanHandlerTest extends TestCase
+public class PropertyBeanHandlerTest
 {
-    public PropertyBeanHandlerTest(String name)
-    {
-        super(name);
-    }
 
     /**
      * Make sure that an interface written to be used with the
@@ -71,17 +69,19 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws Exception
      *             Force an error if introspection fails.
      */
+    @Test
     public void testIntrospection() throws IntrospectionException
     {
         BeanInfo beanInfo = Introspector.getBeanInfo(TypesBean.class);
 
-        assertNotNull("Bean info should not be null.", beanInfo);
+        Assert.assertNotNull(beanInfo, "Bean info should not be null.");
 
         PropertyDescriptor[] properties = beanInfo.getPropertyDescriptors();
 
-        assertNotNull("Property descriptors should not be null.", properties);
-        assertTrue("Property descriptors should not be empty.",
-                0 != properties.length);
+        Assert.assertNotNull(properties,
+                "Property descriptors should not be null.");
+        Assert.assertTrue(0 != properties.length,
+                "Property descriptors should not be empty.");
     }
 
     /**
@@ -92,6 +92,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws InvalidPropertyValueException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testSerialization() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -112,7 +113,7 @@ public class PropertyBeanHandlerTest extends TestCase
         {
             e.printStackTrace();
 
-            fail("Should be able to serialize just to bytes.");
+            Assert.fail("Should be able to serialize just to bytes.");
         }
         finally
         {
@@ -138,18 +139,20 @@ public class PropertyBeanHandlerTest extends TestCase
 
             TypesBean result = (TypesBean) input.readObject();
 
-            assertFalse("Should not be the same object.", test == result);
-            assertEquals("Should be equivalent object.", test, result);
+            Assert
+                    .assertFalse(test == result,
+                            "Should not be the same object.");
+            Assert.assertEquals(test, result, "Should be equivalent object.");
         }
         catch (IOException e)
         {
             e.printStackTrace();
 
-            fail("Should be able to open bytes into a stream.");
+            Assert.fail("Should be able to open bytes into a stream.");
         }
         catch (ClassNotFoundException e)
         {
-            fail("Should not have any class loading issues.");
+            Assert.fail("Should not have any class loading issues.");
         }
         finally
         {
@@ -177,6 +180,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws InvalidPropertyValueException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testReadWrite() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -202,10 +206,12 @@ public class PropertyBeanHandlerTest extends TestCase
         // can only check write-only via the underlying map
         values = handler.getValues();
 
-        assertEquals("readOnly should equal 1", readOnly, bean.getReadOnly());
-        assertEquals("writeOnly should equal 2", new Integer(writeOnly), values
-                .get("writeOnly"));
-        assertEquals("readWrite should equal 3", readWrite, bean.getReadWrite());
+        Assert.assertEquals(readOnly, bean.getReadOnly(),
+                "readOnly should equal 1");
+        Assert.assertEquals(new Integer(writeOnly), values.get("writeOnly"),
+                "writeOnly should equal 2");
+        Assert.assertEquals(readWrite, bean.getReadWrite(),
+                "readWrite should equal 3");
     }
 
     /**
@@ -215,6 +221,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testBadData() throws UnsupportedFeatureException
     {
         String[] badData = new String[]
@@ -230,7 +237,7 @@ public class PropertyBeanHandlerTest extends TestCase
             {
                 new PropertyBeanHandler<TypesBean>(TypesBean.class, values,
                         false);
-                fail("Should catch bad data on construction.");
+                Assert.fail("Should catch bad data on construction.");
             }
             catch (InvalidPropertyValueException e)
             {
@@ -244,7 +251,7 @@ public class PropertyBeanHandlerTest extends TestCase
             {
                 new PropertyBeanHandler<TypesBean>(TypesBean.class, values,
                         false);
-                fail("Should catch bad data on construction.");
+                Assert.fail("Should catch bad data on construction.");
             }
             catch (InvalidPropertyValueException e)
             {
@@ -253,6 +260,7 @@ public class PropertyBeanHandlerTest extends TestCase
         }
     }
 
+    @Test
     public void testBadPut() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -262,7 +270,7 @@ public class PropertyBeanHandlerTest extends TestCase
         try
         {
             handler.put("foo", "bar");
-            fail("Should have errored on bad values.");
+            Assert.fail("Should have errored on bad values.");
         }
         catch (Exception e)
         {
@@ -270,6 +278,7 @@ public class PropertyBeanHandlerTest extends TestCase
         }
     }
 
+    @Test
     public void testBadPutAll() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -282,7 +291,7 @@ public class PropertyBeanHandlerTest extends TestCase
         try
         {
             handler.putAll(badValues);
-            fail("Should have errored on bad values.");
+            Assert.fail("Should have errored on bad values.");
         }
         catch (Exception e)
         {
@@ -294,12 +303,13 @@ public class PropertyBeanHandlerTest extends TestCase
      * Test that the PropertyBeanHandler complains on constructrion when passed
      * an interface that doesn't actually define any properties.
      */
+    @Test
     public void testNoProperties()
     {
         try
         {
             new PropertyBeanHandler<BadPropertyBean>(BadPropertyBean.class);
-            fail("Should have thrown an exception on construction.");
+            Assert.fail("Should have thrown an exception on construction.");
         }
         catch (UnsupportedFeatureException e)
         {
@@ -322,6 +332,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testObjectArray() throws InvalidPropertyValueException,
             UnsupportedFeatureException
     {
@@ -338,19 +349,20 @@ public class PropertyBeanHandlerTest extends TestCase
         for (int i = 0; i < data.length; i++)
         {
             bean.setArray(i, data[i]);
-            assertEquals("Element " + i + " should equal " + data[i], data[i],
-                    bean.getArray(i));
+            Assert.assertEquals(data[i], bean.getArray(i), "Element " + i
+                    + " should equal " + data[i]);
         }
 
         String[] beanData = bean.getArray();
-        assertNotNull("Array from bean should not be null.", beanData);
-        assertTrue("Array from bean should equal original data.", Arrays
-                .equals(data, beanData));
+        Assert.assertNotNull(beanData, "Array from bean should not be null.");
+        Assert.assertTrue(Arrays.equals(data, beanData),
+                "Array from bean should equal original data.");
 
         for (int i = 0; i < beanData.length; i++)
         {
-            assertEquals("Original data and bean should match for element " + i
-                    + ".", data[i], beanData[i]);
+            Assert.assertEquals(data[i], beanData[i],
+                    "Original data and bean should match for element " + i
+                            + ".");
         }
     }
 
@@ -363,6 +375,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testPrimitiveArray() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -379,20 +392,21 @@ public class PropertyBeanHandlerTest extends TestCase
         for (int i = 0; i < data.length; i++)
         {
             bean.setFloats(i, data[i]);
-            assertEquals("Element " + i + " should equal " + data[i], data[i],
-                    bean.getFloats(i), 0.0f);
+            Assert.assertEquals(0.0f, data[i], bean.getFloats(i), i
+                    + " should equal " + data[i] + "Element ");
         }
 
         float[] beanData = bean.getFloats();
-        assertNotNull("Array from bean should not be null.", beanData);
+        Assert.assertNotNull(beanData, "Array from bean should not be null.");
 
-        assertTrue("Array from bean should equal original data.", Arrays
-                .equals(data, beanData));
+        Assert.assertTrue(Arrays.equals(data, beanData),
+                "Array from bean should equal original data.");
 
         for (int i = 0; i < beanData.length; i++)
         {
-            assertEquals("Original data and bean should match for element " + i
-                    + ".", data[i], beanData[i], 0.0f);
+            Assert.assertEquals(0.0f, data[i], beanData[i],
+                    "Original data and bean should match for element " + i
+                            + ".");
         }
     }
 
@@ -405,6 +419,7 @@ public class PropertyBeanHandlerTest extends TestCase
      * @throws UnsupportedFeatureException
      *             Construction should work fine, error otherwise.
      */
+    @Test
     public void testBooleanAlt() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
@@ -416,9 +431,11 @@ public class PropertyBeanHandlerTest extends TestCase
 
         AltBoolean bean = handler.getProxy();
 
-        assertTrue("Boolean alt using is should work.", bean.isPrimitiveAlt());
+        Assert.assertTrue(bean.isPrimitiveAlt(),
+                "Boolean alt using is should work.");
     }
 
+    @Test
     public void testToString()
     {
         Map<String, Object> values = new HashMap<String, Object>(3);
@@ -430,20 +447,22 @@ public class PropertyBeanHandlerTest extends TestCase
 
         SensitiveBean bean = handler.getProxy();
 
-        assertTrue("Username should be present.", bean.toString().indexOf(
-                "username") != -1);
-        assertTrue("Password should not be present.", bean.toString().indexOf(
-                "password") == -1);
+        Assert.assertTrue(bean.toString().indexOf("username") != -1,
+                "Username should be present.");
+        Assert.assertTrue(bean.toString().indexOf("password") == -1,
+                "Password should not be present.");
     }
 
+    @Test
     public void testEquals()
     {
         ReadWriteBean bean = new PropertyBeanHandler<ReadWriteBean>(
                 ReadWriteBean.class).getProxy();
 
-        assertFalse("Nothing should equal null.", bean.equals(null));
+        Assert.assertFalse(bean.equals(null), "Nothing should equal null.");
     }
 
+    @Test
     public void testID()
     {
         Map<String, Object> values = new HashMap<String, Object>();
@@ -452,6 +471,6 @@ public class PropertyBeanHandlerTest extends TestCase
         IdentityBean bean = new PropertyBeanHandler<IdentityBean>(
                 IdentityBean.class, values).getProxy();
 
-        assertEquals("ID should be usable.", 100, bean.getID());
+        Assert.assertEquals(100, bean.getID(), "ID should be usable.");
     }
 }
