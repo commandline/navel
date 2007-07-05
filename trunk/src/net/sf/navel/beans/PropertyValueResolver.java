@@ -281,8 +281,7 @@ class PropertyValueResolver
         }
         else
         {
-            // TODO use new utility class, when available
-            // handler.putAll(values);
+            handler.propertyValues.putAll(values);
         }
 
         return nestedValue;
