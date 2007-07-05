@@ -32,7 +32,8 @@ package net.sf.navel.beans;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.example.BadBeanImpl;
+import net.sf.navel.example.AnotherBadDelegatedImpl;
+import net.sf.navel.example.BadDelegatedImpl;
 import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedBean;
 import net.sf.navel.example.DelegatedImpl;
@@ -56,10 +57,10 @@ import org.testng.annotations.Test;
  * attempted to be match to a delegation target and invoked if possible.
  * 
  * @author cmdln
- * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:23 $
  */
 public class MethodHandlerTest
 {
+    
     private static final Logger LOGGER = Logger
             .getLogger(MethodHandlerTest.class);
 
@@ -82,21 +83,30 @@ public class MethodHandlerTest
      * Test that construction with a mis-matched DelegationTarget fails.
      */
     @Test
-    public void testConstructionValidation()
+    public void testAttachValidation()
     {
+        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class);
+        
         try
         {
-            Object bean = ProxyFactory.createAs(DelegatedBean.class);
-            ProxyFactory.attach(bean, new BadBeanImpl());
+            ProxyFactory.attach(bean, new BadDelegatedImpl());
 
             Assert
-                    .fail("Construction should fail if the delegate doesn't implement the delegated interface.");
+                    .fail("Attachment should fail if the delegate doesn't implement the delegated interface.");
         }
-        catch (UnsupportedFeatureException e)
+        catch (Exception e)
         {
             ;
         }
-        catch (InvalidPropertyValueException e)
+        
+        try
+        {
+            ProxyFactory.attach(bean, new AnotherBadDelegatedImpl());
+
+            Assert
+                    .fail("Attachment should fail if the delegate methods match except for return type.");
+        }
+        catch (Exception e)
         {
             ;
         }
@@ -123,13 +133,15 @@ public class MethodHandlerTest
 
             Assert.fail("Should not have been able to execute correctly!");
         }
-        catch (UnsupportedFeatureException e)
+        catch (Exception e)
         {
             String message = e.getMessage();
+            
+            LogHelper.traceError(LOGGER, e);
 
             Assert
-                    .assertTrue(message.indexOf("DelegationTarget") != -1,
-                            "Should mention DelegationTarget in the exception message.");
+                    .assertTrue(message.indexOf("InterfaceDelegate") != -1,
+                            "Should mention InterfaceDelegate in the exception message.");
         }
 
         // implements the functional interface and Delegation handler
@@ -163,7 +175,7 @@ public class MethodHandlerTest
         try
         {
             DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class,
-                    values);
+                    values, Delegated.class);
             ProxyFactory.attach(bean, delegate);
         }
         catch (Exception e)

@@ -29,46 +29,51 @@
  */
 package net.sf.navel.example;
 
+import net.sf.navel.beans.DelegationTarget;
+import net.sf.navel.beans.PropertyValues;
+
+import org.apache.log4j.Logger;
 
 
 /**
- * Implements the bad bean interface so we can do some concrete testing of the
- * BeanManipulator.
+ * Example delegate that implements a functinal interface and can be
+ * instantiated and used with DelegateBeanHandler.  Must implement
+ * DelegationTarget, but the constructor of DelegateBeanHandler won't accept
+ * anything else, so that shouldn't be a problem.  May implement as many
+ * delegate interfaces as desired, construction of the DelegateBeanHandler just
+ * makes sure that there is some DelegationHandler for each extra interface,
+ * whether there is just one DelegationHandler or one per interface or some
+ * other arbitrary ratio doesn't matter.
  *
  * @author cmdln
  */
-public class BadBeanImpl
+public class BadDelegatedImpl implements DelegationTarget
 {
+    
+    private static final Logger LOGGER = Logger.getLogger(BadDelegatedImpl.class);
+    
+    private transient PropertyValues values;
 
-    private static final long serialVersionUID = -2188450661346952639L;
-
-    public void setFoo(String value1, String value2)
+    public Class<?> getDelegatingInterface()
     {
-        // purposeful does nothing
+        return Delegated.class;
     }
 
-    public int getFoo(String value1, String value2)
+    public void setPropertyValues(PropertyValues values)
     {
-        return 0;
+        this.values = values;
     }
 
-    public String setBar(String value1)
+    public void doTheOther(Integer foo, Integer bar)
     {
-        return null;
-    }
-
-    public void getBar()
-    {
-        // purposeful does nothing
-    }
-
-    public String isNotBooleanAlt()
-    {
-        return null;
-    }
-
-    public Boolean isWrapperAlt()
-    {
-        return Boolean.FALSE;
+        try
+        {
+            values.put("writeOnly", foo);
+            values.put("readWrite", bar);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error(e);
+        }
     }
 }

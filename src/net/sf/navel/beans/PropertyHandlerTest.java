@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.navel.example.AltBoolean;
-import net.sf.navel.example.BadPropertyBean;
 import net.sf.navel.example.IdentityBean;
 import net.sf.navel.example.IndexedBean;
 import net.sf.navel.example.ReadWriteBean;
@@ -59,7 +58,7 @@ import org.testng.annotations.Test;
  * @author cmdln
  * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:44 $
  */
-public class PropertyBeanHandlerTest
+public class PropertyHandlerTest
 {
 
     /**
@@ -253,68 +252,6 @@ public class PropertyBeanHandlerTest
             {
                 ;
             }
-        }
-    }
-
-    //
-    // @Test
-    // public void testBadPut() throws UnsupportedFeatureException,
-    // InvalidPropertyValueException
-    // {
-    // PropertyHandler handler = new PropertyHandler(new Class[] {
-    // TypesBean.class});
-    //
-    // try
-    // {
-    // handler.put("foo", "bar");
-    // Assert.fail("Should have errored on bad values.");
-    // }
-    // catch (Exception e)
-    // {
-    // ;
-    // }
-    // }
-
-    // @Test
-    // public void testBadPutAll() throws UnsupportedFeatureException,
-    // InvalidPropertyValueException
-    // {
-    // PropertyHandler<TypesBean> handler = new PropertyHandler<TypesBean>(
-    // TypesBean.class);
-    //
-    // Map<String, Object> badValues = new HashMap<String, Object>(1);
-    // badValues.put("foo", "bar");
-    //
-    // try
-    // {
-    // handler.putAll(badValues);
-    // Assert.fail("Should have errored on bad values.");
-    // }
-    // catch (Exception e)
-    // {
-    // ;
-    // }
-    // }
-
-    /**
-     * Test that the PropertyBeanHandler complains on constructrion when passed
-     * an interface that doesn't actually define any properties.
-     */
-    @Test
-    public void testNoProperties()
-    {
-        try
-        {
-            ProxyFactory.createAs(BadPropertyBean.class);
-            Assert.fail("Should have thrown an exception on construction.");
-        }
-        catch (UnsupportedFeatureException e)
-        {
-            ;
-        }
-        catch (InvalidPropertyValueException e)
-        {
-            ;
         }
     }
 

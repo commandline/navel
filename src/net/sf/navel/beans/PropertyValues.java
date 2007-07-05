@@ -29,11 +29,18 @@
  */
 package net.sf.navel.beans;
 
+import java.beans.BeanInfo;
+import java.beans.PropertyDescriptor;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.log4j.LogManager;
@@ -49,24 +56,59 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-public class PropertyValues
+public class PropertyValues implements Serializable
 {
+
+    private static final long serialVersionUID = -7835666700165867556L;
 
     private static final Logger LOGGER = LogManager
             .getLogger(PropertyValues.class);
 
+    private final String primaryClassName;
+
+    // TODO restore during derserialization
+    private transient final Set<BeanInfo> proxiedBeanInfo;
+
+    private final PropertyValidator validator;
+
     private final Map<String, Object> values;
 
-    PropertyValues()
-    {
-        this.values = new HashMap<String, Object>();
-    }
+    private final Set<String> filterToString;
 
-    PropertyValues(Map<String, Object> initialValues)
+    PropertyValues(String primaryClassName, Set<BeanInfo> proxiedBeanInfo,
+            Map<String, Object> initialValues)
     {
-        // JavaBeanHandler already copies the initialValues since it must call
-        // PropertyValueResolver
-        this.values = initialValues;
+        this.primaryClassName = primaryClassName;
+
+        this.proxiedBeanInfo = proxiedBeanInfo;
+
+        this.validator = new PropertyValidator(proxiedBeanInfo);
+
+        Map<String, Object> initialCopy = new HashMap<String, Object>(
+                initialValues);
+
+        Set<String> tempFilter = new HashSet<String>();
+
+        for (BeanInfo beanInfo : proxiedBeanInfo)
+        {
+            IgnoreToString ignore = beanInfo.getBeanDescriptor().getBeanClass()
+                    .getAnnotation(IgnoreToString.class);
+            
+            if (null == ignore)
+            {
+                continue;
+            }
+
+            tempFilter.addAll(Arrays.asList(ignore.value()));
+
+            PropertyValueResolver.resolve(beanInfo, initialCopy);
+        }
+
+        filterToString = Collections.unmodifiableSet(tempFilter);
+
+        validator.validateAll(initialCopy);
+
+        this.values = initialCopy;
     }
 
     /**
@@ -95,21 +137,101 @@ public class PropertyValues
      */
     public void put(String propertyName, Object value)
     {
-        // TODO validate propertyName
-        // TODO valid value type
+        if (propertyName.indexOf('.') != -1)
+        {
+            throw new UnsupportedFeatureException(
+                    "Nested property names not yet supported!");
+        }
+
+        // TODO delegate to nested beans, if appropriate
+
+        validator.validate(propertyName, value);
+
         values.put(propertyName, value);
     }
 
-    public void putAll(Map<String, Object> values)
+    /**
+     * Forewards to the internal map, after resolving nested and list properties
+     * and validating the new map. Will overwrite values at the same keys in the
+     * internal storage.
+     */
+    public void putAll(Map<String, Object> newValues)
     {
-        // TODO validate propertyNames
-        // TODO valid value types
-        values.putAll(values);
+        Map<String, Object> copy = new HashMap<String, Object>(newValues);
+
+        for (BeanInfo beanInfo : proxiedBeanInfo)
+        {
+            PropertyValueResolver.resolve(beanInfo, copy);
+        }
+
+        validator.validateAll(copy);
+
+        values.putAll(copy);
     }
 
     public Object get(String propertyName)
     {
         return values.get(propertyName);
+    }
+
+    public boolean containsKey(String property)
+    {
+        return values.containsKey(property);
+    }
+
+    public Object remove(String property)
+    {
+        return values.remove(property);
+    }
+
+    public void clear()
+    {
+        values.clear();
+    }
+
+    boolean isPropertyOf(String propertyName)
+    {
+        int dotIndex = propertyName.indexOf('.');
+
+        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
+                .substring(0, dotIndex);
+
+        for (PropertyDescriptor propertyDescriptor : validator
+                .getPropertyDescriptors())
+        {
+            // keep going if this is not the property we are looking for or
+            // a parent property
+            if (!propertyDescriptor.getName().equals(shallowProperty))
+            {
+                continue;
+            }
+
+            // if this is a leafy property, we're done
+            if (-1 == dotIndex)
+            {
+                return true;
+            }
+
+            // otherwise, recurse on the nested property
+            Object nestedValue = values.get(shallowProperty);
+
+            JavaBeanHandler nestedHandler = ProxyFactory
+                    .getHandler(nestedValue);
+
+            if (null == nestedHandler)
+            {
+                return BeanManipulator.isPropertyOf(propertyDescriptor
+                        .getPropertyType(), propertyName
+                        .substring(dotIndex + 1));
+            }
+            else
+            {
+                return nestedHandler.propertyValues.isPropertyOf(propertyName
+                        .substring(dotIndex + 1));
+            }
+        }
+
+        return false;
     }
 
     Object proxyToObject(final String message, final Method method,
@@ -121,14 +243,14 @@ public class PropertyValues
 
         Class[] argTypes = new Class[count];
 
-        String argString = parseArguments(argTypes);
-
         // the only method in Object that takes an argument is equals, and it
         // takes another Object as an argument
         for (int i = 0; i < count; i++)
         {
             argTypes[i] = Object.class;
         }
+
+        String argString = parseArguments(argTypes);
 
         if (LOGGER.isDebugEnabled())
         {
@@ -184,16 +306,6 @@ public class PropertyValues
         }
     }
 
-    boolean containsKey(String property)
-    {
-        return values.containsKey(property);
-    }
-
-    Object remove(String property)
-    {
-        return values.remove(property);
-    }
-
     private Boolean handleEquals(Object value)
     {
         if (null == value)
@@ -230,22 +342,17 @@ public class PropertyValues
         // consistently sort by the property names
         Map<String, Object> toPrint = new TreeMap<String, Object>(values);
 
-        // TODO need another mechanism
-        // IgnoreToString ignore = proxiedClass
-        // .getAnnotation(IgnoreToString.class);
-        IgnoreToString ignore = null;
-
-        if (null == ignore)
+        if (filterToString.isEmpty())
         {
-            return toPrint.toString();
+            return primaryClassName + ": " + toPrint.toString();
         }
 
-        for (String ignoreName : ignore.value())
+        for (String ignoreName : filterToString)
         {
             toPrint.remove(ignoreName);
         }
 
-        return toPrint.toString();
+        return primaryClassName + ": " + toPrint.toString();
     }
 
     private String parseArguments(Class[] argTypes)

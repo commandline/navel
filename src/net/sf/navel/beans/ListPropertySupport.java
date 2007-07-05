@@ -27,7 +27,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.support;
+package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.navel.beans.CollectionType;
 
 /**
  * Utility class to aid introspecting List typed properties.

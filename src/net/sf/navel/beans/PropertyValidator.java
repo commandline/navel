@@ -29,16 +29,17 @@
  */
 package net.sf.navel.beans;
 
-import static net.sf.navel.beans.PrimitiveSupport.validate;
-
 import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.util.Arrays;
+import java.lang.reflect.Proxy;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
+import java.util.Set;
+import java.util.Map.Entry;
 
 /**
  * Provides validation on construction support for the DelegateBeanHandler,
@@ -53,122 +54,114 @@ class PropertyValidator implements Serializable
 
     private static final long serialVersionUID = -6780317578317368699L;
 
-    private static final Logger LOGGER = Logger
-            .getLogger(PropertyValidator.class);
-
-    PropertyValidator()
+    // TODO restore during derserialization
+    private transient final Map<String, PropertyDescriptor> propertyDescriptors;
+    
+    PropertyValidator(Set<BeanInfo> proxiedBeanInfo)
     {
+        Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
+
+        for (BeanInfo beanInfo : proxiedBeanInfo)
+        {
+            PropertyDescriptor[] propertyDescriptors = beanInfo
+                    .getPropertyDescriptors();
+
+            for (PropertyDescriptor propertyDescriptor : propertyDescriptors)
+            {
+                tempProperties.put(propertyDescriptor.getName(),
+                        propertyDescriptor);
+            }
+        }
+
+        this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
     }
 
-    /**
-     * Ensure that the map of initial values is valid per the properties
-     * described by the proxied class.
-     * 
-     * @param beanInfo
-     *            Introspection data about proxied class.
-     * @throws InvalidPropertyValueException
-     *             Thrown in an initial value doesn't match up with the proxied
-     *             class' properties, by name or type.
-     */
-    void resolve(BeanInfo beanInfo, Map<String, Object> values)
-            throws InvalidPropertyValueException
+    void validateAll(Map<String, Object> values)
     {
-        if ((null == values) || values.isEmpty())
+        for (Entry<String, Object> entry : values.entrySet())
+        {
+            validate(entry.getKey(), entry.getValue());
+        }
+    }
+
+    void validate(String propertyName, Object propertyValue)
+    {
+        if (!propertyDescriptors.containsKey(propertyName))
+        {
+            throw new InvalidPropertyValueException(String.format(
+                    "This JavaBean does not have a property, %1$s.",
+                    propertyName));
+        }
+
+        PropertyDescriptor propertyDescriptor = propertyDescriptors
+                .get(propertyName);
+
+        Class<?> propertyType = propertyDescriptor.getPropertyType();
+
+        // according to the JavaDocs for PropertyDescriptor, this indicates a
+        // particular variation of an indexed property
+        if (null == propertyType)
         {
             return;
         }
 
-        List<PropertyDescriptor> properties = Arrays.asList(beanInfo
-                .getPropertyDescriptors());
-
-        if (LOGGER.isTraceEnabled())
+        // also give List properties a pass as the ListBuilder will deal with
+        // these
+        if (propertyType.isAssignableFrom(List.class))
         {
-            LOGGER.trace("Found properties:");
-            LOGGER.trace(formatProperties(properties));
+            return;
         }
 
-        eliminateMatches(values, properties);
+        if (propertyType.isPrimitive())
+        {
+            PrimitiveSupport
+                    .validate(propertyName, propertyType, propertyValue);
 
-        if (!values.isEmpty())
+            return;
+        }
+
+        if (null == propertyValue)
+        {
+            return;
+        }
+
+        Class<?> valueType = propertyValue.getClass();
+
+        if (Proxy.isProxyClass(valueType))
+        {
+            JavaBeanHandler handler = ProxyFactory.getHandler(propertyValue);
+
+            if (null == handler)
+            {
+                throw new UnsupportedOperationException(
+                        "Cannot validated nested properties that use an InvocationHandler other than JavaBeanHandler!");
+            }
+
+            if (handler.proxiedInterfaces.contains(propertyType))
+            {
+                return;
+            }
+
+            throw new InvalidPropertyValueException(
+                    String
+                            .format(
+                                    "Navel bean value, %1$s, cannot be assigned to property type, %2$s, for property, %3$s.",
+                                    propertyValue, propertyType, propertyName));
+        }
+
+        if (!propertyType.isAssignableFrom(valueType))
         {
             throw new InvalidPropertyValueException(
                     String
                             .format(
-                                    "Extra values found in initial value map that do not match any known property for bean type %1$s : %2$s.",
-                                    beanInfo.getBeanDescriptor().getBeanClass()
-                                            .getName(), values.keySet()));
+                                    "Value, %1$s, of type, %2$s, is not a valid value for property, %3$s, of type, %4$s.",
+                                    propertyValue, valueType.getName(),
+                                    propertyName, propertyType.getName()));
         }
     }
 
-    /**
-     * Eliminiate any values that exactly matches known properties.
-     * 
-     * @param values
-     *            Property values copy to operate on.
-     * @param properties
-     *            Properties to eliminate against.
-     * @throws InvalidPropertyValueException
-     *             In case there is a coercion problem with an eliminated
-     *             property.
-     */
-    private void eliminateMatches(Map<String, Object> values,
-            List<PropertyDescriptor> properties)
-            throws InvalidPropertyValueException
+    Collection<PropertyDescriptor> getPropertyDescriptors()
     {
-        for (int i = 0; i < properties.size(); i++)
-        {
-            String propertyName = properties.get(i).getName();
-
-            if (!values.containsKey(propertyName))
-            {
-                continue;
-            }
-
-            Object propertyValue = values.get(propertyName);
-
-            checkValue(properties.get(i), propertyName, propertyValue);
-
-            values.remove(propertyName);
-        }
-    }
-
-    private String formatProperties(List<PropertyDescriptor> properties)
-    {
-        StringBuffer buffer = new StringBuffer("[");
-
-        for (PropertyDescriptor property : properties)
-        {
-            if (buffer.length() != 1)
-            {
-                buffer.append(", ");
-            }
-
-            buffer.append(property.getName());
-        }
-
-        buffer.append(']');
-
-        return buffer.toString();
-    }
-
-    private void checkValue(PropertyDescriptor propertyDescriptor,
-            String propertyName, Object propertyValue)
-    {
-        Class<?> propertyType = propertyDescriptor.getPropertyType();
-
-        if (propertyType.isPrimitive())
-        {
-            validate(propertyName, propertyType, propertyValue);
-
-            return;
-        }
-
-        if (propertyValue != null && !propertyType.isInstance(propertyValue))
-        {
-            throw new InvalidPropertyValueException(propertyValue + " of type "
-                    + propertyValue.getClass().getName()
-                    + " is not a valid value for property " + propertyName
-                    + " of type " + propertyType.getName());
-        }
+        return propertyDescriptors.values();
     }
 }

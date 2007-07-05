@@ -41,6 +41,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmndln
  */
+// TODO extract out InterfaceValidator
 class MethodValidator
 {
 
@@ -97,8 +98,22 @@ class MethodValidator
 
             try
             {
-                delegateClass.getMethod(method.getName(), method
-                        .getParameterTypes());
+                Method delegateMethod = delegateClass.getMethod(method
+                        .getName(), method.getParameterTypes());
+
+                if (!method.getReturnType().equals(
+                        delegateMethod.getReturnType()))
+                {
+                    throw new InvalidDelegateException(
+                            String
+                                    .format(
+                                            "Invalid method, %1$s, in InterfaceDelegate, %2$s.  Requires return type, %3$s, but found return type, %4$s.",
+                                            delegateMethod.getName(),
+                                            delegateClass.getName(), method
+                                                    .getReturnType().getName(),
+                                            delegateMethod.getReturnType()
+                                                    .getName()));
+                }
             }
             catch (SecurityException e)
             {

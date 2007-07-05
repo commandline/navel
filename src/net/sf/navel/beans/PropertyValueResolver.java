@@ -98,6 +98,8 @@ class PropertyValueResolver
         Map<String, PropertyDescriptor> nameReference = mapNames(properties);
 
         resolveNested(nameReference, values);
+        
+        ListBuilder.filter(beanInfo, values);
     }
 
     private Map<String, PropertyDescriptor> mapNames(
@@ -180,7 +182,7 @@ class PropertyValueResolver
 
         if (collapsed.containsKey(parentName))
         {
-            // IMRPOVE see not where collapsed is initialized
+            // IMPROVE see note where collapsed is initialized
             nestedValues = (Map<String, Object>) collapsed.get(parentName);
         }
         else
@@ -194,8 +196,9 @@ class PropertyValueResolver
 
         if (LOGGER.isTraceEnabled())
         {
-            LOGGER.trace("Adding " + value + " to " + nestedName
-                    + " for parent " + parentName + ".");
+            LOGGER.trace(String.format(
+                    "Adding value, %1$s, to property, %2$s, for parent, %3$s.",
+                    value, nestedName, parentName));
         }
 
         toRemove.add(name);
@@ -232,15 +235,15 @@ class PropertyValueResolver
                 continue;
             }
 
-            Class propClass = descriptor.getPropertyType();
+            Class<?> propertyType = descriptor.getPropertyType();
 
-            if (!propClass.isInterface())
+            if (!propertyType.isInterface())
             {
                 throw new InvalidPropertyValueException(
                         String
                                 .format(
                                         "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
-                                        name, propClass.getName()));
+                                        name, propertyType.getName()));
             }
 
             // IMPROVE see note where collapsed is initialized
@@ -250,7 +253,7 @@ class PropertyValueResolver
             {
                 // we don't need type, here
                 Object nestedValue = buildOrReuse(parentValues, name,
-                        propClass, values);
+                        propertyType, values);
 
                 collapsed.put(name, nestedValue);
             }

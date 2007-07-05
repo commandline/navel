@@ -125,8 +125,8 @@ public class BeanManipulatorTest
 
         populate(bean, values);
 
-        Assert.assertEquals(0, bean.getReadOnly(),
-                "Bean read only should not be set.");
+        Assert.assertEquals(bean.getReadOnly(), 1, 
+                "Bean read only should be set.");
         values = ProxyFactory.getHandler(bean).propertyValues.copyValues();
         LOGGER.debug(values);
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
@@ -212,7 +212,7 @@ public class BeanManipulatorTest
 
         values.put("nested", nestedBean);
 
-        NestedBean bean = ProxyFactory.createAs(NestedBean.class);
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class, values);
 
         Assert.assertNotNull(bean.getNested(),
                 "Nested bean should not be null.");

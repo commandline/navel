@@ -37,7 +37,6 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +59,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(JavaBeanHandler.class);
 
-    final Set<BeanInfo> proxiedBeanInfo;
+    // TODO restore during derserialization
+    transient final Set<BeanInfo> proxiedBeanInfo;
 
     final Set<Class<?>> proxiedInterfaces;
 
@@ -91,42 +91,13 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
 
-        Map<String, Object> initialCopy = new HashMap<String, Object>(initialValues);
-
-        for (int i = 0; i < proxiedClasses.length; i++)
-        {
-            Class<?> proxiedInterface = proxiedClasses[i];
-
-            if (null == proxiedInterface)
-            {
-                throw new IllegalArgumentException(String.format(
-                        "Found a null class at index, %1$d!", i));
-            }
-
-            if (!proxiedInterface.isInterface())
-            {
-
-                throw new IllegalArgumentException(
-                        String
-                                .format(
-                                        "The class, %1$s, at index, %2$d, is not an interface.  Only interfaces may be proxied.",
-                                        proxiedInterface.getName(), i));
-            }
-
-            BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
-
-            tempInfo.add(beanInfo);
-
-            PropertyValueResolver.resolve(beanInfo, initialCopy);
-
-            forbidEvents(beanInfo);
-
-            tempClasses.add(proxiedInterface);
-        }
+        String primaryClassName = mapTypes(proxiedClasses, tempInfo,
+                tempClasses);
 
         this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-        this.propertyValues = new PropertyValues(initialCopy);
+        this.propertyValues = new PropertyValues(primaryClassName,
+                proxiedBeanInfo, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
         this.delegateMapping = new DelegateMapping(proxiedBeanInfo, delegates,
                 propertyValues);
@@ -169,7 +140,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                                         "Forwarding call for method, %1$s, to internal storage Map.",
                                         method.getName()));
             }
-            
+
             return propertyValues.proxyToObject("", method, args);
         }
 
@@ -182,7 +153,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                                     declaringClass.getName(), methodName));
         }
 
-        if (propertyHandler.handles(method))
+        if (PropertyHandler.handles(method))
         {
             if (LOGGER.isInfoEnabled())
             {
@@ -209,6 +180,51 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         throw new UnsupportedFeatureException(String
                 .format("Could not find a usable target for  method, %1$s.",
                         methodName));
+    }
+
+    private final String mapTypes(Class<?>[] proxiedClasses,
+            Set<BeanInfo> tempInfo, Set<Class<?>> tempClasses)
+    {
+        String primaryClassName = null;
+
+        for (int i = 0; i < proxiedClasses.length; i++)
+        {
+            Class<?> proxiedInterface = proxiedClasses[i];
+
+            if (null == proxiedInterface)
+            {
+                throw new IllegalArgumentException(String.format(
+                        "Found a null class at index, %1$d!", i));
+            }
+
+            if (!proxiedInterface.isInterface())
+            {
+
+                throw new IllegalArgumentException(
+                        String
+                                .format(
+                                        "The class, %1$s, at index, %2$d, is not an interface.  Only interfaces may be proxied.",
+                                        proxiedInterface.getName(), i));
+            }
+
+            if (null == primaryClassName)
+            {
+                primaryClassName = proxiedInterface.getName();
+            }
+
+            BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
+
+            tempInfo.add(beanInfo);
+
+            forbidEvents(beanInfo);
+
+            tempClasses.add(proxiedInterface);
+
+            // recurse any interfaces this one extends
+            mapTypes(proxiedInterface.getInterfaces(), tempInfo, tempClasses);
+        }
+
+        return primaryClassName;
     }
 
     /**

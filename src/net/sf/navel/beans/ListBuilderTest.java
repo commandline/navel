@@ -68,16 +68,14 @@ public class ListBuilderTest
 
         rawValues.put("typesList[0].boolean", true);
         rawValues.put("typesList[1]", second);
-        rawValues.put("typesList[?]", third);
+        rawValues.put("typesList[]", third);
 
-        ListBuilder builder = new ListBuilder();
-
-        BeanInfo beanInfo = JavaBeanHandler.introspect(TypesBean.class);
+        BeanInfo beanInfo = JavaBeanHandler.introspect(ListBean.class);
 
         Map<String, Object> filteredValues = new HashMap<String, Object>(
                 rawValues);
 
-        builder.filter(beanInfo, filteredValues);
+        ListBuilder.filter(beanInfo, filteredValues);
 
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
                 .get("typesList");
@@ -133,24 +131,16 @@ public class ListBuilderTest
 
         listHandler.propertyValues.putAll(rawValues);
 
-        Assert.assertEquals(listBean.getTypesList().size(), 2,
+        Assert.assertEquals(listBean.getTypesList().size(), 1,
                 "List property size should be correct after putAll().");
 
         first = listBean.getTypesList(0);
 
-        Assert.assertNotNull(first, "Should still have valid first element.");
-        Assert.assertEquals(first.getInteger(), 1,
-                "Should still have correct first integer value.");
-        Assert.assertEquals(first.getBoolean(), true,
-                "Should still have correct first boolean value.");
-
-        TypesBean second = listBean.getTypesList(1);
-
-        Assert.assertNotNull(second, "Should have valid second element.");
-        Assert.assertEquals(second.getInteger(), 2,
-                "Should have correct second integer value.");
-        Assert.assertEquals(second.getBoolean(), false,
-                "Should have correct second boolean value.");
+        Assert.assertNotNull(first, "Should still have valid single element.");
+        Assert.assertEquals(first.getInteger(), 2,
+                "Should have correct updated integer value.");
+        Assert.assertEquals(first.getBoolean(), false,
+                "Should have correct updated boolean value.");
     }
 
     @Test
