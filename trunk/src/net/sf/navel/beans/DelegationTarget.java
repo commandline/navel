@@ -50,8 +50,8 @@ public interface DelegationTarget
 
     /**
      * You never need to call this method explicitly, it simply allows your
-     * implementation to gain access to the InvocationHandler, at runtime, for
-     * access to the bean's underlying Map, etc.
+     * implementation to gain access to the PropertyValues view into the
+     * internal values of a proxied JavaBean.
      */
-    void setDelegationSource(JavaBeanHandler handler);
+    void setPropertyValues(PropertyValues values);
 }

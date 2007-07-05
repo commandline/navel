@@ -42,10 +42,10 @@ import java.io.Serializable;
  * complaining about invalid methods being found will be thrown.
  *
  * @author cmdln
- * @version $Revision: 1.2 $, $Date: 2003/10/14 16:28:44 $
  */
-public interface DelegatedBean extends Serializable, Delegated
+public interface DelegatedBean extends Serializable
 {
+    
     int getReadOnly();
 
     void setWriteOnly(int value);

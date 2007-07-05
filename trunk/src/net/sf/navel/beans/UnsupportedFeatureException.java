@@ -35,7 +35,6 @@ package net.sf.navel.beans;
  * feature.
  *
  * @author cmdln
- * @version $Revision: 1.3 $, $Date: 2005/09/02 21:31:19 $
  */
 public class UnsupportedFeatureException extends RuntimeException
 {

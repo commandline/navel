@@ -35,7 +35,6 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,6 +66,10 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
 
     final PropertyHandler propertyHandler;
 
+    final PropertyValues propertyValues;
+    
+    final DelegateMapping delegateMapping;
+
     final MethodHandler methodHandler;
 
     /**
@@ -82,7 +85,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
      * @param delegates
      *            Delegates to wire up initially.
      */
-    JavaBeanHandler(Map<String, Object> initialValues, Class<?>[] proxiedClasses, DelegationTarget[] delegates)
+    JavaBeanHandler(Map<String, Object> initialValues,
+            Class<?>[] proxiedClasses, DelegationTarget[] delegates)
     {
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
@@ -123,11 +127,10 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
 
         this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-        this.propertyHandler = new PropertyHandler();
-        this.methodHandler = new MethodHandler(proxiedInterfaces, delegates);
-        
-        // TODO wire in property value validation
-        // TODO wire in delegate validation
+        this.propertyValues = new PropertyValues(initialValues);
+        this.propertyHandler = new PropertyHandler(this.propertyValues);
+        this.delegateMapping = new DelegateMapping(proxiedBeanInfo, delegates, propertyValues);
+        this.methodHandler = new MethodHandler(delegateMapping);
     }
 
     static BeanInfo introspect(Class<?> proxiedInterface)
@@ -154,6 +157,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
             throws Throwable
     {
         Class<?> declaringClass = method.getDeclaringClass();
+        String methodName = method.getName();
 
         if (!proxiedInterfaces.contains(declaringClass))
         {
@@ -161,17 +165,40 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                     String
                             .format(
                                     "This proxy does not implement the interface, %1$s, on which the method being invoked, %2$s, is declared!",
-                                    declaringClass.getName(), method.getName()));
+                                    declaringClass.getName(), methodName));
         }
 
         if (propertyHandler.handles(method))
         {
+            if (LOGGER.isInfoEnabled())
+            {
+                LOGGER.info(String.format(
+                        "Handling property access for method, %1$s.", methodName));
+            }
+
             return propertyHandler.handle(proxy, method, args);
         }
 
-        // TODO wire in method handler
+        if (methodHandler.handles(method))
+        {
+            if (LOGGER.isInfoEnabled())
+            {
+                LOGGER.info(String.format(
+                        "Forwarding call for method, %1$s, to delegates.",
+                        methodName));
+            }
 
-        return proxyToObject("", method, args);
+            return methodHandler.handle(proxy, method, args);
+        }
+
+        if (LOGGER.isInfoEnabled())
+        {
+            LOGGER.info(String.format(
+                    "Forwarding call for method, %1$s, to internal storage Map.",
+                    method.getName()));
+        }
+
+        return propertyValues.proxyToObject("", method, args);
     }
 
     /**
@@ -192,92 +219,4 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                     "PropertyBeanHandler does not support JavaBeans with events.");
         }
     }
-
-    private Object proxyToObject(final String message, final Method method,
-            final Object[] args) throws UnsupportedFeatureException
-    {
-        int count = (null == args) ? 0 : args.length;
-
-        Class[] argTypes = new Class[count];
-
-        // the only method in Object that takes an argument is equals, and it
-        // takes another Object as an argument
-        for (int i = 0; i < count; i++)
-        {
-            argTypes[i] = Object.class;
-        }
-
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Proxying method, " + method.getName()
-                    + " with arguments (" + parseArguments(argTypes)
-                    + ") to underlying Map.");
-        }
-
-        if (method.getName() == "toString" && argTypes.length == 0)
-        {
-            return propertyHandler.filteredToString();
-        }
-
-        try
-        {
-            // use Object so anything else causes an exception--this is merely
-            // a convenience so we don't have to implement the usual object
-            // methods directly
-            Object.class.getDeclaredMethod(method.getName(), argTypes);
-
-            // need to handle equals a little differently, somewhere
-            // between the proxy and the underlying map, based on experience
-            if (method.getName().equals("equals"))
-            {
-                return propertyHandler.handleEquals(args[0]);
-            }
-
-            return method.invoke(propertyHandler.values, args);
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new UnsupportedFeatureException(
-                    "Could not find a usable target for  method, "
-                            + method.getName() + " on with arguments ("
-                            + parseArguments(argTypes) + ").  " + message);
-        }
-        catch (IllegalAccessException e)
-        {
-            LOGGER
-                    .warn("Illegal access proxying Object methods to internal Map.");
-
-            return null;
-        }
-        catch (InvocationTargetException e)
-        {
-            LOGGER
-                    .warn("Error invoking while proxying Object methods to internal Map.");
-
-            return null;
-        }
-    }
-
-    private String parseArguments(Class[] argTypes)
-    {
-        if (null == argTypes)
-        {
-            return "";
-        }
-
-        StringBuffer buffer = new StringBuffer();
-
-        for (int i = 0; i < argTypes.length; i++)
-        {
-            if (i != 0)
-            {
-                buffer.append(", ");
-            }
-
-            buffer.append(argTypes[i].getName());
-        }
-
-        return buffer.toString();
-    }
-
 }

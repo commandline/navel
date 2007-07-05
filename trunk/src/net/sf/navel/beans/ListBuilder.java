@@ -29,6 +29,7 @@
  */
 package net.sf.navel.beans;
 
+import java.beans.BeanInfo;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,7 +78,7 @@ class ListBuilder implements Serializable
      * accepts an int or Integer argument and returns the type of the elements
      * within the List.
      */
-    void filter(Map<String, Object> values)
+    void filter(BeanInfo beanInfo, Map<String, Object> values)
     {
         final Map<String, Object> original = Collections
                 .unmodifiableMap(values);
@@ -89,7 +90,7 @@ class ListBuilder implements Serializable
         // looking for methods with the same name as the List accessor but
         // that also accept an int or Integer argument
         Map<String, Class<?>> elementTypes = ListPropertySupport
-                .introspectListTypes(handler.getProxiedClass());
+                .introspectListTypes(beanInfo);
 
         Set<String> flattened = new HashSet<String>();
 
@@ -151,11 +152,11 @@ class ListBuilder implements Serializable
             return;
         }
 
-        handler.removeAll(toRemove);
+        values.keySet().removeAll(toRemove);
 
         expandFlattened(copy, elementTypes, flattened);
 
-        handler.putAll(copy);
+        values.putAll(copy);
     }
 
     /**
@@ -311,11 +312,11 @@ class ListBuilder implements Serializable
         }
         else
         {
-            if (handler.getValues().containsKey(propertyKey))
+            if (copy.containsKey(propertyKey))
             {
                 // be sure to re-use an existing, already resolved list in the
                 // original bean contents, if available
-                nestedList = new ArrayList<Object>((List<Object>) handler
+                nestedList = new ArrayList<Object>((List<Object>) copy
                         .get(propertyKey));
             }
             else
@@ -337,10 +338,7 @@ class ListBuilder implements Serializable
         {
             if (elementType.isInterface())
             {
-                PropertyHandler<?> handler = new MethodHandler(
-                        elementType, rawValues, true, false);
-
-                return handler.getProxy();
+                return ProxyFactory.createAs(elementType, rawValues);
             }
             else
             {

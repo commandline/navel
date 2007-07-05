@@ -27,15 +27,14 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans;
 
+import java.beans.BeanInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import net.sf.navel.beans.ListBuilder;
-import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.ListBean;
 import net.sf.navel.example.TypesBean;
 
@@ -64,20 +63,21 @@ public class ListBuilderTest
     {
         Map<String, Object> rawValues = new TreeMap<String, Object>();
 
-        TypesBean second = new PropertyHandler<TypesBean>(TypesBean.class)
-                .getProxy();
-        TypesBean third = new PropertyHandler<TypesBean>(TypesBean.class)
-                .getProxy();
+        TypesBean second = ProxyFactory.createAs(TypesBean.class);
+        TypesBean third = ProxyFactory.createAs(TypesBean.class);
 
         rawValues.put("typesList[0].boolean", true);
         rawValues.put("typesList[1]", second);
         rawValues.put("typesList[?]", third);
 
-        ListBuilder builder = new ListBuilder(
-                new PropertyHandler<ListBean>(ListBean.class, rawValues,
-                        true));
+        ListBuilder builder = new ListBuilder();
 
-        Map<String, ?> filteredValues = builder.handler.getValues();
+        BeanInfo beanInfo = JavaBeanHandler.introspect(TypesBean.class);
+
+        Map<String, Object> filteredValues = new HashMap<String, Object>(
+                rawValues);
+
+        builder.filter(beanInfo, filteredValues);
 
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
                 .get("typesList");
@@ -110,10 +110,7 @@ public class ListBuilderTest
         rawValues.put("typesList[].integer", 1);
         rawValues.put("typesList[].boolean", true);
 
-        PropertyHandler<ListBean> listHandler = new PropertyHandler<ListBean>(
-                ListBean.class, rawValues, true);
-
-        ListBean listBean = listHandler.getProxy();
+        ListBean listBean = ProxyFactory.createAs(ListBean.class, rawValues);
 
         Assert.assertNotNull(listBean, "Bean instance should be valid.");
         Assert.assertEquals(listBean.getListID(), 1L,
@@ -132,7 +129,9 @@ public class ListBuilderTest
         rawValues.put("typesList[].integer", 2);
         rawValues.put("typesList[].boolean", false);
 
-        listHandler.putAll(rawValues);
+        JavaBeanHandler listHandler = ProxyFactory.getHandler(listBean);
+
+        listHandler.propertyValues.putAll(rawValues);
 
         Assert.assertEquals(listBean.getTypesList().size(), 2,
                 "List property size should be correct after putAll().");
@@ -164,10 +163,7 @@ public class ListBuilderTest
         rawValues.put("annotated[].integer", 1);
         rawValues.put("annotated[].boolean", true);
 
-        PropertyHandler<ListBean> listHandler = new PropertyHandler<ListBean>(
-                ListBean.class, rawValues, true);
-
-        ListBean listBean = listHandler.getProxy();
+        ListBean listBean = ProxyFactory.createAs(ListBean.class, rawValues);
 
         Assert.assertNotNull(listBean, "Bean instance should be valid.");
         Assert.assertEquals(listBean.getListID(), 1L,
@@ -194,7 +190,7 @@ public class ListBuilderTest
 
         try
         {
-            new PropertyHandler<ListBean>(ListBean.class, values, true);
+            ProxyFactory.createAs(ListBean.class, values);
             Assert
                     .fail("List handling should not affect failing against bad property names.");
         }

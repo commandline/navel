@@ -3,12 +3,12 @@
   <test name="All Tests">
     <classes>
       <class name="net.sf.navel.beans.SimplePropertyManipulatorTest"/>
-      <class name="net.sf.navel.beans.validation.ListBuilderTest"/>
+      <class name="net.sf.navel.beans.ListBuilderTest"/>
       <class name="net.sf.navel.beans.BeanManipulatorTest"/>
-      <class name="net.sf.navel.beans.validation.NestedValidatorTest"/>
-      <class name="net.sf.navel.beans.PropertyBeanHandlerTest"/>
-      <class name="net.sf.navel.beans.DelegateBeanHandlerTest"/>
-      <class name="net.sf.navel.beans.validation.PropertyValidatorTest"/>
+      <class name="net.sf.navel.beans.PropertyValueResolverTest"/>
+      <class name="net.sf.navel.beans.PropertyValidatorTest"/>
+      <class name="net.sf.navel.beans.MethodHandlerTest"/>
+      <class name="net.sf.navel.beans.PropertyValidatorTest"/>
     </classes>
   </test>
 </suite>

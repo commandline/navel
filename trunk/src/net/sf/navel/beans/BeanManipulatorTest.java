@@ -127,7 +127,7 @@ public class BeanManipulatorTest
 
         Assert.assertEquals(0, bean.getReadOnly(),
                 "Bean read only should not be set.");
-        values = ProxyFactory.getHandler(bean).propertyHandler.values;
+        values = ProxyFactory.getHandler(bean).propertyValues.copyValues();
         LOGGER.debug(values);
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Bean write only should be set.");
@@ -231,8 +231,7 @@ public class BeanManipulatorTest
                 "Nested long should be set correctly.");
 
         LOGGER.debug(values);
-        LOGGER.debug(ProxyFactory.getHandler(bean).propertyHandler
-                .values);
+        LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues.copyValues());
     }
 
     /**
