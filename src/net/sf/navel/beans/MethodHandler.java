@@ -31,17 +31,12 @@ package net.sf.navel.beans;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
 /**
- * This handler adds the ability to define delegates for methods that do not
- * deal strictly with properties. It leverages PropertyBeanHandler to handle
- * properties, but can delegate other calls through to the provided classes.
+ * This class wires in the support for methods as found through JavaBeans
+ * introspection.
  * 
  * @author cmdln
  */
@@ -52,32 +47,16 @@ public class MethodHandler implements Serializable
 
     private static final Logger LOGGER = Logger.getLogger(MethodHandler.class);
 
-    /**
-     * The default behavior for checking method delegation at initialization and
-     * re-validation.
-     */
-    public static final boolean DEFAULT_INIT_CHECK = true;
+    private final DelegateMapping mapping;
 
-    private final Map<Class<?>, DelegationTarget> delegations = new HashMap<Class<?>, DelegationTarget>();
-
-    /**
-     * Constructor used for the same purpose as the simpler version, with the
-     * addition of setting the initial property values to the Map argument.
-     * 
-     * @param proxiedInterfaces
-     *            Interfaces to support.
-     * @param delegates
-     *            Objects to delegate to when invoking methods other than
-     *            property manipulators.
-     * @throws UnsupportedFeatureException
-     *             Thrown if the proxied class describes any events or any of
-     *             it's non property-oriented methods do not have delegates
-     *             provided.
-     */
-    MethodHandler(Set<Class<?>> proxiedInterfaces, DelegationTarget[] delegates)
+    MethodHandler(DelegateMapping mapping)
     {
-        delegations.keySet().addAll(
-                Collections.unmodifiableSet(proxiedInterfaces));
+        this.mapping = mapping;
+    }
+
+    public boolean handles(Method method)
+    {
+        return mapping.methods.contains(method);
     }
 
     /**
@@ -102,7 +81,7 @@ public class MethodHandler implements Serializable
 
         Class proxiedInterface = method.getDeclaringClass();
 
-        Object delegate = delegations.get(proxiedInterface);
+        Object delegate = mapping.delegations.get(proxiedInterface);
 
         if (null == delegate)
         {
@@ -118,31 +97,5 @@ public class MethodHandler implements Serializable
         }
 
         return method.invoke(delegate, args);
-    }
-
-    boolean isAttached(Class<?> interfaceType)
-    {
-        if (!delegations.containsKey(interfaceType))
-        {
-            return false;
-        }
-
-        return delegations.get(interfaceType) != null;
-    }
-
-    /**
-     * This method allows for attaching delegates at runtime.
-     * 
-     * @param toAttach
-     *            New delegates to add to the handler.
-     */
-    void attach(Class<?> interfaceType, DelegationTarget toAttach)
-    {
-        if (null == toAttach)
-        {
-            throw new IllegalArgumentException("Cannot attach null delegate!");
-        }
-
-        delegations.put(interfaceType, toAttach);
     }
 }

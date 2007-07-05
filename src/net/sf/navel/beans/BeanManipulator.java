@@ -138,7 +138,7 @@ public class BeanManipulator
      *            new layer of bean properties.
      * @return Null or the resolved value.
      */
-    public static Object get(String name, Map<String, Object> values)
+    public static Object resolveValue(String name, Map<String, Object> values)
     {
         int dotIndex = name.indexOf(".");
 
@@ -158,7 +158,7 @@ public class BeanManipulator
         String subName = name.substring(dotIndex + 1, name.length());
         Map<String, Object> subValues = SINGLETON.describeBean(subBean, false);
 
-        return get(subName, subValues);
+        return resolveValue(subName, subValues);
     }
 
     /**
@@ -189,12 +189,12 @@ public class BeanManipulator
                             + handler.proxiedInterfaces + ".");
         }
 
-        if (!handler.propertyHandler.values.containsKey(property))
+        if (!handler.propertyValues.containsKey(property))
         {
             return true;
         }
 
-        Object value = handler.propertyHandler.values.remove(property);
+        Object value = handler.propertyValues.remove(property);
 
         return (value != null);
     }
@@ -292,8 +292,8 @@ public class BeanManipulator
                 continue;
             }
 
-            SINGLETON.expandNestedBean(values, entry.getKey(), handler.propertyHandler
-                    .values);
+            SINGLETON.expandNestedBean(values, entry.getKey(),
+                    handler.propertyValues.copyValues());
         }
     }
 
@@ -424,8 +424,8 @@ public class BeanManipulator
         }
     }
 
-    private void expandNestedBean(Map<String, Object> values,
-            String key, Map<String, Object> nested)
+    private void expandNestedBean(Map<String, Object> values, String key,
+            Map<String, Object> nested)
     {
         for (Iterator<Entry<String, Object>> entryIter = nested.entrySet()
                 .iterator(); entryIter.hasNext();)

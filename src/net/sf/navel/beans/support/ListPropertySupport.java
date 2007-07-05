@@ -29,13 +29,13 @@
  */
 package net.sf.navel.beans.support;
 
+import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.navel.beans.AbstractPropertyManipulator;
 import net.sf.navel.beans.CollectionType;
 
 /**
@@ -44,7 +44,7 @@ import net.sf.navel.beans.CollectionType;
  * @author cmdln
  * 
  */
-class ListPropertySupport
+public class ListPropertySupport
 {
 
     private static final ListPropertySupport SINGLETON = new ListPropertySupport();
@@ -59,9 +59,9 @@ class ListPropertySupport
      * associating the type of the elements within the List in the resulting
      * Map.
      */
-    static Map<String, Class<?>> introspectListTypes(Class<?> beanClass)
+    public static Map<String, Class<?>> introspectListTypes(BeanInfo beanInfo)
     {
-        return SINGLETON.getElementTypes(beanClass);
+        return SINGLETON.getElementTypes(beanInfo);
     }
 
     /**
@@ -70,17 +70,16 @@ class ListPropertySupport
      * take a single int or Integer argument that is the index for a get call
      * into the List itself.
      */
-    private Map<String, Class<?>> getElementTypes(Class<?> beanClass)
+    private Map<String, Class<?>> getElementTypes(BeanInfo beanInfo)
     {
-        PropertyDescriptor[] descriptors = AbstractPropertyManipulator
-                .getProperties(beanClass);
+        PropertyDescriptor[] descriptors = beanInfo.getPropertyDescriptors();
 
         Map<String, Class<?>> elementTypes = new HashMap<String, Class<?>>();
 
         for (PropertyDescriptor descriptor : descriptors)
         {
             addFromAnnotation(elementTypes, descriptor);
-            addFromAlternateAccessor(beanClass, elementTypes, descriptor);
+            addFromAlternateAccessor(beanInfo, elementTypes, descriptor);
         }
 
         return elementTypes;
@@ -105,7 +104,7 @@ class ListPropertySupport
         elementTypes.put(descriptor.getName(), collectionType.value());
     }
 
-    private void addFromAlternateAccessor(Class<?> beanClass,
+    private void addFromAlternateAccessor(BeanInfo beanInfo,
             Map<String, Class<?>> elementTypes, PropertyDescriptor descriptor)
     {
         Class<?> propertyType = descriptor.getPropertyType();
@@ -115,7 +114,8 @@ class ListPropertySupport
             return;
         }
 
-        Method readMethod = findRead(beanClass, descriptor.getName(), true);
+        Method readMethod = findRead(beanInfo.getBeanDescriptor()
+                .getBeanClass(), descriptor.getName(), true);
 
         if (null == readMethod)
         {

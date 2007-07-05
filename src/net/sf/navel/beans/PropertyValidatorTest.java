@@ -9,12 +9,11 @@
  * accordance with the terms of the license agreement you entered into
  * with Brivo.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.ChildBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -60,10 +59,7 @@ public class PropertyValidatorTest
         values.put("parentID", 1L);
         values.put("childID", 2L);
 
-        PropertyHandler<ChildBean> handler = new PropertyHandler<ChildBean>(
-                ChildBean.class, values, false);
-
-        ChildBean bean = handler.getProxy();
+        ChildBean bean = ProxyFactory.createAs(ChildBean.class, values);
 
         Assert.assertEquals(1L, bean.getParentID(),
                 "Inherited properties should work.");

@@ -99,6 +99,9 @@ public class ProxyFactory
             Map<String, Object> initialValues, Class<?>... additionalTypes)
     {
         Class<?>[] allTypes = new Class<?>[additionalTypes.length + 1];
+        
+        allTypes[0] = primaryType;
+        System.arraycopy(additionalTypes, 0, allTypes, 1, additionalTypes.length);
 
         return (B) ProxyFactory.create(initialValues, allTypes);
     }
@@ -137,7 +140,7 @@ public class ProxyFactory
      */
     public static void attach(Object bean, DelegationTarget delegate)
     {
-        MethodHandler handler = getMethodHandler(bean);
+        JavaBeanHandler handler = getHandler(bean);
         
         if (null == handler)
         {
@@ -145,7 +148,7 @@ public class ProxyFactory
             return;
         }
         
-        handler.attach(interfaceType, delegate);
+        handler.delegateMapping.attach(delegate);
     }
 
     /**
@@ -175,19 +178,5 @@ public class ProxyFactory
         JavaBeanHandler beanHandler = (JavaBeanHandler) handler;
 
         return beanHandler;
-    }
-
-    static PropertyHandler getPropertyHandler(Object bean)
-    {
-        JavaBeanHandler handler = getHandler(bean);
-
-        return null == handler ? null : handler.propertyHandler;
-    }
-
-    static MethodHandler getMethodHandler(Object bean)
-    {
-        JavaBeanHandler handler = getHandler(bean);
-
-        return null == handler ? null : handler.methodHandler;
     }
 }

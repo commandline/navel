@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.navel.example.BadBeanImpl;
-import net.sf.navel.example.ConcreteDelegatedImpl;
+import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedBean;
 import net.sf.navel.example.DelegatedImpl;
 import net.sf.navel.log.LogHelper;
@@ -58,10 +58,10 @@ import org.testng.annotations.Test;
  * @author cmdln
  * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:23 $
  */
-public class DelegateBeanHandlerTest
+public class MethodHandlerTest
 {
     private static final Logger LOGGER = Logger
-            .getLogger(DelegateBeanHandlerTest.class);
+            .getLogger(MethodHandlerTest.class);
 
     /**
      * @see junit.framework.TestCase#setUp()
@@ -88,7 +88,7 @@ public class DelegateBeanHandlerTest
         {
             Object bean = ProxyFactory.createAs(DelegatedBean.class);
             ProxyFactory.attach(bean, new BadBeanImpl());
-            
+
             Assert
                     .fail("Construction should fail if the delegate doesn't implement the delegated interface.");
         }
@@ -109,16 +109,17 @@ public class DelegateBeanHandlerTest
     @Test
     public void testLenientValidation()
     {
-        MethodHandler<DelegatedBean> handler = new MethodHandler<DelegatedBean>(
-                DelegatedBean.class, DelegateBeanHandMethodHandler, false);
+        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class, Delegated.class);
+        
+        Delegated delegated = (Delegated) bean;
 
-        Assert.assertNotNull(handler.getProxy(),
-                "Lenient construction should work.");
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
-        DelegatedBean bean = handler.getProxy();
+        Assert.assertNotNull(handler, "Lenient construction should work.");
+
         try
         {
-            bean.doThis(1, 2);
+            delegated.doThis(1, 2);
 
             Assert.fail("Should not have been able to execute correctly!");
         }
@@ -134,11 +135,11 @@ public class DelegateBeanHandlerTest
         // implements the functional interface and Delegation handler
         DelegatedImpl delegate = new DelegatedImpl();
 
-        handler.attachDelegationTarget(delegate);
+        ProxyFactory.attach(bean, delegate);
 
         try
         {
-            bean.doThis(1, 2);
+            delegated.doThis(1, 2);
         }
         catch (UnsupportedFeatureException e)
         {
@@ -161,8 +162,9 @@ public class DelegateBeanHandlerTest
 
         try
         {
-            new MethodHandler<DelegatedBean>(DelegatedBean.class, values,
-                    delegate);
+            DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class,
+                    values);
+            ProxyFactory.attach(bean, delegate);
         }
         catch (Exception e)
         {
@@ -187,18 +189,18 @@ public class DelegateBeanHandlerTest
         // implements the functional interface and Delegation handler
         DelegatedImpl delegate = new DelegatedImpl();
 
-        // supports the combined property and function interface via the
-        // delegation handler
-        MethodHandler<DelegatedBean> handler = new MethodHandler<DelegatedBean>(
-                DelegatedBean.class, delegate);
-
-        // our bean with properties plus delegated methods
-        DelegatedBean bean = handler.getProxy();
+        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class, Delegated.class);
+        
+        Delegated delegated = (Delegated) bean;
+        
+        ProxyFactory.attach(bean, delegate);
 
         // exercise delegation
-        bean.doThis(new Integer(1), new Integer(2));
+        delegated.doThis(new Integer(1), new Integer(2));
 
-        Map<String, Object> values = handler.getValues();
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        Map<String, Object> values = handler.propertyValues.copyValues();
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");
@@ -207,10 +209,10 @@ public class DelegateBeanHandlerTest
         Assert.assertEquals(2, bean.getReadWrite(),
                 "Read write should be set correctly.");
 
-        Integer result = bean.doThat(new Integer(2), new Integer(3));
+        Integer result = delegated.doThat(new Integer(2), new Integer(3));
 
         // need to fetch values again, since we only every get a shallow copy
-        values = handler.getValues();
+        values = handler.propertyValues.copyValues();
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");
@@ -220,28 +222,5 @@ public class DelegateBeanHandlerTest
                 "Read write should be set correctly.");
         Assert.assertEquals(new Integer(5), result,
                 "Result should come back correctly.");
-    }
-
-    @Test
-    public void testWithInheritance()
-    {
-        ConcreteDelegatedImpl delegate = new ConcreteDelegatedImpl();
-        Map<String, Object> values = new HashMap<String, Object>(3);
-
-        values.put(PropertyNames.RO_PROP, new Integer(1));
-        values.put(PropertyNames.WO_PROP, new Integer(2));
-        values.put(PropertyNames.RW_PROP, new Integer(3));
-
-        try
-        {
-            new MethodHandler<DelegatedBean>(DelegatedBean.class, values,
-                    new DelegationTarget[]
-                    { delegate });
-        }
-        catch (Exception e)
-        {
-            LOGGER.error(e);
-            Assert.fail("Should not have gotten an exception.");
-        }
     }
 }

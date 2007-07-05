@@ -27,14 +27,13 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.sf.navel.beans.validation;
+package net.sf.navel.beans;
 
 import static net.sf.navel.beans.BeanManipulator.describe;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.beans.PropertyHandler;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
@@ -43,11 +42,11 @@ import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class NestedValidatorTest
+public class PropertyValueResolverTest
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(NestedValidatorTest.class);
+            .getLogger(PropertyValueResolverTest.class);
 
     @Test
     public void testInit() throws Exception
@@ -58,8 +57,7 @@ public class NestedValidatorTest
         values.put("nested.long", new Long(42));
         values.put("nested.short", new Short((short) 4));
 
-        NestedBean bean = new PropertyHandler<NestedBean>(NestedBean.class,
-                values, true).getProxy();
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class, values);
 
         LOGGER.debug(bean);
 
@@ -82,8 +80,7 @@ public class NestedValidatorTest
 
         try
         {
-            new PropertyHandler<NestedBean>(NestedBean.class, values, true)
-                    .getProxy();
+            ProxyFactory.createAs(NestedBean.class, values);
 
             Assert
                     .fail("Should not have been able to construct with an overly deep property name.");
@@ -98,13 +95,11 @@ public class NestedValidatorTest
     @Test
     public void testFlatten() throws Exception
     {
-        NestedBean bean = new PropertyHandler<NestedBean>(NestedBean.class)
-                .getProxy();
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class);
 
         bean.setLong(63L);
         bean.setShort((short) 6);
-        bean.setNested(new PropertyHandler<TypesBean>(TypesBean.class)
-                .getProxy());
+        bean.setNested(ProxyFactory.createAs(TypesBean.class));
         bean.getNested().setLong(42L);
         bean.getNested().setShort((short) 4);
 

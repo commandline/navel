@@ -29,10 +29,10 @@
  */
 package net.sf.navel.example;
 
-import org.apache.log4j.Logger;
-
-import net.sf.navel.beans.MethodHandler;
 import net.sf.navel.beans.DelegationTarget;
+import net.sf.navel.beans.PropertyValues;
+
+import org.apache.log4j.Logger;
 
 
 /**
@@ -46,24 +46,31 @@ import net.sf.navel.beans.DelegationTarget;
  * other arbitrary ratio doesn't matter.
  *
  * @author cmdln
- * @version $Revision: 1.3 $, $Date: 2003/10/22 20:49:04 $
  */
-public class DelegatedImpl implements Delegated, DelegationTarget<DelegatedBean>
+public class DelegatedImpl implements DelegationTarget
 {
+    
     private static final Logger LOGGER = Logger.getLogger(DelegatedImpl.class);
-    private transient MethodHandler handler;
+    
+    private transient PropertyValues values;
 
-    public void setDelegationSource(MethodHandler handler)
+    public Class<?> getDelegatingInterface()
     {
-        this.handler = handler;
+        return Delegated.class;
+    }
+
+    public void setPropertyValues(PropertyValues values)
+    {
+        // TODO Auto-generated method stub
+        
     }
 
     public void doThis(Integer foo, Integer bar)
     {
         try
         {
-            handler.put("writeOnly", foo);
-            handler.put("readWrite", bar);
+            values.put("writeOnly", foo);
+            values.put("readWrite", bar);
         }
         catch (Exception e)
         {

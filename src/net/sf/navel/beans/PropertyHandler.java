@@ -37,12 +37,8 @@ import static net.sf.navel.beans.PrimitiveSupport.setElement;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -67,28 +63,13 @@ public class PropertyHandler implements Serializable
 
     private static final String BEING = "is";
 
-    Map<String, Object> values;
+    private PropertyValues values;
 
-    /**
-     * Overload assumes no initial values.
-     */
-    PropertyHandler()
-    {
-        this(new HashMap<String, Object>());
-    }
-
-    /**
-     * Initialized the property value support with a copy of the provided
-     * values.
-     * 
-     * @param values
-     *            Initial values.
-     */
-    PropertyHandler(Map<String, Object> values)
+    PropertyHandler(PropertyValues values)
     {
         // shallow copy so that edits to the original map
         // don't affect the bean contents
-        this.values = new HashMap<String, Object>(values);
+        this.values = values;
     }
 
     boolean handles(Method method)
@@ -160,59 +141,6 @@ public class PropertyHandler implements Serializable
                     "The method, %1$s, is not a property accessor or mutator!",
                     method.getName()));
         }
-    }
-
-    Boolean handleEquals(Object value)
-    {
-        if (null == value)
-        {
-            return Boolean.FALSE;
-        }
-
-        // I don't think there is any sensical comparison, if the argument is
-        // not a Proxy, too; maybe at some point iterating the defined fields
-        // and comparing them individually? Too hard to second guess the bean
-        // interface author, I think this is safer until something better occurs
-        // to me
-        if (!Proxy.isProxyClass(value.getClass()))
-        {
-            return Boolean.FALSE;
-        }
-
-        Object other = Proxy.getInvocationHandler(value);
-
-        if (!(other instanceof PropertyHandler))
-        {
-            return Boolean.FALSE;
-        }
-
-        PropertyHandler otherHandler = (PropertyHandler) other;
-
-        return Boolean.valueOf(values.equals(otherHandler.values));
-    }
-
-    String filteredToString()
-    {
-        // create a shallow map to filter out ignored properties, as well as to
-        // consistently sort by the property names
-        Map<String, Object> toPrint = new TreeMap<String, Object>(values);
-
-        // TODO need another mechanism
-        // IgnoreToString ignore = proxiedClass
-        // .getAnnotation(IgnoreToString.class);
-        IgnoreToString ignore = null;
-
-        if (null == ignore)
-        {
-            return toPrint.toString();
-        }
-
-        for (String ignoreName : ignore.value())
-        {
-            toPrint.remove(ignoreName);
-        }
-
-        return toPrint.toString();
     }
 
     private void handleWrite(String methodName, Object[] args)

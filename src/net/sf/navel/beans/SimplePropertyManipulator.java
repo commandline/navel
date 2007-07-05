@@ -42,10 +42,10 @@ import org.apache.log4j.Logger;
  * stock PropertyDescriptor.
  * 
  * @author cmdln
- * @version $Revision: 1.3 $, $Date: 2005/09/16 22:22:22 $
  */
 public class SimplePropertyManipulator extends AbstractPropertyManipulator
 {
+    
     private static final Logger LOGGER = Logger
             .getLogger(SimplePropertyManipulator.class);
 
