@@ -64,7 +64,9 @@ public class PropertyValues
 
     PropertyValues(Map<String, Object> initialValues)
     {
-        this.values = new HashMap<String, Object>(initialValues);
+        // JavaBeanHandler already copies the initialValues since it must call
+        // PropertyValueResolver
+        this.values = initialValues;
     }
 
     /**
@@ -113,9 +115,13 @@ public class PropertyValues
     Object proxyToObject(final String message, final Method method,
             final Object[] args) throws UnsupportedFeatureException
     {
+        String methodName = method.getName();
+
         int count = (null == args) ? 0 : args.length;
 
         Class[] argTypes = new Class[count];
+
+        String argString = parseArguments(argTypes);
 
         // the only method in Object that takes an argument is equals, and it
         // takes another Object as an argument
@@ -126,12 +132,14 @@ public class PropertyValues
 
         if (LOGGER.isDebugEnabled())
         {
-            LOGGER.debug("Proxying method, " + method.getName()
-                    + " with arguments (" + parseArguments(argTypes)
-                    + ") to underlying Map.");
+            LOGGER
+                    .debug(String
+                            .format(
+                                    "Proxying method, %1$s, with arguments (%2$s) to underlying Map.",
+                                    methodName, argString));
         }
 
-        if (method.getName() == "toString" && argTypes.length == 0)
+        if ("toString".equals(method.getName()) && argTypes.length == 0)
         {
             return filteredToString();
         }
@@ -145,7 +153,7 @@ public class PropertyValues
 
             // need to handle equals a little differently, somewhere
             // between the proxy and the underlying map, based on experience
-            if (method.getName().equals("equals"))
+            if ("equals".equals(method.getName()))
             {
                 return handleEquals(args[0]);
             }
@@ -155,9 +163,10 @@ public class PropertyValues
         catch (NoSuchMethodException e)
         {
             throw new UnsupportedFeatureException(
-                    "Could not find a usable target for  method, "
-                            + method.getName() + " on with arguments ("
-                            + parseArguments(argTypes) + ").  " + message);
+                    String
+                            .format(
+                                    "Could not find a usable target for  method, %1$s, with arguments (%2$s).%3$s",
+                                    methodName, argString, message));
         }
         catch (IllegalAccessException e)
         {

@@ -67,7 +67,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
     final PropertyHandler propertyHandler;
 
     final PropertyValues propertyValues;
-    
+
     final DelegateMapping delegateMapping;
 
     final MethodHandler methodHandler;
@@ -91,8 +91,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
 
-        Map<String, Object> initialCopy = new HashMap<String, Object>(
-                initialValues.size());
+        Map<String, Object> initialCopy = new HashMap<String, Object>(initialValues);
 
         for (int i = 0; i < proxiedClasses.length; i++)
         {
@@ -127,9 +126,10 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
 
         this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-        this.propertyValues = new PropertyValues(initialValues);
+        this.propertyValues = new PropertyValues(initialCopy);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
-        this.delegateMapping = new DelegateMapping(proxiedBeanInfo, delegates, propertyValues);
+        this.delegateMapping = new DelegateMapping(proxiedBeanInfo, delegates,
+                propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
     }
 
@@ -159,6 +159,20 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         Class<?> declaringClass = method.getDeclaringClass();
         String methodName = method.getName();
 
+        if (Object.class.equals(declaringClass))
+        {
+            if (LOGGER.isInfoEnabled())
+            {
+                LOGGER
+                        .info(String
+                                .format(
+                                        "Forwarding call for method, %1$s, to internal storage Map.",
+                                        method.getName()));
+            }
+            
+            return propertyValues.proxyToObject("", method, args);
+        }
+
         if (!proxiedInterfaces.contains(declaringClass))
         {
             throw new IllegalStateException(
@@ -173,7 +187,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
             if (LOGGER.isInfoEnabled())
             {
                 LOGGER.info(String.format(
-                        "Handling property access for method, %1$s.", methodName));
+                        "Handling property access for method, %1$s.",
+                        methodName));
             }
 
             return propertyHandler.handle(proxy, method, args);
@@ -191,14 +206,9 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
             return methodHandler.handle(proxy, method, args);
         }
 
-        if (LOGGER.isInfoEnabled())
-        {
-            LOGGER.info(String.format(
-                    "Forwarding call for method, %1$s, to internal storage Map.",
-                    method.getName()));
-        }
-
-        return propertyValues.proxyToObject("", method, args);
+        throw new UnsupportedFeatureException(String
+                .format("Could not find a usable target for  method, %1$s.",
+                        methodName));
     }
 
     /**

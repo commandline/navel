@@ -61,12 +61,12 @@ public class PropertyValueResolverTest
 
         LOGGER.debug(bean);
 
-        Assert.assertEquals(63L, bean.getLong(),
+        Assert.assertEquals(bean.getLong(), 63L,
                 "Regular property should be set.");
         Assert
                 .assertNotNull(bean.getNested(),
                         "Parent property should be set.");
-        Assert.assertEquals(42L, bean.getNested().getLong(),
+        Assert.assertEquals(bean.getNested().getLong(), 42L,
                 "Nested property should be set.");
     }
 
