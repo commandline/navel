@@ -49,7 +49,6 @@ import java.io.Serializable;
  * that reconciles them.
  *
  * @author cmdln
- * @version $Revision: 1.2 $, $Date: 2003/10/14 16:28:44 $
  */
 public interface BadPropertyBean extends Serializable
 {

@@ -270,11 +270,20 @@ public class PrimitiveSupport
 
         if (!wrapperClass.isInstance(propertyValue))
         {
-            throw new InvalidPropertyValueException(propertyValue
-                    + ((null == propertyValue) ? "" : " of type "
-                            + propertyValue.getClass().getName())
-                    + " is not a valid value for property " + propertyName
-                    + " of type " + propertyType.getName());
+            String valueType = "";
+
+            if (propertyValue != null)
+            {
+                valueType = String.format(" of type, %s,", propertyValue
+                        .getClass().getName());
+            }
+
+            throw new InvalidPropertyValueException(
+                    String
+                            .format(
+                                    "Value, %1$s,%2$s is not a valid value for property, %3$s, of type, %4$s.",
+                                    propertyValue, valueType, propertyName,
+                                    propertyType.getName()));
         }
     }
 

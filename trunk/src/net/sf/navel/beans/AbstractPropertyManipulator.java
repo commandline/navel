@@ -42,7 +42,13 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 /**
- * This abstract class is a base for working with properties of different types.
+ * This abstract class is a base for working with properties of different types
+ * through the BeanManipulator and PropertyManipulator utility classes. These
+ * manipulators allow dynamic programming of both JavaBeans and Navel beans. For
+ * plain, old JavaBeans this is accomplished through Reflection. For Navel
+ * beans, it takes advantage of the fact that all the member data is stored in a
+ * simple, Map-based storage class.
+ * 
  * If you supply a custom implementation of PropertyDescriptor, you need to
  * implement a daughter of this class that knows how to work with the custom
  * property type. You also register your daughters of this class through a
@@ -255,7 +261,7 @@ public abstract class AbstractPropertyManipulator
      * @return An array of PropertyDescriptor instances, may be zero length;
      *         will never be null.
      */
-    public static final PropertyDescriptor[] getProperties(Class beanClass)
+    public static final PropertyDescriptor[] getProperties(Class<?> beanClass)
     {
         try
         {

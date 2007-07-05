@@ -86,7 +86,7 @@ public class MethodHandler implements Serializable
         if (null == delegate)
         {
             throw new IllegalStateException(String.format(
-                    "No delegate found for interface, %1$s!", proxiedInterface
+                    "No InterfaceDelegate instance found for interface, %1$s!", proxiedInterface
                             .getName()));
         }
 
@@ -95,7 +95,9 @@ public class MethodHandler implements Serializable
             LOGGER.trace(String.format("Found delegate for %1$s.",
                     proxiedInterface.getName()));
         }
+        
+        Method delegateMethod = delegate.getClass().getMethod(method.getName(), method.getParameterTypes());
 
-        return method.invoke(delegate, args);
+        return delegateMethod.invoke(delegate, args);
     }
 }

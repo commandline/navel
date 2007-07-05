@@ -72,7 +72,7 @@ public class PropertyHandler implements Serializable
         this.values = values;
     }
 
-    boolean handles(Method method)
+    static boolean handles(Method method)
     {
         String methodName = method.getName();
 

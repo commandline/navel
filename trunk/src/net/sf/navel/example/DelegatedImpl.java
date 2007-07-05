@@ -61,8 +61,7 @@ public class DelegatedImpl implements DelegationTarget
 
     public void setPropertyValues(PropertyValues values)
     {
-        // TODO Auto-generated method stub
-        
+        this.values = values;
     }
 
     public void doThis(Integer foo, Integer bar)

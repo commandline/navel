@@ -46,12 +46,22 @@ import org.apache.log4j.Logger;
 
 /**
  * This class allows for generically manipulating the values encapsulated in
- * JavaBeans. Values can be extracted, via Introspection, into a Map and
- * populated, via Introspection, back into any given JavaBean instnace from a
- * Map.
+ * JavaBeans and Navel beans. Values can be extracted, via Introspection, into a
+ * Map and populated, via Introspection, back into any given JavaBean instance
+ * from a Map.
+ * 
+ * This implementation is somewhat more forgiving of JavaBeans than Navel beans.
+ * Navel beans may be somewhat more efficient because less Reflection code is
+ * necessary to execute the requested operations.
+ * 
+ * For Navel beans, programmating setting of values follows the validation rules
+ * used by the ProxyFactory so that the value of a given Navel bean instance
+ * cannot be inadvertently made invalid. This is based on the assumption that
+ * strict checking is desirable and value translation, both logically related
+ * names and transformable values, are well outside of the scope of this
+ * library.
  * 
  * @author cmdln
- * @version $Revision: 1.16 $, $Date: 2005/10/28 22:49:42 $
  */
 public class BeanManipulator
 {
@@ -162,44 +172,6 @@ public class BeanManipulator
     }
 
     /**
-     * Useful for removing values from the underlying Map, such as when trying
-     * to ignore certain property values like for persistence applications.
-     * 
-     * @param bean
-     *            Bean to clear.
-     * @param property
-     *            Property to clear.
-     * @return Whether the state of the bean was affected.
-     */
-    public static boolean clear(Object bean, String property)
-    {
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new IllegalArgumentException("Bean must be a Navel bean!");
-        }
-
-        if (!isPropertyOf(handler, property))
-        {
-            throw new IllegalArgumentException(
-                    "The property, "
-                            + property
-                            + ", is not a valid one for the bean that implements the types, "
-                            + handler.proxiedInterfaces + ".");
-        }
-
-        if (!handler.propertyValues.containsKey(property))
-        {
-            return true;
-        }
-
-        Object value = handler.propertyValues.remove(property);
-
-        return (value != null);
-    }
-
-    /**
      * Support method to help in dealing with introspection, reflection of
      * JavaBeans.
      * 
@@ -218,17 +190,21 @@ public class BeanManipulator
                     "Cannot check against a null reference!");
         }
 
-        Class<?>[] interfaceTypes = bean.getClass().getInterfaces();
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
-        for (Class<?> interfaceType : interfaceTypes)
+        if (null == handler)
         {
+            Class<?> interfaceType = bean.getClass();
+
             if (isPropertyOf(interfaceType, propertyName))
             {
                 return true;
             }
+
+            return false;
         }
 
-        return false;
+        return handler.propertyValues.isPropertyOf(propertyName);
     }
 
     public static boolean isPropertyOf(Class<?> interfaceType,
@@ -336,42 +312,12 @@ public class BeanManipulator
 
             Object sourceValue = value.getValue();
 
-            writeProperty(sourceName, bean, sourceValue);
+            writeProperty(bean, sourceName, sourceValue);
         }
     }
 
-    private void readProperty(PropertyDescriptor property, Object bean,
-            Map<String, Object> values)
-    {
-        // getClass, implemented in Object, always shows up as a property
-        // with the generated BeanInfo, but should be ignored since it is
-        // always read only
-        if ("class".equals(property.getName()))
-        {
-            return;
-        }
-
-        Method readMethod = property.getReadMethod();
-
-        if (null == readMethod)
-        {
-            return;
-        }
-
-        // just want to get at some shared code, rather than duplicating it
-        AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
-                .getPropertyManipulator(PropertyDescriptor.class);
-
-        Object value = manipulator.handleRead(property, property.getName(),
-                bean);
-
-        if (null != value)
-        {
-            values.put(property.getName(), value);
-        }
-    }
-
-    private void writeProperty(String propertyName, Object bean, Object value)
+    private void writeProperty(Object bean, String propertyName,
+            Object propertyValue)
     {
         String[] propertyTokens = propertyName.split("\\.");
 
@@ -382,7 +328,7 @@ public class BeanManipulator
             return;
         }
 
-        writeProperty(propertyTokens, 0, bean, value);
+        writeProperty(propertyTokens, 0, bean, propertyValue);
     }
 
     private void writeProperty(String[] propertyTokens, int tokenIndex,
@@ -421,6 +367,37 @@ public class BeanManipulator
 
             // recurse on the nested property
             writeProperty(propertyTokens, tokenIndex + 1, nestedBean, value);
+        }
+    }
+
+    private void readProperty(PropertyDescriptor property, Object bean,
+            Map<String, Object> values)
+    {
+        // getClass, implemented in Object, always shows up as a property
+        // with the generated BeanInfo, but should be ignored since it is
+        // always read only
+        if ("class".equals(property.getName()))
+        {
+            return;
+        }
+
+        Method readMethod = property.getReadMethod();
+
+        if (null == readMethod)
+        {
+            return;
+        }
+
+        // just want to get at some shared code, rather than duplicating it
+        AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
+                .getPropertyManipulator(PropertyDescriptor.class);
+
+        Object value = manipulator.handleRead(property, property.getName(),
+                bean);
+
+        if (null != value)
+        {
+            values.put(property.getName(), value);
         }
     }
 

@@ -30,7 +30,6 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,8 +42,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sf.navel.beans.support.ListPropertySupport;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -56,17 +53,17 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-class ListBuilder implements Serializable
+class ListBuilder
 {
-
-    private static final long serialVersionUID = 1L;
 
     private static final Logger LOGGER = LogManager
             .getLogger(ListBuilder.class);
 
-    ListBuilder()
+    private static final ListBuilder SINGLETON = new ListBuilder();
+
+    private ListBuilder()
     {
-        // prevent instantiation outside this package
+        // enforce Singleton pattern
     }
 
     /**
@@ -78,7 +75,12 @@ class ListBuilder implements Serializable
      * accepts an int or Integer argument and returns the type of the elements
      * within the List.
      */
-    void filter(BeanInfo beanInfo, Map<String, Object> values)
+    static void filter(BeanInfo beanInfo, Map<String, Object> values)
+    {
+        SINGLETON.filterLists(beanInfo, values);
+    }
+
+    private void filterLists(BeanInfo beanInfo, Map<String, Object> values)
     {
         final Map<String, Object> original = Collections
                 .unmodifiableMap(values);
@@ -178,8 +180,8 @@ class ListBuilder implements Serializable
 
             if (null == nestedList)
             {
-                LOGGER.warn("No nested list available for property, " + key
-                        + ".");
+                LOGGER.warn(String.format(
+                        "No nested list available for property, %1$s.", key));
 
                 continue;
             }
@@ -203,12 +205,12 @@ class ListBuilder implements Serializable
                 if (elementType.isAssignableFrom(Map.class))
                 {
                     throw new IllegalStateException(
-                            "Element, "
-                                    + i
-                                    + " in constructed List is neither a Map or correctly assignable to the List generic type, "
-                                    + elementType.getName() + "; element is "
-                                    + rawElement.getClass().getName() + ": "
-                                    + rawElement);
+                            String
+                                    .format(
+                                            "Element, %1$s, in constructed List is neither a Map or correctly assignable to the List generic type, %2$s; element is %3$s: %4$s",
+                                            i, elementType.getName(),
+                                            rawElement.getClass().getName(),
+                                            rawElement));
                 }
 
                 Map<String, Object> rawValues = (Map<String, Object>) rawElement;
@@ -238,9 +240,10 @@ class ListBuilder implements Serializable
             if (null == valueType)
             {
                 throw new IllegalArgumentException(
-                        "Not type found for elements of List type property, "
-                                + propertyKey
-                                + ".  Make sure the property name is correctly spelled in the raw values Map.");
+                        String
+                                .format(
+                                        "No type found for elements of List type property, %1$s.  Make sure the property name is correctly spelled in the raw values Map.",
+                                        propertyKey));
             }
 
             element = instantiate(valueType, (Map<String, Object>) value);
@@ -274,10 +277,10 @@ class ListBuilder implements Serializable
         if (index.trim().length() == 0)
         {
             throw new IllegalArgumentException(
-                    "For a fully flattened entry, "
-                            + propertyKey
-                            + ", an index value must be provided in the brackets ([]) "
-                            + "or the related entries cannot be assembled correctly into appropriate elements of the list property!");
+                    String
+                            .format(
+                                    "For a fully flattened entry, %1$s, an index value must be provided in the brackets ([]) or the related entries cannot be assembled correctly into appropriate elements of the list property!",
+                                    propertyKey));
         }
 
         List<Object> nestedList = initializeList(copy, propertyKey);
@@ -398,10 +401,10 @@ class ListBuilder implements Serializable
         catch (NumberFormatException e)
         {
             throw new IllegalArgumentException(
-                    "Index value, "
-                            + index
-                            + ", could not be parsed as a number for use with List property, "
-                            + propertyKey + ".", e);
+                    String
+                            .format(
+                                    "Index value, %1$s, could not be parsed as a number for use with List property, %2$s.",
+                                    index, propertyKey), e);
         }
     }
 

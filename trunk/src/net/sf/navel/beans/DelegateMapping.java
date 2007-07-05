@@ -31,6 +31,7 @@ package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
 import java.beans.MethodDescriptor;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,8 +51,10 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-class DelegateMapping
+class DelegateMapping implements Serializable
 {
+
+    private static final long serialVersionUID = -4311211381597816297L;
 
     private static final Logger LOGGER = LogManager
             .getLogger(DelegateMapping.class);
@@ -97,9 +100,23 @@ class DelegateMapping
                 continue;
             }
 
+            int nonPropertyCount = 0;
+
             for (MethodDescriptor methodDescriptor : methodDescriptors)
             {
+                if (PropertyHandler.handles(methodDescriptor.getMethod()))
+                {
+                    continue;
+                }
+
                 tempMethods.add(methodDescriptor.getMethod());
+
+                nonPropertyCount++;
+            }
+
+            if (0 == nonPropertyCount)
+            {
+                continue;
             }
 
             // initialize to null since this is just setting up the fixed key
