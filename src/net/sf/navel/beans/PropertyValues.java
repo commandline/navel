@@ -91,17 +91,15 @@ public class PropertyValues implements Serializable
 
         for (BeanInfo beanInfo : proxiedBeanInfo)
         {
+            PropertyValueResolver.resolve(beanInfo, initialCopy);
+            
             IgnoreToString ignore = beanInfo.getBeanDescriptor().getBeanClass()
                     .getAnnotation(IgnoreToString.class);
             
-            if (null == ignore)
+            if (null != ignore)
             {
-                continue;
+                tempFilter.addAll(Arrays.asList(ignore.value()));
             }
-
-            tempFilter.addAll(Arrays.asList(ignore.value()));
-
-            PropertyValueResolver.resolve(beanInfo, initialCopy);
         }
 
         filterToString = Collections.unmodifiableSet(tempFilter);
