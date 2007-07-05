@@ -146,11 +146,12 @@ public class PropertyValidatorTest
         try
         {
             PropertyManipulator.put(bean, "foo", 1L);
+            Assert
+                    .fail("Should not be able to use the PropertyManipulator to set a bad property name, should be consistent with construction check.");
         }
         catch (Exception e)
         {
-            Assert
-                    .fail("Should be able to use the PropertyManipulator to set a bad property name, it is a no-op.");
+            LogHelper.traceError(LOGGER, e);
         }
     }
 

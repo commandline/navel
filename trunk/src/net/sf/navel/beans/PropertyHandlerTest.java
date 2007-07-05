@@ -190,7 +190,7 @@ public class PropertyHandlerTest
         Map<String, Object> values = new HashMap<String, Object>(1);
         values.put("readOnly", new Integer(readOnly));
 
-        ReadWriteBean bean = ProxyFactory.createAs(ReadWriteBean.class);
+        ReadWriteBean bean = ProxyFactory.createAs(ReadWriteBean.class, values);
 
         // write-only
         bean.setWriteOnly(writeOnly);
@@ -199,16 +199,14 @@ public class PropertyHandlerTest
         bean.setReadWrite(readWrite);
 
         // can only check write-only via the underlying map
-        // TODO restore when new utility class is complete
-//        values = BeanManipulator.getNavelHandler(bean).propertyHandler
-//                .getValues();
-//
-//        Assert.assertEquals(readOnly, bean.getReadOnly(),
-//                "readOnly should equal 1");
-//        Assert.assertEquals(new Integer(writeOnly), values.get("writeOnly"),
-//                "writeOnly should equal 2");
-//        Assert.assertEquals(readWrite, bean.getReadWrite(),
-//                "readWrite should equal 3");
+        values = ProxyFactory.getHandler(bean).propertyValues.copyValues();
+
+        Assert.assertEquals(bean.getReadOnly(), readOnly,
+                "readOnly should equal 1");
+        Assert.assertEquals(new Integer(writeOnly), values.get("writeOnly"),
+                "writeOnly should equal 2");
+        Assert.assertEquals(readWrite, bean.getReadWrite(),
+                "readWrite should equal 3");
     }
 
     /**
