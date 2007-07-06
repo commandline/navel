@@ -29,13 +29,13 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
+import java.beans.IndexedPropertyDescriptor;
+import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Utility class to aid introspecting List typed properties.
@@ -43,7 +43,7 @@ import java.util.Map;
  * @author cmdln
  * 
  */
-public class ListPropertySupport
+class ListPropertySupport
 {
 
     private static final ListPropertySupport SINGLETON = new ListPropertySupport();
@@ -58,9 +58,10 @@ public class ListPropertySupport
      * associating the type of the elements within the List in the resulting
      * Map.
      */
-    public static Map<String, Class<?>> introspectListTypes(BeanInfo beanInfo)
+    static Map<String, Class<?>> introspectListTypes(
+            Map<String, PropertyDescriptor> properties)
     {
-        return SINGLETON.getElementTypes(beanInfo);
+        return SINGLETON.getElementTypes(properties);
     }
 
     /**
@@ -69,16 +70,15 @@ public class ListPropertySupport
      * take a single int or Integer argument that is the index for a get call
      * into the List itself.
      */
-    private Map<String, Class<?>> getElementTypes(BeanInfo beanInfo)
+    private Map<String, Class<?>> getElementTypes(
+            Map<String, PropertyDescriptor> properties)
     {
-        PropertyDescriptor[] descriptors = beanInfo.getPropertyDescriptors();
-
         Map<String, Class<?>> elementTypes = new HashMap<String, Class<?>>();
 
-        for (PropertyDescriptor descriptor : descriptors)
+        for (PropertyDescriptor descriptor : properties.values())
         {
             addFromAnnotation(elementTypes, descriptor);
-            addFromAlternateAccessor(beanInfo, elementTypes, descriptor);
+            addFromAlternateAccessor(elementTypes, descriptor);
         }
 
         return elementTypes;
@@ -103,8 +103,8 @@ public class ListPropertySupport
         elementTypes.put(descriptor.getName(), collectionType.value());
     }
 
-    private void addFromAlternateAccessor(BeanInfo beanInfo,
-            Map<String, Class<?>> elementTypes, PropertyDescriptor descriptor)
+    private void addFromAlternateAccessor(Map<String, Class<?>> elementTypes,
+            PropertyDescriptor descriptor)
     {
         Class<?> propertyType = descriptor.getPropertyType();
 
@@ -113,8 +113,7 @@ public class ListPropertySupport
             return;
         }
 
-        Method readMethod = findRead(beanInfo.getBeanDescriptor()
-                .getBeanClass(), descriptor.getName(), true);
+        Method readMethod = findRead(descriptor, true);
 
         if (null == readMethod)
         {
@@ -124,10 +123,15 @@ public class ListPropertySupport
         elementTypes.put(descriptor.getName(), readMethod.getReturnType());
     }
 
-    private Method findRead(Class<?> beanClass, String name,
+    private Method findRead(PropertyDescriptor descriptor,
             boolean primitiveArgument)
     {
+        Class<?> beanClass = findBeanClass(descriptor);
+
+        String name = descriptor.getName();
+
         String methodName = "get";
+
         methodName = methodName.concat(name.substring(0, 1).toUpperCase());
         methodName = methodName.concat(name.substring(1));
 
@@ -150,7 +154,7 @@ public class ListPropertySupport
         {
             if (primitiveArgument)
             {
-                return findRead(beanClass, name, false);
+                return findRead(descriptor, false);
             }
             else
             {
@@ -159,4 +163,48 @@ public class ListPropertySupport
         }
     }
 
+    private Class<?> findBeanClass(PropertyDescriptor descriptor)
+    {
+        Method method = descriptor.getWriteMethod();
+
+        // may be read only
+        if (null == method)
+        {
+            method = descriptor.getReadMethod();
+        }
+        
+        if (method != null)
+        {
+            return method.getDeclaringClass();
+        }
+        
+        if (!(descriptor instanceof IndexedPropertyDescriptor))
+        {
+            return null;
+        }
+
+        IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) descriptor;
+
+        // may be indexed
+        if (null == method)
+        {
+            method = indexedDescriptor.getIndexedWriteMethod();
+        }
+
+        // may be indexed read only
+        if (null == method)
+        {
+            method = indexedDescriptor.getIndexedReadMethod();
+        }
+
+        Class<?> parent = method.getDeclaringClass();
+
+        if (null == parent)
+        {
+
+            parent = indexedDescriptor.getReadMethod().getDeclaringClass();
+        }
+
+        return parent;
+    }
 }

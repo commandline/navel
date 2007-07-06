@@ -48,7 +48,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-public class PropertyHandler implements Serializable
+class PropertyHandler implements Serializable
 {
 
     private static final long serialVersionUID = 8234362825076556906L;

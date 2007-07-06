@@ -29,7 +29,7 @@
  */
 package net.sf.navel.example;
 
-import net.sf.navel.beans.DelegationTarget;
+import net.sf.navel.beans.InterfaceDelegate;
 import net.sf.navel.beans.PropertyValues;
 
 import org.apache.log4j.Logger;
@@ -46,7 +46,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-public class AnotherBadDelegatedImpl implements DelegationTarget
+public class AnotherBadDelegatedImpl implements InterfaceDelegate
 {
 
     private static final Logger LOGGER = Logger
@@ -59,7 +59,7 @@ public class AnotherBadDelegatedImpl implements DelegationTarget
         return Delegated.class;
     }
 
-    public void setPropertyValues(PropertyValues values)
+    public void attach(PropertyValues values)
     {
         this.values = values;
     }
@@ -82,5 +82,10 @@ public class AnotherBadDelegatedImpl implements DelegationTarget
         doThis(foo, bar);
 
         return new Long(foo.intValue() + bar.intValue());
+    }
+
+    public void detach()
+    {
+        values = null;
     }
 }

@@ -29,13 +29,7 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
-import java.beans.PropertyDescriptor;
-import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 /**
  * Public interface for doing reflection-like dynamic programming of the
@@ -46,11 +40,6 @@ import org.apache.log4j.Logger;
  */
 public class PropertyManipulator
 {
-
-    private static final Logger LOGGER = LogManager
-            .getLogger(PropertyManipulator.class);
-
-    private static final PropertyManipulator SINGLETON = new PropertyManipulator();
 
     private PropertyManipulator()
     {
@@ -67,7 +56,7 @@ public class PropertyManipulator
      * @param bean
      *            Target whose property, simply or nested, to set.
      * @param propertyName
-     *            Property to set, may be a nested property using the do
+     *            Property to set, may be a nested property using the dot
      *            notation. Also may be an indexed property.
      * @param propertyValue
      *            Value to set at the specified name.
@@ -75,7 +64,21 @@ public class PropertyManipulator
     public static void put(Object bean, String propertyName,
             Object propertyValue)
     {
-        SINGLETON.putValue(bean, propertyName, propertyValue);
+        if (null == bean)
+        {
+            throw new IllegalArgumentException("Bean argument cannot be null!");
+        }
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
+        }
+
+        // this will resolve, and validate the property value
+        handler.propertyValues.put(propertyName, propertyValue);
     }
 
     /**
@@ -95,8 +98,6 @@ public class PropertyManipulator
      */
     public static void putAll(Object bean, Map<String, Object> values)
     {
-        Map<String, Object> copy = new HashMap<String, Object>(values);
-
         if (null == bean)
         {
             throw new IllegalArgumentException("Bean argument cannot be null!");
@@ -110,15 +111,8 @@ public class PropertyManipulator
                     "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
         }
 
-        // resolve all nested properties, constructing daughter Navel beans
-        // along the way, if needed
-        for (BeanInfo beanInfo : handler.proxiedBeanInfo)
-        {
-            PropertyValueResolver.resolve(beanInfo, copy);
-        }
-
-        // this will also validate the Map contents
-        handler.propertyValues.putAll(copy);
+        // this will copy, resolve, and validate the Map contents
+        handler.propertyValues.putAll(values);
     }
 
     /**
@@ -133,11 +127,16 @@ public class PropertyManipulator
      */
     public static boolean clear(Object bean, String propertyName)
     {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException("Bean argument cannot be null!");
+        }
+        
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
         if (null == handler)
         {
-            throw new IllegalArgumentException("Bean must be a Navel bean!");
+            throw new UnsupportedFeatureException("Bean must be a Navel bean!");
         }
 
         if (!handler.propertyValues.isPropertyOf(propertyName))
@@ -175,83 +174,5 @@ public class PropertyManipulator
         }
 
         handler.propertyValues.clear();
-    }
-
-    private void putValue(Object bean, String propertyName, Object propertyValue)
-    {
-        String[] propertyTokens = propertyName.split("\\.");
-
-        if (0 == propertyTokens.length)
-        {
-            LOGGER.warn("Empty property name.");
-
-            return;
-        }
-
-        putValue(propertyTokens, 0, bean, propertyValue);
-    }
-
-    private void putValue(String[] propertyTokens, int tokenIndex, Object bean,
-            Object propertyValue)
-    {
-        String propertyName = propertyTokens[tokenIndex];
-
-        PropertyDescriptor propertyDescriptor = AbstractPropertyManipulator
-                .findProperty(bean.getClass(), propertyName);
-
-        if (null == propertyDescriptor)
-        {
-            throw new InvalidPropertyValueException(String.format(
-                    "No property descriptor for property name, %1$s.",
-                    propertyName));
-        }
-
-        AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
-                .getPropertyManipulator(propertyDescriptor.getClass());
-
-        if (1 == propertyTokens.length - tokenIndex)
-        {
-            JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-            if (null == handler)
-            {
-                manipulator.handleWrite(propertyDescriptor, propertyName, bean,
-                        propertyValue);
-            }
-            else
-            {
-                handler.propertyValues.put(propertyName, propertyValue);
-            }
-
-            return;
-        }
-
-        Object nestedBean = manipulator.handleRead(propertyDescriptor,
-                propertyName, bean);
-
-        if (null == nestedBean)
-        {
-            LOGGER.warn(String.format(
-                    "Nested bean target was null for property name, %1$s.",
-                    propertyName));
-
-            Class propClass = propertyDescriptor.getPropertyType();
-
-            if (!propClass.isInterface())
-            {
-                LOGGER
-                        .warn(String
-                                .format(
-                                        "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
-                                        propertyName, propClass.getName()));
-
-                return;
-            }
-
-            nestedBean = ProxyFactory.create(propClass);
-        }
-
-        // recurse on the nested property
-        putValue(propertyTokens, tokenIndex + 1, nestedBean, propertyValue);
     }
 }

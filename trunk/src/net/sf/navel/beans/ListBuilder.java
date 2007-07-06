@@ -29,7 +29,7 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
+import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,12 +75,14 @@ class ListBuilder
      * accepts an int or Integer argument and returns the type of the elements
      * within the List.
      */
-    static void filter(BeanInfo beanInfo, Map<String, Object> values)
+    static void filter(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
-        SINGLETON.filterLists(beanInfo, values);
+        SINGLETON.filterLists(properties, values);
     }
 
-    private void filterLists(BeanInfo beanInfo, Map<String, Object> values)
+    private void filterLists(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
         final Map<String, Object> original = Collections
                 .unmodifiableMap(values);
@@ -92,7 +94,7 @@ class ListBuilder
         // looking for methods with the same name as the List accessor but
         // that also accept an int or Integer argument
         Map<String, Class<?>> elementTypes = ListPropertySupport
-                .introspectListTypes(beanInfo);
+                .introspectListTypes(properties);
 
         Set<String> flattened = new HashSet<String>();
 

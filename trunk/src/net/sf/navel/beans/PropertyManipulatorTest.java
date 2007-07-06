@@ -29,6 +29,10 @@
  */
 package net.sf.navel.beans;
 
+import net.sf.navel.example.IndexedBean;
+import net.sf.navel.example.TypesBean;
+
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -42,6 +46,35 @@ public class PropertyManipulatorTest
     @Test
     public void testIndexedProperty()
     {
-        
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
+
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class);
+
+        indexedBean.setArray(new String[2]);
+        indexedBean.setFloats(new float[2]);
+        indexedBean.setTypes(new TypesBean[]
+        { typesBean });
+
+
+        PropertyManipulator.put(indexedBean, "array[0]", "foo");
+        PropertyManipulator.put(indexedBean, "array[1]", "bar");
+        PropertyManipulator.put(indexedBean, "floats[0]", new Float(32.0));
+        PropertyManipulator.put(indexedBean, "floats[1]", new Float(64.0));
+        // TODO restore when nested property support is available
+//        PropertyManipulator.put("types[0].boolean", Boolean.TRUE);
+
+        Assert.assertEquals("foo", indexedBean.getArray(0),
+                "First String element should be set correctly.");
+        Assert.assertEquals("bar", indexedBean.getArray(1),
+                "Second String element should be set correctly.");
+
+        Assert.assertEquals(32.0, indexedBean.getFloats(0), 0,
+                "First float element should be set correctly.");
+        Assert.assertEquals(64.0, indexedBean.getFloats(1), 0,
+                "Second float element should be set correctly.");
+
+//        Assert
+//                .assertEquals(true, indexedBean.getTypes(0).getBoolean(),
+//                        "Boolean property of first types element should be set correctly.");
     }
 }

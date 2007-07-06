@@ -29,16 +29,10 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
-import java.io.Serializable;
 import java.lang.reflect.Proxy;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 /**
@@ -49,52 +43,42 @@ import java.util.Map.Entry;
  * 
  * @author cmndln
  */
-class PropertyValidator implements Serializable
+class PropertyValidator
 {
 
-    private static final long serialVersionUID = -6780317578317368699L;
+    private static final PropertyValidator SINGLETON = new PropertyValidator();
 
-    // TODO restore during derserialization
-    private transient final Map<String, PropertyDescriptor> propertyDescriptors;
-    
-    PropertyValidator(Set<BeanInfo> proxiedBeanInfo)
+    private PropertyValidator()
     {
-        Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
-
-        for (BeanInfo beanInfo : proxiedBeanInfo)
-        {
-            PropertyDescriptor[] propertyDescriptors = beanInfo
-                    .getPropertyDescriptors();
-
-            for (PropertyDescriptor propertyDescriptor : propertyDescriptors)
-            {
-                tempProperties.put(propertyDescriptor.getName(),
-                        propertyDescriptor);
-            }
-        }
-
-        this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
+        // enforce Singleton pattern
     }
 
-    void validateAll(Map<String, Object> values)
+    static void validateAll(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
         for (Entry<String, Object> entry : values.entrySet())
         {
-            validate(entry.getKey(), entry.getValue());
+            validate(properties, entry.getKey(), entry.getValue());
         }
     }
 
-    void validate(String propertyName, Object propertyValue)
+    static void validate(Map<String, PropertyDescriptor> properties,
+            String propertyName, Object propertyValue)
     {
-        if (!propertyDescriptors.containsKey(propertyName))
+        SINGLETON.validateProperty(properties, propertyName, propertyValue);
+    }
+
+    private void validateProperty(Map<String, PropertyDescriptor> properties,
+            String propertyName, Object propertyValue)
+    {
+        if (!properties.containsKey(propertyName))
         {
             throw new InvalidPropertyValueException(String.format(
                     "This JavaBean does not have a property, %1$s.",
                     propertyName));
         }
 
-        PropertyDescriptor propertyDescriptor = propertyDescriptors
-                .get(propertyName);
+        PropertyDescriptor propertyDescriptor = properties.get(propertyName);
 
         Class<?> propertyType = propertyDescriptor.getPropertyType();
 
@@ -158,10 +142,5 @@ class PropertyValidator implements Serializable
                                     propertyValue, valueType.getName(),
                                     propertyName, propertyType.getName()));
         }
-    }
-
-    Collection<PropertyDescriptor> getPropertyDescriptors()
-    {
-        return propertyDescriptors.values();
     }
 }

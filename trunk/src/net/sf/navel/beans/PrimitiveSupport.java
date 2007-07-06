@@ -54,7 +54,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-public class PrimitiveSupport
+class PrimitiveSupport
 {
     private static final Logger LOGGER = Logger
             .getLogger(PrimitiveSupport.class);
@@ -90,7 +90,7 @@ public class PrimitiveSupport
      *            Value, typically from the PropertyBeanHandler's underlying
      *            Map.
      */
-    public static void validate(String propertyName, Class propertyType,
+    static void validate(String propertyName, Class propertyType,
             Object propertyValue) throws InvalidPropertyValueException
     {
         SINGLETON.validatePrimitive(propertyName, propertyType, propertyValue);
@@ -109,7 +109,7 @@ public class PrimitiveSupport
      * @return Is the propertyValue a valid wrapper instance for the property
      *         type?
      */
-    public static boolean isValid(Class propertyType, Object propertyValue)
+    static boolean isValid(Class propertyType, Object propertyValue)
     {
         return SINGLETON.isValidPrimitive(propertyType, propertyValue);
     }
@@ -123,7 +123,7 @@ public class PrimitiveSupport
      *            and my suspicion is it may change from JVM to JVM.
      * @return Can this class work with the array type?
      */
-    public static boolean isPrimitiveArray(Class propertyType)
+    static boolean isPrimitiveArray(Class propertyType)
     {
         return SINGLETON.manipulators.containsKey(propertyType);
     }
@@ -140,7 +140,7 @@ public class PrimitiveSupport
      * @return Element at index, type as Object--dynamic proxies will cast on
      *         the way out.
      */
-    public static Object getElement(Object array, int index)
+    static Object getElement(Object array, int index)
     {
         ArrayManipulator manipulator = SINGLETON.manipulators.get(array
                 .getClass());
@@ -160,7 +160,7 @@ public class PrimitiveSupport
      *            Value to set into the array, inner classes will cast
      *            appropriately based on Class on array argument.
      */
-    public static void setElement(Object array, int index, Object value)
+    static void setElement(Object array, int index, Object value)
     {
         ArrayManipulator manipulator = SINGLETON.manipulators.get(array
                 .getClass());
@@ -185,7 +185,7 @@ public class PrimitiveSupport
      * @return The value itself it it is not a primitive or is not null, an
      *         appropriate primitive default otherwise.
      */
-    public static Object handleNull(Class returnType, Object value)
+    static Object handleNull(Class returnType, Object value)
     {
         if (!returnType.isPrimitive() || (null != value))
         {
