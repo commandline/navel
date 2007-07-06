@@ -50,6 +50,8 @@ import org.apache.log4j.Logger;
 public class DelegatedImpl implements InterfaceDelegate
 {
     
+    private static final long serialVersionUID = 1952512601271098175L;
+
     private static final Logger LOGGER = Logger.getLogger(DelegatedImpl.class);
     
     private transient PropertyValues values;

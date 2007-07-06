@@ -33,6 +33,9 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.navel.example.CharacterAsStringDelegate;
+import net.sf.navel.example.TypesBean;
+
 /**
  * This is the starting point for working with Navel. It encapsulates the
  * creation of dynamic proxies, constructing them with the supplied delegation
@@ -137,6 +140,50 @@ public class ProxyFactory
     }
 
     /**
+     * Checks to see if there is a delegate for the specified interface.
+     * 
+     * @param bean
+     *            Proxy to check.
+     * @param delegatingInterface
+     *            Interface to check.
+     * @return Whether there is a delegate for the specified interface.
+     */
+    public static boolean isAttached(Object bean, Class<?> delegatingInterface)
+    {
+        JavaBeanHandler handler = getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot check a delegate on anything other than a Navel bean!");
+        }
+
+        return handler.delegateMapping.isAttached(delegatingInterface);
+    }
+
+    /**
+     * Checks to see if there is a delegate for the specified property.
+     * 
+     * @param bean
+     *            Proxy to check.
+     * @param propertyName
+     *            Property to check.
+     * @return Whether there is a delegate for the specified property.
+     */
+    public static boolean isAttached(Object bean, String propertyName)
+    {
+        JavaBeanHandler handler = getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot check a delegate on anything other than a Navel bean!");
+        }
+
+        return handler.propertyValues.isAttached(propertyName);
+    }
+
+    /**
      * Utility method that exposes the runtime delegation attachment code.
      * 
      * @param bean
@@ -158,13 +205,39 @@ public class ProxyFactory
     }
 
     /**
+     * Utility method that exposes the runtime delegation attachment code.
+     * 
+     * @param bean
+     *            Target to which the delegate will be attached, if applicable.
+     * @param propertyName
+     *            Property this delegate should support.
+     * @param delegate
+     *            Delegate to attach.
+     */
+    public static void attach(TypesBean bean, String propertyName,
+            CharacterAsStringDelegate delegate)
+    {
+        JavaBeanHandler handler = getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot attach a delegate to anything other than a Navel bean!");
+        }
+
+        handler.propertyValues.attach(propertyName, delegate);
+    }
+
+    /**
      * Removes a delegate, if any, mapped to the specific interface. Useful, for
      * instance, to participate in a State or Strategy pattern where at
      * different times or under different conditions different delegates, or
      * none at all, might be desirable.
      * 
-     * @param bean Bean from which the delegate should be detached.
-     * @param delegatingInterface If there is a delegate for this interface, remove it.
+     * @param bean
+     *            Bean from which the delegate should be detached.
+     * @param delegatingInterface
+     *            If there is a delegate for this interface, remove it.
      * @return Indicate whether a delegate was removed.
      */
     public static boolean detach(Object bean, Class<?> delegatingInterface)
@@ -178,6 +251,31 @@ public class ProxyFactory
         }
 
         return handler.delegateMapping.detach(delegatingInterface);
+    }
+
+    /**
+     * Removes a delegate, if any, mapped to the specific property. Useful, for
+     * instance, to participate in a State or Strategy pattern where at
+     * different times or under different conditions different delegates, or
+     * none at all, might be desirable.
+     * 
+     * @param bean
+     *            Bean from which the delegate should be detached.
+     * @param propertyName
+     *            If there is a delegate for this property, remove it.
+     * @return Indicate whether a delegate was removed.
+     */
+    public static boolean detach(Object bean, String propertyName)
+    {
+        JavaBeanHandler handler = getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot detach a delegate from anything other than a Navel bean!");
+        }
+
+        return handler.propertyValues.detach(propertyName);
     }
 
     /**

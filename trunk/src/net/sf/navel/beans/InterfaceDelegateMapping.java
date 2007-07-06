@@ -51,13 +51,13 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-class DelegateMapping implements Serializable
+class InterfaceDelegateMapping implements Serializable
 {
 
     private static final long serialVersionUID = -4311211381597816297L;
 
     private static final Logger LOGGER = LogManager
-            .getLogger(DelegateMapping.class);
+            .getLogger(InterfaceDelegateMapping.class);
 
     final Map<Class<?>, InterfaceDelegate> delegations = new HashMap<Class<?>, InterfaceDelegate>();
 
@@ -81,7 +81,7 @@ class DelegateMapping implements Serializable
      *            Necessary to set onto each delegate so it can safely
      *            manipulate the internal state of the JavaBeanHandler.
      */
-    DelegateMapping(Set<BeanInfo> proxiedBeanInfo,
+    InterfaceDelegateMapping(Set<BeanInfo> proxiedBeanInfo,
             InterfaceDelegate[] delegates, PropertyValues values)
     {
         this.values = values;
@@ -155,7 +155,7 @@ class DelegateMapping implements Serializable
             LOGGER
                     .warn(String
                             .format(
-                                    "DelegationTarget already mapped for interface, %1$s, overwriting!",
+                                    "InterfaceDelegate already mapped for interface, %1$s, overwriting!",
                                     delegatingInterface));
         }
 
@@ -184,15 +184,6 @@ class DelegateMapping implements Serializable
             throw new IllegalArgumentException(String.format(
                     "The proxy does not implement the interface, %1$s.",
                     delegatingInterface.getName()));
-        }
-
-        if (delegations.get(delegatingInterface) != null)
-        {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "DelegationTarget already mapped for interface, %1$s, overwriting!",
-                                    delegatingInterface));
         }
 
         return delegations.remove(delegatingInterface) != null;

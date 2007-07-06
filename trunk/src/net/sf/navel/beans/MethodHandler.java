@@ -47,9 +47,9 @@ public class MethodHandler implements Serializable
 
     private static final Logger LOGGER = Logger.getLogger(MethodHandler.class);
 
-    private final DelegateMapping mapping;
+    private final InterfaceDelegateMapping mapping;
 
-    MethodHandler(DelegateMapping mapping)
+    MethodHandler(InterfaceDelegateMapping mapping)
     {
         this.mapping = mapping;
     }
