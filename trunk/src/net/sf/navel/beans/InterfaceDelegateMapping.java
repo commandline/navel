@@ -139,7 +139,7 @@ class InterfaceDelegateMapping implements Serializable
 
     final void attach(InterfaceDelegate delegate)
     {
-        InterfaceValidator.validate(delegate);
+        InterfaceDelegateValidator.validate(delegate);
 
         Class<?> delegatingInterface = delegate.getDelegatingInterface();
 

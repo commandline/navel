@@ -66,7 +66,7 @@ public class PropertyValues implements Serializable
 
     private final String primaryClassName;
 
-    final Map<String, PropertyDelegate> propertyDelegates = new HashMap<String, PropertyDelegate>();
+    final Map<String, PropertyDelegate<?>> propertyDelegates = new HashMap<String, PropertyDelegate<?>>();
 
     /**
      * The restore method re-populates this during deserialization, restore is
@@ -348,7 +348,7 @@ public class PropertyValues implements Serializable
                 && propertyDelegates.get(propertyName) != null;
     }
 
-    void attach(String propertyName, PropertyDelegate delegate)
+    void attach(String propertyName, PropertyDelegate<?> delegate)
     {
         if (propertyDelegates.get(propertyName) != null)
         {
@@ -357,6 +357,20 @@ public class PropertyValues implements Serializable
                             .format(
                                     "PropertyDelegate already mapped for property, %1$s, overwriting!",
                                     propertyName));
+        }
+
+        PropertyDescriptor propertyDescriptor = propertyDescriptors
+                .get(propertyName);
+
+        if (!propertyDescriptor.getPropertyType().equals(
+                delegate.propertyType()))
+        {
+            throw new InvalidDelegateException(
+                    String
+                            .format(
+                                    "Invalid type, %1$s, for PropertyDelegate.  Property, %2$s, requires type, %3$s.",
+                                    delegate.propertyType(), propertyName,
+                                    propertyDescriptor.getPropertyType()));
         }
 
         propertyDelegates.put(propertyName, delegate);

@@ -41,15 +41,15 @@ import org.apache.log4j.Logger;
  * 
  * @author cmndln
  */
-class InterfaceValidator
+class InterfaceDelegateValidator
 {
 
     private static final Logger LOGGER = Logger
-            .getLogger(InterfaceValidator.class);
+            .getLogger(InterfaceDelegateValidator.class);
 
-    private static final InterfaceValidator SINGLETON = new InterfaceValidator();
+    private static final InterfaceDelegateValidator SINGLETON = new InterfaceDelegateValidator();
 
-    private InterfaceValidator()
+    private InterfaceDelegateValidator()
     {
         // enforce Singleton pattern
     }

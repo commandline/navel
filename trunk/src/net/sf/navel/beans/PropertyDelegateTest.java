@@ -32,8 +32,15 @@ package net.sf.navel.beans;
 import net.sf.navel.example.CharacterAsString;
 import net.sf.navel.example.CharacterAsStringDelegate;
 import net.sf.navel.example.TypesBean;
+import net.sf.navel.log.LogHelper;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -44,7 +51,21 @@ import org.testng.annotations.Test;
  */
 public class PropertyDelegateTest
 {
+    
+    private static final Logger LOGGER = LogManager.getLogger(PropertyDelegateTest.class);
 
+    @BeforeMethod
+    public void setUp() throws Exception
+    {
+        Logger root = LogManager.getRootLogger();
+
+        root.removeAllAppenders();
+
+        root.addAppender(new ConsoleAppender(new PatternLayout(
+                "%d %-5p [%c] %m%n"), ConsoleAppender.SYSTEM_OUT));
+        root.setLevel(Level.DEBUG);
+    }
+    
     @Test
     public void testStringView()
     {
@@ -91,5 +112,24 @@ public class PropertyDelegateTest
 
         Assert.assertEquals(handler.propertyValues.copyValues().size(), 2,
                 "Should have two entries.");
+    }
+
+    @Test
+    public void breakValidation()
+    {
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                CharacterAsString.class);
+
+        try
+        {
+            ProxyFactory.attach(typesBean, "boolean",
+                    new CharacterAsStringDelegate());
+
+            Assert.fail("Should not be able to attach a mismatched delegate.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
     }
 }

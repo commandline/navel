@@ -39,25 +39,30 @@ import net.sf.navel.beans.PropertyValues;
  * @author cmdln
  * 
  */
-public class CharacterAsStringDelegate implements PropertyDelegate
+public class CharacterAsStringDelegate implements PropertyDelegate<String>
 {
 
     private static final long serialVersionUID = 7297236429106919391L;
 
-    public Object get(PropertyValues values, String propertyName)
+    public String get(PropertyValues values, String propertyName)
     {
         Character characterValue = (Character) values.get("character");
 
         return characterValue.toString();
     }
 
-    public void set(PropertyValues values, String propertyName, Object value)
+    public void set(PropertyValues values, String propertyName, String value)
     {
-        String stringValue = (String) value;
+        String stringValue = value;
 
         char characterValue = stringValue.charAt(0);
 
         values.put("character", characterValue);
+    }
+
+    public Class<String> propertyType()
+    {
+        return String.class;
     }
 
 }

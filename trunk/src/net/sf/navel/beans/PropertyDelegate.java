@@ -39,8 +39,14 @@ import java.io.Serializable;
  * @author cmdln
  * 
  */
-public interface PropertyDelegate extends Serializable
+public interface PropertyDelegate<T> extends Serializable
 {
+
+    /**
+     * For constraint checking so that the parameterized type can be ensured to
+     * work with the property to which this may be attached.
+     */
+    Class<T> propertyType();
 
     /**
      * Invoked by the PropertyHandler when a read is performed against a
@@ -54,7 +60,7 @@ public interface PropertyDelegate extends Serializable
      * @return Must match the property type or will cause an
      *         InvocationTargetException.
      */
-    Object get(PropertyValues values, String propertyName);
+    T get(PropertyValues values, String propertyName);
 
     /**
      * Invoked by the PropertyHandler when a write is performed against a
@@ -68,5 +74,5 @@ public interface PropertyDelegate extends Serializable
      * @return value Must match the property type or will cause an
      *         InvalidPropertyValueException.
      */
-    void set(PropertyValues values, String propertyName, Object value);
+    void set(PropertyValues values, String propertyName, T value);
 }
