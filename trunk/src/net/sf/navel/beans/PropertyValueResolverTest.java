@@ -37,9 +37,13 @@ import java.util.Map;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class PropertyValueResolverTest
@@ -47,6 +51,21 @@ public class PropertyValueResolverTest
 
     private static final Logger LOGGER = LogManager
             .getLogger(PropertyValueResolverTest.class);
+
+    /**
+     * @see junit.framework.TestCase#setUp()
+     */
+    @BeforeMethod
+    protected void setUp() throws Exception
+    {
+        Logger root = LogManager.getRootLogger();
+
+        root.removeAllAppenders();
+
+        root.addAppender(new ConsoleAppender(new PatternLayout(
+                "%d %-5p [%c] %m%n"), ConsoleAppender.SYSTEM_OUT));
+        root.setLevel(Level.DEBUG);
+    }
 
     @Test
     public void testInit() throws Exception

@@ -33,6 +33,10 @@ import java.beans.BeanInfo;
 import java.beans.EventSetDescriptor;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectInputValidation;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -51,7 +55,8 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-public class JavaBeanHandler implements InvocationHandler, Serializable
+public class JavaBeanHandler implements InvocationHandler, Serializable,
+        ObjectInputValidation
 {
 
     private static final long serialVersionUID = 5765950784911097987L;
@@ -59,18 +64,17 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(JavaBeanHandler.class);
 
-    // TODO restore during derserialization
-    transient final Set<BeanInfo> proxiedBeanInfo;
+    private transient Set<BeanInfo> proxiedBeanInfo;
 
-    final Set<Class<?>> proxiedInterfaces;
+    private final Set<Class<?>> proxiedInterfaces;
 
-    final PropertyHandler propertyHandler;
+    private final PropertyHandler propertyHandler;
+
+    private final MethodHandler methodHandler;
 
     final PropertyValues propertyValues;
 
     final DelegateMapping delegateMapping;
-
-    final MethodHandler methodHandler;
 
     /**
      * Used only by the {@see ProxyFactory} and validates that the requested
@@ -180,6 +184,53 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         throw new UnsupportedFeatureException(String
                 .format("Could not find a usable target for  method, %1$s.",
                         methodName));
+    }
+
+    public void validateObject() throws InvalidObjectException
+    {
+        Set<BeanInfo> tempInfo = new HashSet<BeanInfo>();
+
+        for (Class<?> proxiedInterface : proxiedInterfaces)
+        {
+            BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
+
+            tempInfo.add(beanInfo);
+        }
+
+        proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
+
+        propertyValues.restore(proxiedBeanInfo);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder buffer = new StringBuilder();
+
+        for (Class<?> proxiedInterface : proxiedInterfaces)
+        {
+            if (buffer.length() == 0)
+            {
+                buffer.append(", ");
+            }
+
+            buffer.append(proxiedInterface.getName());
+        }
+
+        return "JavaBeanHandler: " + buffer.toString();
+    }
+
+    boolean proxiesFor(Class<?> proxyInterface)
+    {
+        return proxiedInterfaces.contains(proxyInterface);
+    }
+
+    private final void readObject(ObjectInputStream input) throws IOException,
+            ClassNotFoundException
+    {
+        input.defaultReadObject();
+
+        input.registerValidation(this, 0);
     }
 
     private final String mapTypes(Class<?>[] proxiedClasses,

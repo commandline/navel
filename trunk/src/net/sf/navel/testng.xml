@@ -9,6 +9,7 @@
       <class name="net.sf.navel.beans.PropertyManipulatorTest"/>
       <class name="net.sf.navel.beans.PropertyValidatorTest"/>
       <class name="net.sf.navel.beans.PropertyValueResolverTest"/>
+      <class name="net.sf.navel.beans.ProxyFactoryTest"/>
       <class name="net.sf.navel.beans.SimplePropertyManipulatorTest"/>
     </classes>
   </test>
