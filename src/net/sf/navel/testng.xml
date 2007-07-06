@@ -5,6 +5,7 @@
       <class name="net.sf.navel.beans.BeanManipulatorTest"/>
       <class name="net.sf.navel.beans.ListBuilderTest"/>
       <class name="net.sf.navel.beans.MethodHandlerTest"/>
+      <class name="net.sf.navel.beans.PropertyDelegateTest"/>
       <class name="net.sf.navel.beans.PropertyHandlerTest"/>
       <class name="net.sf.navel.beans.PropertyManipulatorTest"/>
       <class name="net.sf.navel.beans.PropertyValidatorTest"/>

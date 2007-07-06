@@ -66,6 +66,8 @@ public class PropertyValues implements Serializable
 
     private final String primaryClassName;
 
+    final Map<String, PropertyDelegate> propertyDelegates = new HashMap<String, PropertyDelegate>();
+
     /**
      * The restore method re-populates this during deserialization, restore is
      * called by JavaBeanHandler as part of its custom serialization logic.
@@ -338,6 +340,31 @@ public class PropertyValues implements Serializable
         }
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
+    }
+
+    boolean isAttached(String propertyName)
+    {
+        return propertyDelegates.containsKey(propertyName)
+                && propertyDelegates.get(propertyName) != null;
+    }
+
+    void attach(String propertyName, PropertyDelegate delegate)
+    {
+        if (propertyDelegates.get(propertyName) != null)
+        {
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "PropertyDelegate already mapped for property, %1$s, overwriting!",
+                                    propertyName));
+        }
+
+        propertyDelegates.put(propertyName, delegate);
+    }
+
+    boolean detach(String propertyName)
+    {
+        return propertyDelegates.remove(propertyName) != null;
     }
 
     private Boolean handleEquals(Object value)

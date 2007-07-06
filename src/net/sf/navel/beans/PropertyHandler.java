@@ -155,6 +155,16 @@ class PropertyHandler implements Serializable
 
         if (1 == args.length)
         {
+            if (values.isAttached(propertyName))
+            {
+                PropertyDelegate delegate = values.propertyDelegates
+                        .get(propertyName);
+
+                delegate.set(values, propertyName, args[0]);
+                
+                return;
+            }
+
             values.put(propertyName, args[0]);
         }
         else if (2 == args.length)
@@ -192,6 +202,14 @@ class PropertyHandler implements Serializable
 
         if ((null == args) || (0 == args.length))
         {
+            if (values.isAttached(propertyName))
+            {
+                PropertyDelegate delegate = values.propertyDelegates
+                        .get(propertyName);
+
+                return delegate.get(values, propertyName);
+            }
+
             return handleNull(method.getReturnType(), values.get(propertyName));
         }
         else if (1 == args.length)
@@ -239,6 +257,14 @@ class PropertyHandler implements Serializable
     private Object handleBeing(String methodName)
     {
         String propertyName = getPropertyName(methodName, BEING);
+
+        if (values.isAttached(propertyName))
+        {
+            PropertyDelegate delegate = values.propertyDelegates
+                    .get(propertyName);
+
+            return delegate.get(values, propertyName);
+        }
 
         return handleNull(Boolean.class, values.get(propertyName));
     }

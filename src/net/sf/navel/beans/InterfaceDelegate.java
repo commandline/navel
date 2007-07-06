@@ -29,6 +29,8 @@
  */
 package net.sf.navel.beans;
 
+import java.io.Serializable;
+
 /**
  * Parent class for delegate implementations that supports an entire interface
  * of functional methods. In older versions this was an interface but with the
@@ -36,7 +38,7 @@ package net.sf.navel.beans;
  * 
  * @author cmdln
  */
-public interface InterfaceDelegate
+public interface InterfaceDelegate extends Serializable
 {
 
     /**

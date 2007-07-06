@@ -74,7 +74,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     final PropertyValues propertyValues;
 
-    final DelegateMapping delegateMapping;
+    final InterfaceDelegateMapping delegateMapping;
 
     /**
      * Used only by the {@see ProxyFactory} and validates that the requested
@@ -103,7 +103,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         this.propertyValues = new PropertyValues(primaryClassName,
                 proxiedBeanInfo, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
-        this.delegateMapping = new DelegateMapping(proxiedBeanInfo, delegates,
+        this.delegateMapping = new InterfaceDelegateMapping(proxiedBeanInfo, delegates,
                 propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
     }

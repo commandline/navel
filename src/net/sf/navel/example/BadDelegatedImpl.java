@@ -50,9 +50,11 @@ import org.apache.log4j.Logger;
 public class BadDelegatedImpl implements InterfaceDelegate
 {
     
+    private static final long serialVersionUID = 9201754338054535311L;
+
     private static final Logger LOGGER = Logger.getLogger(BadDelegatedImpl.class);
     
-    private transient PropertyValues values;
+    private PropertyValues values;
 
     public Class<?> getDelegatingInterface()
     {
