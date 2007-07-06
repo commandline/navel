@@ -75,7 +75,8 @@ public class ProxyFactory
      */
     public static Object create(Class<?>... allTypes)
     {
-        return ProxyFactory.create(new HashMap<String, Object>(), allTypes);
+        return ProxyFactory.create(new HashMap<String, Object>(), allTypes,
+                new InterfaceDelegate[0]);
     }
 
     /**
@@ -99,11 +100,13 @@ public class ProxyFactory
             Map<String, Object> initialValues, Class<?>... additionalTypes)
     {
         Class<?>[] allTypes = new Class<?>[additionalTypes.length + 1];
-        
-        allTypes[0] = primaryType;
-        System.arraycopy(additionalTypes, 0, allTypes, 1, additionalTypes.length);
 
-        return (B) ProxyFactory.create(initialValues, allTypes);
+        allTypes[0] = primaryType;
+        System.arraycopy(additionalTypes, 0, allTypes, 1,
+                additionalTypes.length);
+
+        return (B) ProxyFactory.create(initialValues, allTypes,
+                new InterfaceDelegate[0]);
     }
 
     /**
@@ -115,11 +118,13 @@ public class ProxyFactory
      *            they are valid.
      * @param allTypes
      *            All of the interfaces the proxy will implement.
+     * @param initialDelegates
+     *            Delegates to map in initially.
      * @return A proxy that extends all of the specified types and has the
      *         specified initial property values.
      */
     public static Object create(Map<String, Object> initialValues,
-            Class<?>... allTypes)
+            Class<?>[] allTypes, InterfaceDelegate[] initialDelegates)
     {
         if (allTypes.length <= 0)
         {
@@ -127,28 +132,52 @@ public class ProxyFactory
                     "Must supply at least interface for the proxy to implement!");
         }
 
-        // TODO expose ability to specify initial delegates
         return Proxy.newProxyInstance(allTypes[0].getClassLoader(), allTypes,
-                new JavaBeanHandler(initialValues, allTypes, new DelegationTarget[0]));
+                new JavaBeanHandler(initialValues, allTypes, initialDelegates));
     }
 
     /**
      * Utility method that exposes the runtime delegation attachment code.
      * 
-     * @param bean Target to which the delegate will be attached, if applicable.
-     * @param delegate Delegate to attach.
+     * @param bean
+     *            Target to which the delegate will be attached, if applicable.
+     * @param delegate
+     *            Delegate to attach.
      */
-    public static void attach(Object bean, DelegationTarget delegate)
+    public static void attach(Object bean, InterfaceDelegate delegate)
     {
         JavaBeanHandler handler = getHandler(bean);
-        
+
         if (null == handler)
         {
-            // TODO throw an exception?
-            return;
+            throw new UnsupportedFeatureException(
+                    "Cannot attach a delegate to anything other than a Navel bean!");
         }
-        
+
         handler.delegateMapping.attach(delegate);
+    }
+
+    /**
+     * Removes a delegate, if any, mapped to the specific interface. Useful, for
+     * instance, to participate in a State or Strategy pattern where at
+     * different times or under different conditions different delegates, or
+     * none at all, might be desirable.
+     * 
+     * @param bean Bean from which the delegate should be detached.
+     * @param delegatingInterface If there is a delegate for this interface, remove it.
+     * @return Indicate whether a delegate was removed.
+     */
+    public static boolean detach(Object bean, Class<?> delegatingInterface)
+    {
+        JavaBeanHandler handler = getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot detach a delegate from anything other than a Navel bean!");
+        }
+
+        return handler.delegateMapping.detach(delegatingInterface);
     }
 
     /**

@@ -41,16 +41,15 @@ import org.apache.log4j.Logger;
  * 
  * @author cmndln
  */
-// TODO extract out InterfaceValidator
-class MethodValidator
+class InterfaceValidator
 {
 
     private static final Logger LOGGER = Logger
-            .getLogger(MethodValidator.class);
+            .getLogger(InterfaceValidator.class);
 
-    private static final MethodValidator SINGLETON = new MethodValidator();
+    private static final InterfaceValidator SINGLETON = new InterfaceValidator();
 
-    private MethodValidator()
+    private InterfaceValidator()
     {
         // enforce Singleton pattern
     }
@@ -60,12 +59,12 @@ class MethodValidator
      * the methods found through introspection on the interface it is meant to
      * support.
      */
-    public static void validate(DelegationTarget delegate)
+    public static void validate(InterfaceDelegate delegate)
     {
         SINGLETON.validateDelegate(delegate);
     }
 
-    private void validateDelegate(DelegationTarget delegate)
+    private void validateDelegate(InterfaceDelegate delegate)
     {
         if (null == delegate)
         {

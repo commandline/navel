@@ -31,13 +31,10 @@ package net.sf.navel.beans;
 
 import static net.sf.navel.beans.BeanManipulator.populate;
 
-import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -55,8 +52,6 @@ import org.apache.log4j.Logger;
 class PropertyValueResolver
 {
 
-    private static final long serialVersionUID = 394546846709604632L;
-
     private static final Logger LOGGER = Logger
             .getLogger(PropertyValueResolver.class);
 
@@ -70,54 +65,27 @@ class PropertyValueResolver
     /**
      * Ensure that the map of initial values is valid per the properties
      * described by the proxied class.
-     * 
-     * @param beanInfo
-     *            Introspection data about proxied class.
      */
-    public static void resolve(BeanInfo beanInfo, Map<String, Object> values)
+    static void resolve(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
-        SINGLETON.resolveValues(beanInfo, values);
+        SINGLETON.resolveAll(properties, values);
     }
 
-    private void resolveValues(BeanInfo beanInfo, Map<String, Object> values)
+    private void resolveAll(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
         if (values.isEmpty())
         {
             return;
         }
 
-        List<PropertyDescriptor> properties = Arrays.asList(beanInfo
-                .getPropertyDescriptors());
+        resolveNested(properties, values);
 
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace("Found properties:");
-            LOGGER.trace(properties);
-        }
-
-        Map<String, PropertyDescriptor> nameReference = mapNames(properties);
-
-        resolveNested(nameReference, values);
-        
-        ListBuilder.filter(beanInfo, values);
+        ListBuilder.filter(properties, values);
     }
 
-    private Map<String, PropertyDescriptor> mapNames(
-            List<PropertyDescriptor> properties)
-    {
-        Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>(
-                properties.size());
-
-        for (int i = 0; i < properties.size(); i++)
-        {
-            byNames.put(properties.get(i).getName(), properties.get(i));
-        }
-
-        return byNames;
-    }
-
-    private void resolveNested(Map<String, PropertyDescriptor> nameReference,
-            Map<String, Object> values)
+    private void resolveNested(Map<String, PropertyDescriptor> properties, Map<String, Object> values)
     {
         Map<String, Object> collapsed = new HashMap<String, Object>();
         Set<String> toRemove = new HashSet<String>();
@@ -154,7 +122,7 @@ class PropertyValueResolver
         // this should only remove nested names, like foo.bar
         values.keySet().removeAll(toRemove);
 
-        buildNestedBeans(values, nameReference, collapsed);
+        buildNestedBeans(properties, values, collapsed);
 
         values.putAll(collapsed);
     }
@@ -182,7 +150,6 @@ class PropertyValueResolver
 
         if (collapsed.containsKey(parentName))
         {
-            // IMPROVE see note where collapsed is initialized
             nestedValues = (Map<String, Object>) collapsed.get(parentName);
         }
         else
@@ -205,11 +172,9 @@ class PropertyValueResolver
     }
 
     @SuppressWarnings("unchecked")
-    private void buildNestedBeans(Map<String, Object> parentValues,
-            Map<String, PropertyDescriptor> nameReference,
+    private void buildNestedBeans(Map<String, PropertyDescriptor> properties, Map<String, Object> parentValues,
             Map<String, Object> collapsed) throws InvalidPropertyValueException
     {
-        // IMPROVE see note where collapsed is initialized
         // copy so we can iterate the copy and use it to modify the original map
         Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
                 collapsed.entrySet());
@@ -221,7 +186,7 @@ class PropertyValueResolver
 
             String name = entry.getKey();
 
-            PropertyDescriptor descriptor = nameReference.get(name);
+            PropertyDescriptor descriptor = properties.get(name);
 
             if (null == descriptor)
             {
@@ -246,7 +211,6 @@ class PropertyValueResolver
                                         name, propertyType.getName()));
             }
 
-            // IMPROVE see note where collapsed is initialized
             Map<String, Object> values = (Map<String, Object>) entry.getValue();
 
             try

@@ -30,6 +30,7 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
+import java.beans.PropertyDescriptor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +76,10 @@ public class ListBuilderTest
         Map<String, Object> filteredValues = new HashMap<String, Object>(
                 rawValues);
 
-        ListBuilder.filter(beanInfo, filteredValues);
+        Map<String, PropertyDescriptor> properties = PropertyValues
+                .mapProperties(beanInfo);
+
+        ListBuilder.filter(properties, filteredValues);
 
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
                 .get("typesList");

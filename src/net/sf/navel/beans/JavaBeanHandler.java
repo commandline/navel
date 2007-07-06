@@ -86,7 +86,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
      *            Delegates to wire up initially.
      */
     JavaBeanHandler(Map<String, Object> initialValues,
-            Class<?>[] proxiedClasses, DelegationTarget[] delegates)
+            Class<?>[] proxiedClasses, InterfaceDelegate[] delegates)
     {
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);

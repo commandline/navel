@@ -59,7 +59,7 @@ class DelegateMapping implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(DelegateMapping.class);
 
-    final Map<Class<?>, DelegationTarget> delegations = new HashMap<Class<?>, DelegationTarget>();
+    final Map<Class<?>, InterfaceDelegate> delegations = new HashMap<Class<?>, InterfaceDelegate>();
 
     final Set<Method> methods;
 
@@ -82,7 +82,7 @@ class DelegateMapping implements Serializable
      *            manipulate the internal state of the JavaBeanHandler.
      */
     DelegateMapping(Set<BeanInfo> proxiedBeanInfo,
-            DelegationTarget[] delegates, PropertyValues values)
+            InterfaceDelegate[] delegates, PropertyValues values)
     {
         this.values = values;
 
@@ -131,19 +131,19 @@ class DelegateMapping implements Serializable
             return;
         }
 
-        for (DelegationTarget delegate : delegates)
+        for (InterfaceDelegate delegate : delegates)
         {
             attach(delegate);
         }
     }
 
-    final void attach(DelegationTarget delegate)
+    final void attach(InterfaceDelegate delegate)
     {
-        MethodValidator.validate(delegate);
+        InterfaceValidator.validate(delegate);
 
         Class<?> delegatingInterface = delegate.getDelegatingInterface();
 
-        if (!delegations.containsKey(delegate.getDelegatingInterface()))
+        if (!delegations.containsKey(delegatingInterface))
         {
             throw new IllegalArgumentException(String.format(
                     "The proxy does not implement the interface, %1$s.",
@@ -159,7 +159,7 @@ class DelegateMapping implements Serializable
                                     delegatingInterface));
         }
 
-        delegate.setPropertyValues(values);
+        delegate.attach(values);
         delegations.put(delegatingInterface, delegate);
     }
 
@@ -175,5 +175,26 @@ class DelegateMapping implements Serializable
         }
 
         return delegations.get(interfaceType) != null;
+    }
+
+    boolean detach(Class<?> delegatingInterface)
+    {
+        if (!delegations.containsKey(delegatingInterface))
+        {
+            throw new IllegalArgumentException(String.format(
+                    "The proxy does not implement the interface, %1$s.",
+                    delegatingInterface.getName()));
+        }
+
+        if (delegations.get(delegatingInterface) != null)
+        {
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "DelegationTarget already mapped for interface, %1$s, overwriting!",
+                                    delegatingInterface));
+        }
+
+        return delegations.remove(delegatingInterface) != null;
     }
 }

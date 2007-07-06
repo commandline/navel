@@ -30,14 +30,13 @@
 package net.sf.navel.beans;
 
 /**
- * This is both a marker interface and allows the DelegateBeanHandler to pass an
- * instance of itself to all the DelegationTarget instances it aggregates. This
- * allows implementors to access the underlying value map of the
- * DelegateBeanhandler instance via it's put and get methods.
+ * Parent class for delegate implementations that supports an entire interface
+ * of functional methods. In older versions this was an interface but with the
+ * enhancements to
  * 
  * @author cmdln
  */
-public interface DelegationTarget
+public interface InterfaceDelegate
 {
 
     /**
@@ -53,5 +52,11 @@ public interface DelegationTarget
      * implementation to gain access to the PropertyValues view into the
      * internal values of a proxied JavaBean.
      */
-    void setPropertyValues(PropertyValues values);
+    void attach(PropertyValues values);
+
+    /**
+     * Called when a delegate is detached to clean up the reference to the
+     * property value storage.
+     */
+    void detach();
 }
