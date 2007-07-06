@@ -73,6 +73,11 @@ class InterfaceDelegateValidator
         }
 
         Class<?> delegatingInterface = delegate.getDelegatingInterface();
+        
+        if (delegatingInterface.isAssignableFrom(delegate.getClass()))
+        {
+            return;
+        }
 
         BeanInfo beanInfo = JavaBeanHandler.introspect(delegatingInterface);
 
@@ -89,7 +94,6 @@ class InterfaceDelegateValidator
             return;
         }
 
-        // IMPROVE add a short cut for delegates that implement the delegatingInterface
         Class<?> delegateClass = delegate.getClass();
 
         for (MethodDescriptor methodDescriptor : methodDescriptors)
