@@ -40,8 +40,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
-import net.sf.navel.log.LogHelper;
-
 import org.apache.log4j.Logger;
 
 /**
