@@ -30,8 +30,6 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -50,16 +48,9 @@ import org.apache.log4j.Logger;
  * Map and populated, via Introspection, back into any given JavaBean instance
  * from a Map.
  * 
- * This implementation is somewhat more forgiving of JavaBeans than Navel beans.
- * Navel beans may be somewhat more efficient because less Reflection code is
- * necessary to execute the requested operations.
- * 
- * For Navel beans, programmating setting of values follows the validation rules
- * used by the ProxyFactory so that the value of a given Navel bean instance
- * cannot be inadvertently made invalid. This is based on the assumption that
- * strict checking is desirable and value translation, both logically related
- * names and transformable values, are well outside of the scope of this
- * library.
+ * Navel and JavaBeans are treated equally with no special handling of unset
+ * properties or entries in the Map that do not match any available properties.
+ * For more strict treatment of just Navel beans, use the PropertyManipulator.
  * 
  * @author cmdln
  */
@@ -215,39 +206,30 @@ public class BeanManipulator
         String shallowProperty = -1 == dotIndex ? propertyName : propertyName
                 .substring(0, dotIndex);
 
-        try
+        BeanInfo beanInfo = JavaBeanHandler.introspect(interfaceType);
+
+        for (PropertyDescriptor propertyDescriptor : beanInfo
+                .getPropertyDescriptors())
         {
-            BeanInfo beanInfo = Introspector.getBeanInfo(interfaceType);
-
-            for (PropertyDescriptor propertyDescriptor : beanInfo
-                    .getPropertyDescriptors())
+            // keep going if this is not the property we are looking for or
+            // a parent property
+            if (!propertyDescriptor.getName().equals(shallowProperty))
             {
-                // keep going if this is not the property we are looking for or
-                // a parent property
-                if (!propertyDescriptor.getName().equals(shallowProperty))
-                {
-                    continue;
-                }
-
-                // if this is a leafy property, we're done
-                if (-1 == dotIndex)
-                {
-                    return true;
-                }
-
-                // otherwise, recurse on the nested property
-                return isPropertyOf(propertyDescriptor.getPropertyType(),
-                        propertyName.substring(dotIndex + 1));
+                continue;
             }
 
-            return false;
+            // if this is a leafy property, we're done
+            if (-1 == dotIndex)
+            {
+                return true;
+            }
+
+            // otherwise, recurse on the nested property
+            return isPropertyOf(propertyDescriptor.getPropertyType(),
+                    propertyName.substring(dotIndex + 1));
         }
-        catch (IntrospectionException e)
-        {
-            throw new IllegalStateException(
-                    "Could not introspect bean of type, "
-                            + interfaceType.getName() + ".");
-        }
+
+        return false;
     }
 
     private static void expandNestedBeans(Map<String, Object> values)
