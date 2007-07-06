@@ -98,8 +98,13 @@ public class PropertyValues implements Serializable
             }
         }
 
+        // this cleans up nested values, if it hits a Navel bean as a nested
+        // property it will try to re-use or instantiate as appropriate,
+        // including validating the nested bean
         PropertyValueResolver.resolve(tempProperties, initialCopy);
 
+        // only validates the direct properties of this bean, but the step above
+        // takes care of ensuring nested properties are valid
         PropertyValidator.validateAll(tempProperties, initialCopy);
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
@@ -300,8 +305,7 @@ public class PropertyValues implements Serializable
         }
     }
 
-    static final Map<String, PropertyDescriptor> mapProperties(
-            BeanInfo beanInfo)
+    static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
     {
         Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
 
@@ -389,8 +393,18 @@ public class PropertyValues implements Serializable
             String[] propertyTokens, int tokenIndex, Object propertyValue)
     {
         String propertyName = propertyTokens[tokenIndex];
+        String originalName = propertyName;
 
-        PropertyDescriptor propertyDescriptor = propertyDescriptors
+        boolean indexedProperty = false;
+
+        if (propertyName.endsWith("]") && propertyName.indexOf('[') != -1)
+        {
+            propertyName = propertyName.substring(0, propertyName.indexOf('['));
+
+            indexedProperty = true;
+        }
+
+        PropertyDescriptor propertyDescriptor = propertyValues.propertyDescriptors
                 .get(propertyName);
 
         if (null == propertyDescriptor)
@@ -402,37 +416,36 @@ public class PropertyValues implements Serializable
 
         if (1 == propertyTokens.length - tokenIndex)
         {
-            PropertyValidator.validate(propertyDescriptors, propertyName,
-                    propertyValue);
+            if (indexedProperty)
+            {
+                putIndexed(originalName, propertyName, propertyDescriptor,
+                        propertyValue);
+            }
+            else
+            {
+                PropertyValidator.validate(propertyValues.propertyDescriptors,
+                        propertyName, propertyValue);
 
-            propertyValues.values.put(propertyName, propertyValue);
+                propertyValues.values.put(propertyName, propertyValue);
+            }
 
             return;
         }
 
         Class propertyType = propertyDescriptor.getPropertyType();
 
-        Object nestedBean = propertyValues.values.get(propertyName);
+        Object nestedBean = indexedProperty ? getIndexed(originalName,
+                propertyName, propertyDescriptor) : propertyValues.values
+                .get(propertyName);
 
         if (null == nestedBean)
         {
-            LOGGER.warn(String.format(
-                    "Nested bean target was null for property name, %1$s.",
-                    propertyName));
+            nestedBean = instantiate(originalName, propertyType);
 
-            if (!propertyType.isInterface())
+            if (null == nestedBean)
             {
-                LOGGER
-                        .warn(String
-                                .format(
-                                        "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
-                                        propertyName, propertyType.getName()));
-
                 return;
             }
-
-            // TODO add hook for decorating, augmenting creation
-            nestedBean = ProxyFactory.create(propertyType);
         }
 
         JavaBeanHandler nestedHandler = ProxyFactory.getHandler(nestedBean);
@@ -448,6 +461,81 @@ public class PropertyValues implements Serializable
         }
 
         // recurse on the nested property
-        putValue(nestedHandler.propertyValues, propertyTokens, tokenIndex + 1, propertyValue);
+        putValue(nestedHandler.propertyValues, propertyTokens, tokenIndex + 1,
+                propertyValue);
+    }
+
+    private void putIndexed(String nameWithIndex, String propertyName,
+            PropertyDescriptor propertyDescriptor, Object propertyValue)
+    {
+        Object array = values.get(propertyName);
+
+        // use the argument since the local will have had the index
+        // operator and value stripped
+        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
+
+        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
+                .getPropertyType()))
+        {
+            PrimitiveSupport.setElement(array, arrayIndex, propertyValue);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) array;
+
+            indexed[arrayIndex] = propertyValue;
+        }
+    }
+
+    private Object getIndexed(String nameWithIndex, String propertyName,
+            PropertyDescriptor propertyDescriptor)
+    {
+        Object array = values.get(propertyName);
+
+        // use the argument since the local will have had the index
+        // operator and value stripped
+        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
+
+        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
+                .getPropertyType()))
+        {
+            return PrimitiveSupport.getElement(array, arrayIndex);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) array;
+
+            Object nestedValue = indexed[arrayIndex];
+
+            if (null == nestedValue)
+            {
+                nestedValue = instantiate(nameWithIndex, propertyDescriptor
+                        .getPropertyType().getComponentType());
+                
+                indexed[arrayIndex] = nestedValue;
+            }
+
+            return nestedValue;
+        }
+    }
+
+    private Object instantiate(String name, Class<?> propertyType)
+    {
+        LOGGER.warn(String.format(
+                "Nested bean target was null for property name, %1$s.", name));
+
+        if (!propertyType.isInterface())
+        {
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
+                                    name, propertyType.getName()));
+
+            return null;
+        }
+
+        // TODO add hook for decorating, augmenting creation
+        return ProxyFactory.create(propertyType);
     }
 }
