@@ -38,7 +38,7 @@ import org.testng.annotations.Test;
 /**
  * 
  * @author cmdln
- *
+ * 
  */
 public class PropertyManipulatorTest
 {
@@ -52,29 +52,32 @@ public class PropertyManipulatorTest
 
         indexedBean.setArray(new String[2]);
         indexedBean.setFloats(new float[2]);
-        indexedBean.setTypes(new TypesBean[]
-        { typesBean });
+        indexedBean.setTypes(new TypesBean[2]);
 
+        indexedBean.setTypes(0, typesBean);
 
         PropertyManipulator.put(indexedBean, "array[0]", "foo");
         PropertyManipulator.put(indexedBean, "array[1]", "bar");
         PropertyManipulator.put(indexedBean, "floats[0]", new Float(32.0));
         PropertyManipulator.put(indexedBean, "floats[1]", new Float(64.0));
-        // TODO restore when nested property support is available
-//        PropertyManipulator.put("types[0].boolean", Boolean.TRUE);
+        PropertyManipulator.put(indexedBean, "types[0].boolean", Boolean.TRUE);
+        PropertyManipulator.put(indexedBean, "types[1].boolean", Boolean.FALSE);
 
-        Assert.assertEquals("foo", indexedBean.getArray(0),
+        Assert.assertEquals(indexedBean.getArray(0), "foo",
                 "First String element should be set correctly.");
-        Assert.assertEquals("bar", indexedBean.getArray(1),
+        Assert.assertEquals(indexedBean.getArray(1), "bar",
                 "Second String element should be set correctly.");
 
-        Assert.assertEquals(32.0, indexedBean.getFloats(0), 0,
+        Assert.assertEquals(indexedBean.getFloats(0), 32.0, 0,
                 "First float element should be set correctly.");
-        Assert.assertEquals(64.0, indexedBean.getFloats(1), 0,
+        Assert.assertEquals(indexedBean.getFloats(1), 64.0, 0,
                 "Second float element should be set correctly.");
 
-//        Assert
-//                .assertEquals(true, indexedBean.getTypes(0).getBoolean(),
-//                        "Boolean property of first types element should be set correctly.");
+        Assert
+                .assertEquals(indexedBean.getTypes(0).getBoolean(), true,
+                        "Boolean property of first types element should be set correctly.");
+        Assert
+                .assertEquals(indexedBean.getTypes(1).getBoolean(), false,
+                        "Boolean property of second types element should be set correctly.");
     }
 }
