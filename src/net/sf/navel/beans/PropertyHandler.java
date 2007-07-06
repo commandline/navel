@@ -40,6 +40,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
+import net.sf.navel.log.LogHelper;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -143,6 +145,7 @@ class PropertyHandler implements Serializable
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void handleWrite(String methodName, Object[] args)
     {
         if (null == args)
@@ -160,8 +163,17 @@ class PropertyHandler implements Serializable
                 PropertyDelegate delegate = values.propertyDelegates
                         .get(propertyName);
 
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER
+                            .debug(String
+                                    .format(
+                                            "Delegating write on property, %1$s, to delegate, %2$s",
+                                            propertyName, delegate));
+                }
+
                 delegate.set(values, propertyName, args[0]);
-                
+
                 return;
             }
 
@@ -206,6 +218,15 @@ class PropertyHandler implements Serializable
             {
                 PropertyDelegate delegate = values.propertyDelegates
                         .get(propertyName);
+
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER
+                            .debug(String
+                                    .format(
+                                            "Delegating read on property, %1$s, to delegate, %2$s",
+                                            propertyName, delegate));
+                }
 
                 return delegate.get(values, propertyName);
             }
