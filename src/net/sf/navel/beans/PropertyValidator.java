@@ -121,7 +121,7 @@ class PropertyValidator
                         "Cannot validated nested properties that use an InvocationHandler other than JavaBeanHandler!");
             }
 
-            if (handler.proxiedInterfaces.contains(propertyType))
+            if (handler.proxiesFor(propertyType))
             {
                 return;
             }

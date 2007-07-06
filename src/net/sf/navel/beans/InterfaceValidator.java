@@ -89,6 +89,7 @@ class InterfaceValidator
             return;
         }
 
+        // IMPROVE add a short cut for delegates that implement the delegatingInterface
         Class<?> delegateClass = delegate.getClass();
 
         for (MethodDescriptor methodDescriptor : methodDescriptors)

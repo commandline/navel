@@ -66,8 +66,11 @@ public class PropertyValues implements Serializable
 
     private final String primaryClassName;
 
-    // TODO restore during derserialization
-    private transient final Map<String, PropertyDescriptor> propertyDescriptors;
+    /**
+     * The restore method re-populates this during deserialization, restore is
+     * called by JavaBeanHandler as part of its custom serialization logic.
+     */
+    private transient Map<String, PropertyDescriptor> propertyDescriptors;
 
     private final Map<String, Object> values;
 
@@ -318,6 +321,25 @@ public class PropertyValues implements Serializable
         return byNames;
     }
 
+    /**
+     * Used during deserialization of JavaBeanHandler to re-populate the
+     * introspection data that is not Serializable.
+     * 
+     * @param proxiedBeanInfo
+     *            Introspection data from JavaBeanHandler.
+     */
+    void restore(Set<BeanInfo> proxiedBeanInfo)
+    {
+        Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
+
+        for (BeanInfo beanInfo : proxiedBeanInfo)
+        {
+            tempProperties.putAll(PropertyValues.mapProperties(beanInfo));
+        }
+
+        this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
+    }
+
     private Boolean handleEquals(Object value)
     {
         if (null == value)
@@ -511,7 +533,7 @@ public class PropertyValues implements Serializable
             {
                 nestedValue = instantiate(nameWithIndex, propertyDescriptor
                         .getPropertyType().getComponentType());
-                
+
                 indexed[arrayIndex] = nestedValue;
             }
 

@@ -29,15 +29,6 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,126 +38,18 @@ import net.sf.navel.example.IdentityBean;
 import net.sf.navel.example.IndexedBean;
 import net.sf.navel.example.ReadWriteBean;
 import net.sf.navel.example.SensitiveBean;
-import net.sf.navel.example.TypesBean;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
- * Test case for exercises the PropertyBeanHandler, including failure modes.
+ * Test case for exercises the PropertyHandler, including failure modes.
  * 
  * @author cmdln
- * @version $Revision: 1.4 $, $Date: 2005/09/16 15:27:44 $
  */
 public class PropertyHandlerTest
 {
 
-    /**
-     * Make sure that an interface written to be used with the
-     * PropertyBeanHandler can be introspected like any other JavaBean.
-     * 
-     * @throws Exception
-     *             Force an error if introspection fails.
-     */
-    @Test
-    public void testIntrospection() throws IntrospectionException
-    {
-        BeanInfo beanInfo = Introspector.getBeanInfo(TypesBean.class);
-
-        Assert.assertNotNull(beanInfo, "Bean info should not be null.");
-
-        PropertyDescriptor[] properties = beanInfo.getPropertyDescriptors();
-
-        Assert.assertNotNull(properties,
-                "Property descriptors should not be null.");
-        Assert.assertTrue(0 != properties.length,
-                "Property descriptors should not be empty.");
-    }
-
-    /**
-     * Make sure that a Navel Bean serializes correctly, without error.
-     * 
-     * @throws UnsupportedFeatureException
-     *             Construction should work fine, error otherwise.
-     * @throws InvalidPropertyValueException
-     *             Construction should work fine, error otherwise.
-     */
-    @Test
-    public void testSerialization() throws UnsupportedFeatureException,
-            InvalidPropertyValueException
-    {
-        final TypesBean test = ProxyFactory.createAs(TypesBean.class);
-
-        ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-
-        ObjectOutputStream out = null;
-
-        try
-        {
-            out = new ObjectOutputStream(byteOutput);
-
-            out.writeObject(test);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-
-            Assert.fail("Should be able to serialize just to bytes.");
-        }
-        finally
-        {
-            if (out != null)
-            {
-                try
-                {
-                    out.close();
-                }
-                catch (IOException e)
-                {
-                    // do nothing
-                }
-            }
-        }
-
-        ObjectInputStream input = null;
-
-        try
-        {
-            input = new ObjectInputStream(new ByteArrayInputStream(byteOutput
-                    .toByteArray()));
-
-            TypesBean result = (TypesBean) input.readObject();
-
-            Assert
-                    .assertFalse(test == result,
-                            "Should not be the same object.");
-            Assert.assertEquals(test, result, "Should be equivalent object.");
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-
-            Assert.fail("Should be able to open bytes into a stream.");
-        }
-        catch (ClassNotFoundException e)
-        {
-            Assert.fail("Should not have any class loading issues.");
-        }
-        finally
-        {
-            if (input != null)
-            {
-                try
-                {
-                    input.close();
-                }
-                catch (IOException e)
-                {
-                    // do nothing
-                }
-            }
-        }
-    }
 
     /**
      * Test that the invoke method of the PropertyBeanHandler successfully
@@ -207,50 +90,6 @@ public class PropertyHandlerTest
                 "writeOnly should equal 2");
         Assert.assertEquals(readWrite, bean.getReadWrite(),
                 "readWrite should equal 3");
-    }
-
-    /**
-     * Exercise the data type validation logic embedded in the
-     * PropertyBeanHandler.
-     * 
-     * @throws UnsupportedFeatureException
-     *             Construction should work fine, error otherwise.
-     */
-    @Test
-    public void testBadData() throws UnsupportedFeatureException
-    {
-        String[] badData = new String[]
-        { "boolean", "byte", "short", "integer", "long", "float", "double",
-                "character", };
-
-        for (int i = 0; i < badData.length; i++)
-        {
-            Map<String, Object> values = new HashMap<String, Object>(1);
-            values.put(badData[i], badData[i]);
-
-            try
-            {
-                ProxyFactory.createAs(TypesBean.class, values);
-                Assert.fail("Should catch bad data on construction.");
-            }
-            catch (InvalidPropertyValueException e)
-            {
-                ;
-            }
-
-            values.clear();
-            values.put("foo", "foo");
-
-            try
-            {
-                ProxyFactory.createAs(TypesBean.class, values);
-                Assert.fail("Should catch bad data on construction.");
-            }
-            catch (InvalidPropertyValueException e)
-            {
-                ;
-            }
-        }
     }
 
     /**

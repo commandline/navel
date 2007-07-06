@@ -144,8 +144,8 @@ public class PropertyManipulator
             throw new IllegalArgumentException(
                     String
                             .format(
-                                    "The property, %1$s, is not a valid one for the bean that implements the types, %2$s.",
-                                    propertyName, handler.proxiedInterfaces));
+                                    "The property, %1$s, is not a valid one for this proxy, %2$s.",
+                                    propertyName, handler));
         }
 
         if (!handler.propertyValues.containsKey(propertyName))
