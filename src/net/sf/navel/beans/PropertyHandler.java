@@ -188,11 +188,33 @@ class PropertyHandler implements Serializable
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void handleIndexedWrite(String propertyName, Object[] args)
     {
         int index = getIndex(args[0], true);
 
         Object value = values.get(propertyName);
+
+        if (values.isAttached(propertyName))
+        {
+            // the PropertyValidator ensures at attachment time that this is a
+            // safe cast
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) values.propertyDelegates
+                    .get(propertyName);
+
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Delegating write on property, %1$s, to delegate, %2$s",
+                                        propertyName, delegate));
+            }
+
+            delegate.set(values, propertyName, index, args[1]);
+
+            return;
+        }
 
         if (isPrimitiveArray(value.getClass()))
         {
@@ -242,6 +264,7 @@ class PropertyHandler implements Serializable
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Object handleIndexedRead(String propertyName, Object[] args)
     {
         int index = getIndex(args[0], false);
@@ -252,6 +275,23 @@ class PropertyHandler implements Serializable
         {
             LOGGER.warn("Trying to read null array.");
             return null;
+        }
+
+        if (values.isAttached(propertyName))
+        {
+            // the PropertyValidator ensures this is a safe cast at the time the
+            // delegate is attached
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) values.propertyDelegates
+                    .get(propertyName);
+
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug(String.format(
+                        "Delegating read on property, %1$s, to delegate, %2$s",
+                        propertyName, delegate));
+            }
+
+            return delegate.get(values, propertyName, index);
         }
 
         if (isPrimitiveArray(value.getClass()))

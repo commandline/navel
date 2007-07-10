@@ -29,17 +29,55 @@
  */
 package net.sf.navel.example;
 
+import net.sf.navel.beans.IndexedPropertyDelegate;
+import net.sf.navel.beans.PropertyValues;
+
 /**
- * A synthetic property, to be used with Types, to provide a String version of
- * the character property, based on the same value.
  * 
  * @author cmdln
  * 
  */
-public interface CharacterAsString
+public class FloatsAsIntegersDelegate implements
+        IndexedPropertyDelegate<Integer, int[]>
 {
 
-    public String getCharacterString();
-    
-    public void setCharacterString(String characterString);
+    private static final long serialVersionUID = 2571749468868862692L;
+
+    public Integer get(PropertyValues values, String propertyName, int index)
+    {
+        float[] floats = (float[]) values.get("floats");
+
+        return (int) floats[index];
+    }
+
+    public void set(PropertyValues values, String propertyName, int index,
+            Integer value)
+    {
+        float[] floats = (float[]) values.get("floats");
+
+        floats[index] = value;
+    }
+
+    public int[] get(PropertyValues values, String propertyName)
+    {
+        throw new UnsupportedOperationException(
+                "Cannot convert float[] to int[]!");
+    }
+
+    public Class<int[]> propertyType()
+    {
+        return int[].class;
+    }
+
+    public void set(PropertyValues values, String propertyName, int[] value)
+    {
+        throw new UnsupportedOperationException(
+                "Cannot convert float[] to int[]!");
+    }
+
+    public Class<Integer> componentType()
+    {
+        return Integer.class;
+    }
+
 }

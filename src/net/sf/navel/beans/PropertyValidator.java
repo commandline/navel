@@ -29,6 +29,7 @@
  */
 package net.sf.navel.beans;
 
+import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Proxy;
 import java.util.List;
@@ -66,6 +67,59 @@ class PropertyValidator
             String propertyName, Object propertyValue)
     {
         SINGLETON.validateProperty(properties, propertyName, propertyValue);
+    }
+
+    static void validate(String propertyName,
+            PropertyDescriptor propertyDescriptor, PropertyDelegate delegate)
+    {
+        if (delegate instanceof IndexedPropertyDelegate)
+        {
+            IndexedPropertyDelegate indexedDelegate = (IndexedPropertyDelegate) delegate;
+
+            Class<?> arrayType = delegate.propertyType();
+
+            if (!arrayType.isArray())
+            {
+                throw new InvalidDelegateException(
+                        String
+                                .format(
+                                        "Invalid type, %1$s, for IndexedPropertyDelegate.  Property, %2$s, must be of an array type.",
+                                        delegate.propertyType(), propertyName));
+            }
+
+            Class<?> componentType = indexedDelegate.componentType();
+
+            if (arrayType.getComponentType().isAssignableFrom(componentType))
+            {
+                throw new InvalidDelegateException(
+                        String
+                                .format(
+                                        "Component of the delegate's array type, %1$s, must match the component type, %2$s, of the delegate.",
+                                        arrayType.getName(), componentType
+                                                .getName()));
+            }
+        }
+
+        if (propertyDescriptor instanceof IndexedPropertyDescriptor
+                && !(delegate instanceof IndexedPropertyDelegate))
+        {
+            throw new InvalidDelegateException(
+                    String
+                            .format(
+                                    "Property, %2$s, requires an IndexedPropertyDelegate instance.",
+                                    delegate.propertyType(), propertyName));
+        }
+
+        if (!propertyDescriptor.getPropertyType().equals(
+                delegate.propertyType()))
+        {
+            throw new InvalidDelegateException(
+                    String
+                            .format(
+                                    "Invalid type, %1$s, for PropertyDelegate.  Property, %2$s, requires type, %3$s.",
+                                    delegate.propertyType(), propertyName,
+                                    propertyDescriptor.getPropertyType()));
+        }
     }
 
     private void validateProperty(Map<String, PropertyDescriptor> properties,

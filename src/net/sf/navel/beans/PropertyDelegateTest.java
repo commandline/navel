@@ -29,7 +29,7 @@
  */
 package net.sf.navel.beans;
 
-import net.sf.navel.example.CharacterAsString;
+import net.sf.navel.example.StringBean;
 import net.sf.navel.example.CharacterAsStringDelegate;
 import net.sf.navel.example.TypesBean;
 
@@ -69,41 +69,41 @@ public class PropertyDelegateTest
     public void testStringView()
     {
         TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
-                CharacterAsString.class);
+                StringBean.class);
 
-        CharacterAsString stringBean = (CharacterAsString) typesBean;
+        StringBean stringBean = (StringBean) typesBean;
 
-        stringBean.setCharacterString("foo");
+        stringBean.setString("foo");
 
-        Assert.assertEquals(stringBean.getCharacterString(), "foo",
+        Assert.assertEquals(stringBean.getString(), "foo",
                 "Should work with default behavior.");
 
-        ProxyFactory.attach(typesBean, "characterString",
+        ProxyFactory.attach(typesBean, "string",
                 new CharacterAsStringDelegate());
 
         Assert.assertTrue(
-                ProxyFactory.isAttached(typesBean, "characterString"),
+                ProxyFactory.isAttached(typesBean, "string"),
                 "Should spot the property delegate.");
 
         typesBean.setCharacter('a');
 
-        Assert.assertEquals(stringBean.getCharacterString(), "a",
+        Assert.assertEquals(stringBean.getString(), "a",
                 "Should have gotten the correct view.");
 
-        stringBean.setCharacterString("b");
+        stringBean.setString("b");
 
         Assert.assertEquals(typesBean.getCharacter(), 'b',
                 "Updating the view should have updated the live value.");
 
-        ProxyFactory.detach(typesBean, "characterString");
+        ProxyFactory.detach(typesBean, "string");
 
         JavaBeanHandler handler = ProxyFactory.getHandler(typesBean);
 
         Assert.assertFalse(ProxyFactory
-                .isAttached(typesBean, "characterString"),
+                .isAttached(typesBean, "string"),
                 "Should not longer have the property delegate.");
 
-        Assert.assertEquals(stringBean.getCharacterString(), "foo",
+        Assert.assertEquals(stringBean.getString(), "foo",
                 "Detaching should restore original behavior.");
 
         Assert.assertEquals(typesBean.getCharacter(), 'b',
@@ -117,7 +117,7 @@ public class PropertyDelegateTest
     public void breakValidation()
     {
         TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
-                CharacterAsString.class);
+                StringBean.class);
 
         try
         {

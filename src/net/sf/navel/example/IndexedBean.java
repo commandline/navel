@@ -37,7 +37,6 @@ import java.io.Serializable;
  * sepcification, both of Object and primitive types.
  *
  * @author cmdln
- * @version $Revision: 1.3 $, $Date: 2003/10/21 20:37:47 $
  */
 public interface IndexedBean extends Serializable
 {

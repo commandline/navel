@@ -29,42 +29,49 @@
  */
 package net.sf.navel.beans;
 
-
 import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
-
 
 /**
  * This PropertyManipulator daughter class provides support for indexed
  * properties, as defined in the JavaBeans spec.
- *
+ * 
  * @author cmdln
- * @version $Revision: 1.4 $, $Date: 2005/09/15 19:32:15 $
  */
 class IndexedPropertyManipulator extends SimplePropertyManipulator
 {
-    private static final Logger LOGGER = Logger.getLogger(IndexedPropertyManipulator.class);
+
+    private static final Logger LOGGER = Logger
+            .getLogger(IndexedPropertyManipulator.class);
+
     private static final String OPEN_BRACKET = "[";
+
     private static final String CLOSE_BRACKET = "]";
+
     private static final int MISSING_INDEX = -1;
 
     /**
      * This implementation knows how to access the indexed write property on
-     * IndexedPropertyDescriptor.  Since the factory method on
+     * IndexedPropertyDescriptor. Since the factory method on
      * PropertyManipulator is keyed on PropertyDescriptor sub-types, the cast
      * should be perfectly safe.
-     *
-     * @param property Descriptor for the target property.
-     * @param propertyName Name of the property, may be an expression of some
-     * sort.
-     * @param bean The bean to write to.
-     * @param value The value to write.
+     * 
+     * @param property
+     *            Descriptor for the target property.
+     * @param propertyName
+     *            Name of the property, may be an expression of some sort.
+     * @param bean
+     *            The bean to write to.
+     * @param value
+     *            The value to write.
      */
     @Override
-    public void handleWrite(PropertyDescriptor property, String propertyName, Object bean, Object value)
+    public void handleWrite(PropertyDescriptor property, String propertyName,
+            Object bean, Object value)
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -78,26 +85,30 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
             return;
         }
 
-        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor)property;
+        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
 
         Method writeMethod = indexedProperty.getIndexedWriteMethod();
-        invokeWriteMethod(writeMethod, bean, new Object[] { new Integer(index), value });
+        invokeWriteMethod(writeMethod, bean, new Object[]
+        { new Integer(index), value });
     }
 
     /**
      * This implementation knows how to access the indexed read property on
-     * IndexedPropertyDescriptor.  Since the factory method on
+     * IndexedPropertyDescriptor. Since the factory method on
      * PropertyManipulator is keyed on PropertyDescriptor sub-types, the cast
      * should be perfectly safe.
-     *
-     * @param property Descriptor for the target property.
-     * @param propertyName Name of the property, may be an expression of some
-     * sort.
-     * @param bean The bean to write to.
+     * 
+     * @param property
+     *            Descriptor for the target property.
+     * @param propertyName
+     *            Name of the property, may be an expression of some sort.
+     * @param bean
+     *            The bean to write to.
      * @return The value read from the bean argument.
      */
     @Override
-    public Object handleRead(PropertyDescriptor property, String propertyName, Object bean)
+    public Object handleRead(PropertyDescriptor property, String propertyName,
+            Object bean)
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -112,10 +123,11 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
             return null;
         }
 
-        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor)property;
-        
+        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
+
         Method readMethod = indexedProperty.getIndexedReadMethod();
-        return invokeReadMethod(readMethod, bean, new Object[] { new Integer(index) });
+        return invokeReadMethod(readMethod, bean, new Object[]
+        { new Integer(index) });
     }
 
     static int getIndex(String propertyName)
@@ -123,8 +135,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         int braceStart = propertyName.indexOf(OPEN_BRACKET);
         int braceEnd = propertyName.indexOf(CLOSE_BRACKET);
 
-        if ((-1 == braceStart) || (-1 == braceEnd) ||
-                (braceEnd <= braceStart))
+        if ((-1 == braceStart) || (-1 == braceEnd) || (braceEnd <= braceStart))
         {
             LOGGER.warn("One or both braces missing or invalid positioning.");
             return -1;
@@ -150,8 +161,64 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         catch (NumberFormatException e)
         {
             LOGGER.warn(indexString + " cannot be parsed as an int.");
-            
+
             return -1;
+        }
+    }
+
+    static void putIndexed(Map<String, Object> values, String nameWithIndex,
+            String propertyName, PropertyDescriptor propertyDescriptor,
+            Object propertyValue)
+    {
+        Object array = values.get(propertyName);
+
+        // use the argument since the local will have had the index
+        // operator and value stripped
+        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
+
+        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
+                .getPropertyType()))
+        {
+            PrimitiveSupport.setElement(array, arrayIndex, propertyValue);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) array;
+
+            indexed[arrayIndex] = propertyValue;
+        }
+    }
+
+    static Object getIndexed(Map<String, Object> values, String nameWithIndex,
+            String propertyName, PropertyDescriptor propertyDescriptor)
+    {
+        Object array = values.get(propertyName);
+
+        // use the argument since the local will have had the index
+        // operator and value stripped
+        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
+
+        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
+                .getPropertyType()))
+        {
+            return PrimitiveSupport.getElement(array, arrayIndex);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) array;
+
+            Object nestedValue = indexed[arrayIndex];
+
+            if (null == nestedValue)
+            {
+                nestedValue = NestedBeanFactory
+                        .create(nameWithIndex, propertyDescriptor
+                                .getPropertyType().getComponentType());
+
+                indexed[arrayIndex] = nestedValue;
+            }
+
+            return nestedValue;
         }
     }
 }
