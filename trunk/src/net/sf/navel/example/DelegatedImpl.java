@@ -83,7 +83,7 @@ public class DelegatedImpl implements InterfaceDelegate
     {
         doThis(foo, bar);
 
-        return new Integer(foo.intValue() + bar.intValue());
+        return Integer.valueOf(foo.intValue() + bar.intValue());
     }
 
     public void detach()

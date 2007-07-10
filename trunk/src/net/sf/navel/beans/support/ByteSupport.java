@@ -39,7 +39,8 @@ public class ByteSupport implements ArrayManipulator, DefaultPrimitive
     public static final Class ARRAY_TYPE = byte[].class;
 
     private static final ByteSupport SINGLETON = new ByteSupport();
-    private static final Byte DEFAULT_VALUE = new Byte((byte)0);
+    
+    private static final Byte DEFAULT_VALUE = Byte.valueOf((byte)0);
 
     private ByteSupport()
     {
@@ -55,7 +56,7 @@ public class ByteSupport implements ArrayManipulator, DefaultPrimitive
     {
         byte[] primitiveArray = (byte[])array;
 
-        return new Byte(primitiveArray[index]);
+        return Byte.valueOf(primitiveArray[index]);
     }
 
     public void setElement(Object array, int index, Object value)

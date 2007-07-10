@@ -39,7 +39,7 @@ public class IntegerSupport implements ArrayManipulator, DefaultPrimitive
     public static final Class ARRAY_TYPE = int[].class;
 
     private static final IntegerSupport SINGLETON = new IntegerSupport();
-    private static final Integer DEFAULT_VALUE = new Integer(0);
+    private static final Integer DEFAULT_VALUE = Integer.valueOf(0);
 
     private IntegerSupport()
     {
@@ -55,7 +55,7 @@ public class IntegerSupport implements ArrayManipulator, DefaultPrimitive
     {
         int[] primitiveArray = (int[])array;
 
-        return new Integer(primitiveArray[index]);
+        return Integer.valueOf(primitiveArray[index]);
     }
 
     public void setElement(Object array, int index, Object value)

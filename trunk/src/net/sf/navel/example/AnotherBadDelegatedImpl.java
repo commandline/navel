@@ -83,7 +83,7 @@ public class AnotherBadDelegatedImpl implements InterfaceDelegate
     {
         doThis(foo, bar);
 
-        return new Long(foo.intValue() + bar.intValue());
+        return Long.valueOf(foo.intValue() + bar.intValue());
     }
 
     public void detach()
