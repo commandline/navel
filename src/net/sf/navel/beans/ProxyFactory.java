@@ -33,7 +33,6 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.example.CharacterAsStringDelegate;
 import net.sf.navel.example.TypesBean;
 
 /**
@@ -215,7 +214,7 @@ public class ProxyFactory
      *            Delegate to attach.
      */
     public static void attach(TypesBean bean, String propertyName,
-            CharacterAsStringDelegate delegate)
+            PropertyDelegate delegate)
     {
         JavaBeanHandler handler = getHandler(bean);
 
