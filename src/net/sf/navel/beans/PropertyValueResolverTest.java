@@ -71,10 +71,10 @@ public class PropertyValueResolverTest
     public void testInit() throws Exception
     {
         Map<String, Object> values = new HashMap<String, Object>();
-        values.put("long", new Long(63));
-        values.put("short", new Short((short) 6));
-        values.put("nested.long", new Long(42));
-        values.put("nested.short", new Short((short) 4));
+        values.put("long", Long.valueOf(63));
+        values.put("short", Short.valueOf((short) 6));
+        values.put("nested.long", Long.valueOf(42));
+        values.put("nested.short", Short.valueOf((short) 4));
 
         NestedBean bean = ProxyFactory.createAs(NestedBean.class, values);
 
@@ -93,9 +93,9 @@ public class PropertyValueResolverTest
     public void testNestedTooDeep()
     {
         Map<String, Object> values = new HashMap<String, Object>();
-        values.put("long", new Long(63));
-        values.put("nested.long", new Long(42));
-        values.put("nested.too.long", new Long(42));
+        values.put("long", Long.valueOf(63));
+        values.put("nested.long", Long.valueOf(42));
+        values.put("nested.too.long", Long.valueOf(42));
 
         try
         {

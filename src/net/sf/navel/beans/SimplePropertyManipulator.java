@@ -182,7 +182,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
                                     + method.getName());
                     LOGGER.trace(propertyType.getName()
                             + ": "
-                            + ((null == value) ? "null" : value.getClass()
+                            + ((null == value.getClass()) ? "null" : value.getClass()
                                     .getName()) + ".");
                 }
 

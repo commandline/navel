@@ -131,7 +131,7 @@ public class BeanManipulatorTest
         LOGGER.debug(values);
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Bean write only should be set.");
-        Assert.assertEquals(new Integer(2), values.get(PropertyNames.WO_PROP),
+        Assert.assertEquals(values.get(PropertyNames.WO_PROP), Integer.valueOf(2),
                 "Bean write only should be set correctly.");
         Assert.assertEquals(3, bean.getReadWrite(),
                 "bean read/write should be set.");
@@ -163,13 +163,13 @@ public class BeanManipulatorTest
         Map<String, Object> values = describe(sourceBean);
 
         Assert.assertNotNull(values, "Extracted values should be set.");
-        Assert.assertEquals(new Byte(fooSource), values.get("foo"),
+        Assert.assertEquals(values.get("foo"), Byte.valueOf(fooSource),
                 "Check source foo.");
-        Assert.assertEquals(new Short(barSource), values.get("bar"),
+        Assert.assertEquals(values.get("bar"),Short.valueOf(barSource), 
                 "Check source bar.");
-        Assert.assertEquals(new Integer(bazSource), values.get("baz"),
+        Assert.assertEquals(values.get("baz"),Integer.valueOf(bazSource), 
                 "Check source baz.");
-        Assert.assertEquals(new Float(quuxSource), values.get("quux"),
+        Assert.assertEquals(values.get("quux"),Float.valueOf(quuxSource), 
                 "Check source quux.");
 
         TargetBean targetBean = new TargetBean();
@@ -221,7 +221,7 @@ public class BeanManipulatorTest
 
         // test convert values from a String to a Boolean
         values.put("nested.boolean", "true");
-        values.put("nested.long", new Long(128));
+        values.put("nested.long", Long.valueOf(128));
 
         populate(bean, values);
 

@@ -78,6 +78,15 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
             LOGGER.debug("Inside IndexedPropertyManipulator.handleWrite().");
         }
 
+        if (!(property instanceof IndexedPropertyDescriptor))
+        {
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "Cannot perform indexed write on a non-indexed property, %1$s, of bean, %2$s!",
+                                    propertyName, bean));
+        }
+
         int index = getIndex(propertyName);
 
         if (MISSING_INDEX == index)
@@ -89,7 +98,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         Method writeMethod = indexedProperty.getIndexedWriteMethod();
         invokeWriteMethod(writeMethod, bean, new Object[]
-        { new Integer(index), value });
+        { Integer.valueOf(index), value });
     }
 
     /**
@@ -115,6 +124,15 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
             LOGGER.debug("Inside IndexedPropertyManipulator.handleRead().");
         }
 
+        if (!(property instanceof IndexedPropertyDescriptor))
+        {
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "Cannot perform indexed read on a non-indexed property, %1$s, of bean, %2$s!",
+                                    propertyName, bean));
+        }
+
         int index = getIndex(propertyName);
 
         if (MISSING_INDEX == index)
@@ -127,7 +145,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         Method readMethod = indexedProperty.getIndexedReadMethod();
         return invokeReadMethod(readMethod, bean, new Object[]
-        { new Integer(index) });
+        { Integer.valueOf(index) });
     }
 
     static int getIndex(String propertyName)

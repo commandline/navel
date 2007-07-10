@@ -39,7 +39,7 @@ public class LongSupport implements ArrayManipulator, DefaultPrimitive
     public static final Class ARRAY_TYPE = long[].class;
 
     private static final LongSupport SINGLETON = new LongSupport();
-    private static final Long DEFAULT_VALUE = new Long(0L);
+    private static final Long DEFAULT_VALUE = Long.valueOf(0L);
 
     private LongSupport()
     {
@@ -55,7 +55,7 @@ public class LongSupport implements ArrayManipulator, DefaultPrimitive
     {
         long[] primitiveArray = (long[])array;
 
-        return new Long(primitiveArray[index]);
+        return Long.valueOf(primitiveArray[index]);
     }
 
     public void setElement(Object array, int index, Object value)

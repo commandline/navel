@@ -39,7 +39,7 @@ public class CharacterSupport implements ArrayManipulator, DefaultPrimitive
     public static final Class ARRAY_TYPE = char[].class;
 
     private static final CharacterSupport SINGLETON = new CharacterSupport();
-    private static final Character DEFAULT_VALUE = new Character('\u0000');
+    private static final Character DEFAULT_VALUE = Character.valueOf('\u0000');
 
     private CharacterSupport()
     {
@@ -55,7 +55,7 @@ public class CharacterSupport implements ArrayManipulator, DefaultPrimitive
     {
         char[] primitiveArray = (char[])array;
 
-        return new Character(primitiveArray[index]);
+        return Character.valueOf(primitiveArray[index]);
     }
 
     public void setElement(Object array, int index, Object value)

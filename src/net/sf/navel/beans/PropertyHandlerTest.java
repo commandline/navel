@@ -50,7 +50,6 @@ import org.testng.annotations.Test;
 public class PropertyHandlerTest
 {
 
-
     /**
      * Test that the invoke method of the PropertyBeanHandler successfully
      * discriminiates each property access, for a mixture of readable and
@@ -71,7 +70,7 @@ public class PropertyHandlerTest
 
         // can only set read-only via the underlying map
         Map<String, Object> values = new HashMap<String, Object>(1);
-        values.put("readOnly", new Integer(readOnly));
+        values.put("readOnly", Integer.valueOf(readOnly));
 
         ReadWriteBean bean = ProxyFactory.createAs(ReadWriteBean.class, values);
 
@@ -86,8 +85,8 @@ public class PropertyHandlerTest
 
         Assert.assertEquals(bean.getReadOnly(), readOnly,
                 "readOnly should equal 1");
-        Assert.assertEquals(new Integer(writeOnly), values.get("writeOnly"),
-                "writeOnly should equal 2");
+        Assert.assertEquals(values.get("writeOnly"),
+                Integer.valueOf(writeOnly), "writeOnly should equal 2");
         Assert.assertEquals(readWrite, bean.getReadWrite(),
                 "readWrite should equal 3");
     }

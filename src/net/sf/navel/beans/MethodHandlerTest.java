@@ -59,7 +59,7 @@ import org.testng.annotations.Test;
  */
 public class MethodHandlerTest
 {
-    
+
     private static final Logger LOGGER = Logger
             .getLogger(MethodHandlerTest.class);
 
@@ -85,7 +85,7 @@ public class MethodHandlerTest
     public void testAttachValidation()
     {
         DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class);
-        
+
         try
         {
             ProxyFactory.attach(bean, new BadDelegatedImpl());
@@ -97,7 +97,7 @@ public class MethodHandlerTest
         {
             ;
         }
-        
+
         try
         {
             ProxyFactory.attach(bean, new AnotherBadDelegatedImpl());
@@ -118,8 +118,9 @@ public class MethodHandlerTest
     @Test
     public void testLenientValidation()
     {
-        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class, Delegated.class);
-        
+        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class,
+                Delegated.class);
+
         Delegated delegated = (Delegated) bean;
 
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
@@ -135,7 +136,7 @@ public class MethodHandlerTest
         catch (Exception e)
         {
             String message = e.getMessage();
-            
+
             LogHelper.traceError(LOGGER, e);
 
             Assert
@@ -167,9 +168,9 @@ public class MethodHandlerTest
         DelegatedImpl delegate = new DelegatedImpl();
         Map<String, Object> values = new HashMap<String, Object>(3);
 
-        values.put(PropertyNames.RO_PROP, new Integer(1));
-        values.put(PropertyNames.WO_PROP, new Integer(2));
-        values.put(PropertyNames.RW_PROP, new Integer(3));
+        values.put(PropertyNames.RO_PROP, Integer.valueOf(1));
+        values.put(PropertyNames.WO_PROP, Integer.valueOf(2));
+        values.put(PropertyNames.RW_PROP, Integer.valueOf(3));
 
         try
         {
@@ -200,14 +201,15 @@ public class MethodHandlerTest
         // implements the functional interface and Delegation handler
         DelegatedImpl delegate = new DelegatedImpl();
 
-        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class, Delegated.class);
-        
+        DelegatedBean bean = ProxyFactory.createAs(DelegatedBean.class,
+                Delegated.class);
+
         Delegated delegated = (Delegated) bean;
-        
+
         ProxyFactory.attach(bean, delegate);
 
         // exercise delegation
-        delegated.doThis(new Integer(1), new Integer(2));
+        delegated.doThis(Integer.valueOf(1), Integer.valueOf(2));
 
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
@@ -215,23 +217,23 @@ public class MethodHandlerTest
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");
-        Assert.assertEquals(new Integer(1), values.get(PropertyNames.WO_PROP),
-                "Write only should be set correctly.");
-        Assert.assertEquals(2, bean.getReadWrite(),
+        Assert.assertEquals(values.get(PropertyNames.WO_PROP), Integer
+                .valueOf(1), "Write only should be set correctly.");
+        Assert.assertEquals(bean.getReadWrite(), 2,
                 "Read write should be set correctly.");
 
-        Integer result = delegated.doThat(new Integer(2), new Integer(3));
+        Integer result = delegated.doThat(Integer.valueOf(2), Integer.valueOf(3));
 
         // need to fetch values again, since we only every get a shallow copy
         values = handler.propertyValues.copyValues();
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");
-        Assert.assertEquals(new Integer(2), values.get(PropertyNames.WO_PROP),
-                "Write only should be set correctly.");
-        Assert.assertEquals(3, bean.getReadWrite(),
+        Assert.assertEquals(values.get(PropertyNames.WO_PROP), Integer
+                .valueOf(2), "Write only should be set correctly.");
+        Assert.assertEquals(bean.getReadWrite(), 3,
                 "Read write should be set correctly.");
-        Assert.assertEquals(new Integer(5), result,
+        Assert.assertEquals(result, Integer.valueOf(5),
                 "Result should come back correctly.");
     }
 }

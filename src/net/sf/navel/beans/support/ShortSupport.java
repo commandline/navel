@@ -39,7 +39,7 @@ public class ShortSupport implements ArrayManipulator, DefaultPrimitive
     public static final Class ARRAY_TYPE = short[].class;
 
     private static final ShortSupport SINGLETON = new ShortSupport();
-    private static final Short DEFAULT_VALUE = new Short((short)0);
+    private static final Short DEFAULT_VALUE = Short.valueOf((short)0);
 
     private ShortSupport()
     {
@@ -55,7 +55,7 @@ public class ShortSupport implements ArrayManipulator, DefaultPrimitive
     {
         short[] primitiveArray = (short[])array;
 
-        return new Short(primitiveArray[index]);
+        return Short.valueOf(primitiveArray[index]);
     }
 
     public void setElement(Object array, int index, Object value)
