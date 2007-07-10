@@ -1,17 +1,8 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="All Tests">
   <test name="All Tests">
-    <classes>
-      <class name="net.sf.navel.beans.BeanManipulatorTest"/>
-      <class name="net.sf.navel.beans.ListBuilderTest"/>
-      <class name="net.sf.navel.beans.MethodHandlerTest"/>
-      <class name="net.sf.navel.beans.PropertyDelegateTest"/>
-      <class name="net.sf.navel.beans.PropertyHandlerTest"/>
-      <class name="net.sf.navel.beans.PropertyManipulatorTest"/>
-      <class name="net.sf.navel.beans.PropertyValidatorTest"/>
-      <class name="net.sf.navel.beans.PropertyValueResolverTest"/>
-      <class name="net.sf.navel.beans.ProxyFactoryTest"/>
-      <class name="net.sf.navel.beans.SimplePropertyManipulatorTest"/>
-    </classes>
+    <packages>
+      <package name="net.sf.navel.beans"/>
+    </packages>
   </test>
 </suite>
