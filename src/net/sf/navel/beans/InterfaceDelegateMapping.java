@@ -137,6 +137,14 @@ class InterfaceDelegateMapping implements Serializable
         }
     }
 
+    InterfaceDelegateMapping(PropertyValues values,
+            InterfaceDelegateMapping source)
+    {
+        this.values = values;
+        this.methods = Collections.unmodifiableSet(new HashSet<Method>(
+                source.methods));
+    }
+
     final void attach(InterfaceDelegate delegate)
     {
         InterfaceDelegateValidator.validate(delegate);

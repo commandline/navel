@@ -40,6 +40,8 @@ import java.io.ObjectInputValidation;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -103,9 +105,22 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         this.propertyValues = new PropertyValues(primaryClassName,
                 proxiedBeanInfo, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
-        this.delegateMapping = new InterfaceDelegateMapping(proxiedBeanInfo, delegates,
-                propertyValues);
+        this.delegateMapping = new InterfaceDelegateMapping(proxiedBeanInfo,
+                delegates, propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
+    }
+
+    JavaBeanHandler(JavaBeanHandler source)
+    {
+        this.proxiedInterfaces = Collections
+                .unmodifiableSet(new HashSet<Class<?>>(source.proxiedInterfaces));
+        this.proxiedBeanInfo = Collections
+                .unmodifiableSet(new HashSet<BeanInfo>(source.proxiedBeanInfo));
+        this.propertyValues = new PropertyValues(source.propertyValues);
+        this.propertyHandler = new PropertyHandler(this.propertyValues);
+        this.delegateMapping = new InterfaceDelegateMapping(
+                this.propertyValues, source.delegateMapping);
+        this.methodHandler = new MethodHandler(this.delegateMapping);
     }
 
     static BeanInfo introspect(Class<?> proxiedInterface)
@@ -218,6 +233,15 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         }
 
         return "JavaBeanHandler: " + buffer.toString();
+    }
+
+    Object copy()
+    {
+        Class<?>[] copyTypes = new ArrayList<Class<?>>(proxiedInterfaces)
+                .toArray(new Class<?>[proxiedInterfaces.size()]);
+
+        return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(), copyTypes,
+                new JavaBeanHandler(this));
     }
 
     boolean proxiesFor(Class<?> proxyInterface)

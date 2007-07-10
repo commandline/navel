@@ -67,8 +67,6 @@ class PropertyHandler implements Serializable
 
     PropertyHandler(PropertyValues values)
     {
-        // shallow copy so that edits to the original map
-        // don't affect the bean contents
         this.values = values;
     }
 

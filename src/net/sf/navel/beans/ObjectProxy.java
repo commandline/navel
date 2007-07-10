@@ -83,6 +83,13 @@ class ObjectProxy implements Serializable
         this.primaryClassName = primaryClassName;
     }
 
+    ObjectProxy(ObjectProxy source)
+    {
+        this.filterToString = Collections
+                .unmodifiableSet(source.filterToString);
+        this.primaryClassName = source.primaryClassName;
+    }
+
     Object proxy(final String message, final PropertyValues values,
             final Method method, final Object[] args)
             throws UnsupportedFeatureException
