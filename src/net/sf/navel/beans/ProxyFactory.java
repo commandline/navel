@@ -213,7 +213,7 @@ public class ProxyFactory
      * @param delegate
      *            Delegate to attach.
      */
-    public static void attach(TypesBean bean, String propertyName,
+    public static void attach(Object bean, String propertyName,
             PropertyDelegate delegate)
     {
         JavaBeanHandler handler = getHandler(bean);
