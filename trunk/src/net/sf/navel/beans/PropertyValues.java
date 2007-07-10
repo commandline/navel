@@ -32,16 +32,11 @@ package net.sf.navel.beans;
 import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -64,8 +59,6 @@ public class PropertyValues implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(PropertyValues.class);
 
-    private final String primaryClassName;
-
     final Map<String, PropertyDelegate<?>> propertyDelegates = new HashMap<String, PropertyDelegate<?>>();
 
     /**
@@ -76,31 +69,19 @@ public class PropertyValues implements Serializable
 
     private final Map<String, Object> values;
 
-    private final Set<String> filterToString;
+    final ObjectProxy objectProxy;
 
     PropertyValues(String primaryClassName, Set<BeanInfo> proxiedBeanInfo,
             Map<String, Object> initialValues)
     {
-        this.primaryClassName = primaryClassName;
-
         Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
 
         Map<String, Object> initialCopy = null == initialValues ? new HashMap<String, Object>()
                 : new HashMap<String, Object>(initialValues);
 
-        Set<String> tempFilter = new HashSet<String>();
-
         for (BeanInfo beanInfo : proxiedBeanInfo)
         {
             tempProperties.putAll(mapProperties(beanInfo));
-
-            IgnoreToString ignore = beanInfo.getBeanDescriptor().getBeanClass()
-                    .getAnnotation(IgnoreToString.class);
-
-            if (null != ignore)
-            {
-                tempFilter.addAll(Arrays.asList(ignore.value()));
-            }
         }
 
         // this cleans up nested values, if it hits a Navel bean as a nested
@@ -114,7 +95,7 @@ public class PropertyValues implements Serializable
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
 
-        this.filterToString = Collections.unmodifiableSet(tempFilter);
+        this.objectProxy = new ObjectProxy(primaryClassName, proxiedBeanInfo);
 
         this.values = initialCopy;
     }
@@ -238,78 +219,6 @@ public class PropertyValues implements Serializable
         return false;
     }
 
-    Object proxyToObject(final String message, final Method method,
-            final Object[] args) throws UnsupportedFeatureException
-    {
-        String methodName = method.getName();
-
-        int count = (null == args) ? 0 : args.length;
-
-        Class[] argTypes = new Class[count];
-
-        // the only method in Object that takes an argument is equals, and it
-        // takes another Object as an argument
-        for (int i = 0; i < count; i++)
-        {
-            argTypes[i] = Object.class;
-        }
-
-        String argString = parseArguments(argTypes);
-
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER
-                    .debug(String
-                            .format(
-                                    "Proxying method, %1$s, with arguments (%2$s) to underlying Map.",
-                                    methodName, argString));
-        }
-
-        if ("toString".equals(method.getName()) && argTypes.length == 0)
-        {
-            return filteredToString();
-        }
-
-        try
-        {
-            // use Object so anything else causes an exception--this is merely
-            // a convenience so we don't have to implement the usual object
-            // methods directly
-            Object.class.getDeclaredMethod(method.getName(), argTypes);
-
-            // need to handle equals a little differently, somewhere
-            // between the proxy and the underlying map, based on experience
-            if ("equals".equals(method.getName()))
-            {
-                return handleEquals(args[0]);
-            }
-
-            return method.invoke(values, args);
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new UnsupportedFeatureException(
-                    String
-                            .format(
-                                    "Could not find a usable target for  method, %1$s, with arguments (%2$s).%3$s",
-                                    methodName, argString, message));
-        }
-        catch (IllegalAccessException e)
-        {
-            LOGGER
-                    .warn("Illegal access proxying Object methods to internal Map.");
-
-            return null;
-        }
-        catch (InvocationTargetException e)
-        {
-            LOGGER
-                    .warn("Error invoking while proxying Object methods to internal Map.");
-
-            return null;
-        }
-    }
-
     static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
     {
         Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
@@ -362,16 +271,7 @@ public class PropertyValues implements Serializable
         PropertyDescriptor propertyDescriptor = propertyDescriptors
                 .get(propertyName);
 
-        if (!propertyDescriptor.getPropertyType().equals(
-                delegate.propertyType()))
-        {
-            throw new InvalidDelegateException(
-                    String
-                            .format(
-                                    "Invalid type, %1$s, for PropertyDelegate.  Property, %2$s, requires type, %3$s.",
-                                    delegate.propertyType(), propertyName,
-                                    propertyDescriptor.getPropertyType()));
-        }
+        PropertyValidator.validate(propertyName, propertyDescriptor, delegate);
 
         propertyDelegates.put(propertyName, delegate);
     }
@@ -381,75 +281,9 @@ public class PropertyValues implements Serializable
         return propertyDelegates.remove(propertyName) != null;
     }
 
-    private Boolean handleEquals(Object value)
+    Object proxyToObject(String message, Method method, Object[] args)
     {
-        if (null == value)
-        {
-            return Boolean.FALSE;
-        }
-
-        // I don't think there is any sensical comparison, if the argument is
-        // not a Proxy, too; maybe at some point iterating the defined fields
-        // and comparing them individually? Too hard to second guess the bean
-        // interface author, I think this is safer until something better occurs
-        // to me
-        if (!Proxy.isProxyClass(value.getClass()))
-        {
-            return Boolean.FALSE;
-        }
-
-        Object other = Proxy.getInvocationHandler(value);
-
-        if (!(other instanceof JavaBeanHandler))
-        {
-            return Boolean.FALSE;
-        }
-
-        JavaBeanHandler otherHandler = (JavaBeanHandler) other;
-
-        return Boolean.valueOf(values
-                .equals(otherHandler.propertyValues.values));
-    }
-
-    private String filteredToString()
-    {
-        // create a shallow map to filter out ignored properties, as well as to
-        // consistently sort by the property names
-        Map<String, Object> toPrint = new TreeMap<String, Object>(values);
-
-        if (filterToString.isEmpty())
-        {
-            return primaryClassName + ": " + toPrint.toString();
-        }
-
-        for (String ignoreName : filterToString)
-        {
-            toPrint.remove(ignoreName);
-        }
-
-        return primaryClassName + ": " + toPrint.toString();
-    }
-
-    private String parseArguments(Class[] argTypes)
-    {
-        if (null == argTypes)
-        {
-            return "";
-        }
-
-        StringBuffer buffer = new StringBuffer();
-
-        for (int i = 0; i < argTypes.length; i++)
-        {
-            if (i != 0)
-            {
-                buffer.append(", ");
-            }
-
-            buffer.append(argTypes[i].getName());
-        }
-
-        return buffer.toString();
+        return objectProxy.proxy(message, this, method, args);
     }
 
     private void putValue(PropertyValues propertyValues,
@@ -481,7 +315,8 @@ public class PropertyValues implements Serializable
         {
             if (indexedProperty)
             {
-                putIndexed(originalName, propertyName, propertyDescriptor,
+                IndexedPropertyManipulator.putIndexed(propertyValues.values,
+                        originalName, propertyName, propertyDescriptor,
                         propertyValue);
             }
             else
@@ -497,8 +332,9 @@ public class PropertyValues implements Serializable
 
         Class propertyType = propertyDescriptor.getPropertyType();
 
-        Object nestedBean = indexedProperty ? getIndexed(originalName,
-                propertyName, propertyDescriptor) : propertyValues.values
+        Object nestedBean = indexedProperty ? IndexedPropertyManipulator
+                .getIndexed(propertyValues.values, originalName, propertyName,
+                        propertyDescriptor) : propertyValues.values
                 .get(propertyName);
 
         if (null == nestedBean)
@@ -527,60 +363,5 @@ public class PropertyValues implements Serializable
         // recurse on the nested property
         putValue(nestedHandler.propertyValues, propertyTokens, tokenIndex + 1,
                 propertyValue);
-    }
-
-    private void putIndexed(String nameWithIndex, String propertyName,
-            PropertyDescriptor propertyDescriptor, Object propertyValue)
-    {
-        Object array = values.get(propertyName);
-
-        // use the argument since the local will have had the index
-        // operator and value stripped
-        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
-
-        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
-                .getPropertyType()))
-        {
-            PrimitiveSupport.setElement(array, arrayIndex, propertyValue);
-        }
-        else
-        {
-            Object[] indexed = (Object[]) array;
-
-            indexed[arrayIndex] = propertyValue;
-        }
-    }
-
-    private Object getIndexed(String nameWithIndex, String propertyName,
-            PropertyDescriptor propertyDescriptor)
-    {
-        Object array = values.get(propertyName);
-
-        // use the argument since the local will have had the index
-        // operator and value stripped
-        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
-
-        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
-                .getPropertyType()))
-        {
-            return PrimitiveSupport.getElement(array, arrayIndex);
-        }
-        else
-        {
-            Object[] indexed = (Object[]) array;
-
-            Object nestedValue = indexed[arrayIndex];
-
-            if (null == nestedValue)
-            {
-                nestedValue = NestedBeanFactory
-                        .create(nameWithIndex, propertyDescriptor
-                                .getPropertyType().getComponentType());
-
-                indexed[arrayIndex] = nestedValue;
-            }
-
-            return nestedValue;
-        }
     }
 }

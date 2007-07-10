@@ -29,6 +29,20 @@
  */
 package net.sf.navel.beans;
 
+import net.sf.navel.example.FloatsAsIntegersDelegate;
+import net.sf.navel.example.IndexedBean;
+import net.sf.navel.example.IndexedIntegersBean;
+import net.sf.navel.example.NonIndexedPropertyDelegate;
+
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
 /**
  * Tests the additional behavior of indexed property delegation.
  * 
@@ -37,5 +51,87 @@ package net.sf.navel.beans;
  */
 public class IndexedPropertyDelegateTest
 {
+
+    private static final Logger LOGGER = LogManager
+            .getLogger(PropertyDelegateTest.class);
+
+    @BeforeMethod
+    public void setUp() throws Exception
+    {
+        Logger root = LogManager.getRootLogger();
+
+        root.removeAllAppenders();
+
+        root.addAppender(new ConsoleAppender(new PatternLayout(
+                "%d %-5p [%c] %m%n"), ConsoleAppender.SYSTEM_OUT));
+        root.setLevel(Level.DEBUG);
+    }
+
+    @Test
+    public void testIntegerView()
+    {
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class,
+                IndexedIntegersBean.class);
+        
+        indexedBean.setFloats(new float[1]);
+
+        IndexedIntegersBean integersBean = (IndexedIntegersBean) indexedBean;
+
+        integersBean.setIntegers(new int[1]);
+        integersBean.setIntegers(0, 42);
+
+        Assert.assertEquals(integersBean.getIntegers(0), 42,
+                "Should work with default behavior.");
+
+        ProxyFactory.attach(indexedBean, "integers",
+                new FloatsAsIntegersDelegate());
+
+        Assert.assertTrue(ProxyFactory.isAttached(indexedBean, "integers"),
+                "Should spot the property delegate.");
+
+        indexedBean.setFloats(0, 37.0f);
+
+        Assert.assertEquals(integersBean.getIntegers(0), 37,
+                "Should have gotten the correct view.");
+
+        integersBean.setIntegers(0, 17);
+
+        Assert.assertEquals(indexedBean.getFloats(0), 17.0, 0,
+                "Updating the view should have updated the live value.");
+
+        ProxyFactory.detach(indexedBean, "integers");
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(indexedBean);
+
+        Assert.assertFalse(ProxyFactory.isAttached(indexedBean, "integers"),
+                "Should not longer have the property delegate.");
+
+        Assert.assertEquals(integersBean.getIntegers(0), 42,
+                "Detaching should restore original behavior.");
+
+        Assert.assertEquals(indexedBean.getFloats(0), 17.0, 0,
+                "Live value should be permanently changed.");
+
+        Assert.assertEquals(handler.propertyValues.copyValues().size(), 2,
+                "Should have two entries.");
+    }
+
+    @Test
+    public void breakValidation()
+    {
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
+
+        try
+        {
+            ProxyFactory.attach(indexedBean, "array",
+                    new NonIndexedPropertyDelegate());
+
+            Assert.fail("Should not be able to attach a mismatched delegate.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+    }
 
 }

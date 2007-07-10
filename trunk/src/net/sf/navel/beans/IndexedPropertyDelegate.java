@@ -34,10 +34,23 @@ package net.sf.navel.beans;
  * JavaBeans API is to PropertyDescriptor.
  * 
  * @author cmdln
+ * @param C
+ *            Component type of the array.
+ * @param T
+ *            Type of the array itself, such as {Object[].class}.
  * 
  */
-public interface IndexedPropertyDelegate<T> extends PropertyDelegate<T>
+public interface IndexedPropertyDelegate<C, T> extends PropertyDelegate<T>
 {
+
+    /**
+     * Used to ensure that the parameterization of the component type of the
+     * indexed property won't cause problems for the PropertyHandler.
+     * 
+     * @return Should match the component type of the T parameters, which will
+     *         be checked to ensure it is an array.
+     */
+    Class<C> componentType();
 
     /**
      * Invoked by the PropertyHandler when a read is performed against a
@@ -54,7 +67,7 @@ public interface IndexedPropertyDelegate<T> extends PropertyDelegate<T>
      * @return Must match the property type or will cause an
      *         InvocationTargetException.
      */
-    T get(PropertyValues values, String propertyName, int index);
+    C get(PropertyValues values, String propertyName, int index);
 
     /**
      * Invoked by the PropertyHandler when a write is performed against a
@@ -71,5 +84,5 @@ public interface IndexedPropertyDelegate<T> extends PropertyDelegate<T>
      * @return value Must match the property type or will cause an
      *         InvalidPropertyValueException.
      */
-    void set(PropertyValues values, String propertyName, int index, T value);
+    void set(PropertyValues values, String propertyName, int index, C value);
 }
