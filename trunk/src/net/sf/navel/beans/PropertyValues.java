@@ -85,8 +85,8 @@ public class PropertyValues implements Serializable
 
         Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
 
-        Map<String, Object> initialCopy = new HashMap<String, Object>(
-                initialValues);
+        Map<String, Object> initialCopy = null == initialValues ? new HashMap<String, Object>()
+                : new HashMap<String, Object>(initialValues);
 
         Set<String> tempFilter = new HashSet<String>();
 
@@ -503,7 +503,7 @@ public class PropertyValues implements Serializable
 
         if (null == nestedBean)
         {
-            nestedBean = instantiate(originalName, propertyType);
+            nestedBean = NestedBeanFactory.create(originalName, propertyType);
 
             if (null == nestedBean)
             {
@@ -572,33 +572,14 @@ public class PropertyValues implements Serializable
 
             if (null == nestedValue)
             {
-                nestedValue = instantiate(nameWithIndex, propertyDescriptor
-                        .getPropertyType().getComponentType());
+                nestedValue = NestedBeanFactory
+                        .create(nameWithIndex, propertyDescriptor
+                                .getPropertyType().getComponentType());
 
                 indexed[arrayIndex] = nestedValue;
             }
 
             return nestedValue;
         }
-    }
-
-    private Object instantiate(String name, Class<?> propertyType)
-    {
-        LOGGER.warn(String.format(
-                "Nested bean target was null for property name, %1$s.", name));
-
-        if (!propertyType.isInterface())
-        {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "Nested property, %1$s, must currently be an interface to allow automatic instantiation.  Was of type, %2$s.",
-                                    name, propertyType.getName()));
-
-            return null;
-        }
-
-        // TODO add hook for decorating, augmenting creation
-        return ProxyFactory.create(propertyType);
     }
 }
