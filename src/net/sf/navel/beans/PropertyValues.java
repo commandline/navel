@@ -513,6 +513,7 @@ public class PropertyValues implements Serializable
 
         JavaBeanHandler nestedHandler = ProxyFactory.getHandler(nestedBean);
 
+        // IMPROVE consider using BeanManipulator to attempt population
         if (null == nestedHandler)
         {
             LOGGER
