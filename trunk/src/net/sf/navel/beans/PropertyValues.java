@@ -66,7 +66,7 @@ public class PropertyValues implements Serializable
      * The restore method re-populates this during deserialization, restore is
      * called by JavaBeanHandler as part of its custom serialization logic.
      */
-    @SuppressWarnings("all")
+    @SuppressWarnings("unchecked")
     private transient Map<String, PropertyDescriptor> propertyDescriptors;
 
     private final Map<String, Object> values;
@@ -100,6 +100,15 @@ public class PropertyValues implements Serializable
         this.objectProxy = new ObjectProxy(primaryClassName, proxiedBeanInfo);
 
         this.values = initialCopy;
+    }
+
+    PropertyValues(PropertyValues source)
+    {
+        this.propertyDescriptors = Collections.unmodifiableMap(source.propertyDescriptors);
+
+        this.objectProxy = new ObjectProxy(source.objectProxy);
+
+        this.values = new HashMap<String, Object>(source.values);
     }
 
     /**

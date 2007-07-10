@@ -255,4 +255,22 @@ public class ProxyFactoryTest
             }
         }
     }
+
+    @Test
+    public void testCopy()
+    {
+        TypesBean source = ProxyFactory.createAs(TypesBean.class);
+
+        source.setBoolean(true);
+
+        TypesBean copy = ProxyFactory.copyAs(TypesBean.class, source);
+
+        Assert.assertEquals(source, copy, "Should initially be the same.");
+        Assert.assertNotSame(source, copy, "Should not be identical, though.");
+
+        copy.setBoolean(false);
+
+        Assert.assertFalse(source.equals(copy),
+                "Should be able to change one and not affect the other.");
+    }
 }

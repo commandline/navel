@@ -136,6 +136,60 @@ public class ProxyFactory
                 new JavaBeanHandler(initialValues, allTypes, initialDelegates));
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T copyAs(Class<T> primaryType, Object source)
+    {
+        if (null == source)
+        {
+            return null;
+        }
+
+        JavaBeanHandler sourceHandler = getHandler(source);
+
+        if (null == sourceHandler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot copy anything other than a Navel bean!");
+        }
+
+        if (!sourceHandler.proxiesFor(primaryType))
+        {
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "The copy source, %1$s, does not support the requested type, %2$s.",
+                                    sourceHandler, primaryType.getName()));
+        }
+        
+        return (T) sourceHandler.copy();
+    }
+
+    /**
+     * Performs a deep copy of all the proxy support code and a shallow copy of
+     * the internal bean state.
+     * 
+     * @param source
+     *            Bean to copy, must be a Navel bean.
+     * @return A copy of the original bean.
+     */
+    public static Object copy(Object source)
+    {
+        if (null == source)
+        {
+            return null;
+        }
+
+        JavaBeanHandler sourceHandler = getHandler(source);
+
+        if (null == sourceHandler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot copy anything other than a Navel bean!");
+        }
+
+        return sourceHandler.copy();
+    }
+
     /**
      * Checks to see if there is a delegate for the specified interface.
      * 

@@ -338,11 +338,6 @@ public class BeanManipulator
         {
             Object[] indexed = (Object[]) array;
 
-            if (null == array)
-            {
-                return null;
-            }
-
             return indexed[arrayIndex];
         }
     }

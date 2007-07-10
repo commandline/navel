@@ -171,12 +171,12 @@ class ListPropertySupport
         {
             method = descriptor.getReadMethod();
         }
-        
+
         if (method != null)
         {
             return method.getDeclaringClass();
         }
-        
+
         if (!(descriptor instanceof IndexedPropertyDescriptor))
         {
             return null;
@@ -185,10 +185,7 @@ class ListPropertySupport
         IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) descriptor;
 
         // may be indexed
-        if (null == method)
-        {
-            method = indexedDescriptor.getIndexedWriteMethod();
-        }
+        method = indexedDescriptor.getIndexedWriteMethod();
 
         // may be indexed read only
         if (null == method)
