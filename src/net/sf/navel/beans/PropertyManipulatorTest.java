@@ -29,9 +29,14 @@
  */
 package net.sf.navel.beans;
 
+import java.util.Arrays;
+
 import net.sf.navel.example.IndexedBean;
+import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -42,6 +47,9 @@ import org.testng.annotations.Test;
  */
 public class PropertyManipulatorTest
 {
+
+    private static final Logger LOGGER = LogManager
+            .getLogger(PropertyManipulatorTest.class);
 
     @Test
     public void testIndexedProperty()
@@ -80,4 +88,193 @@ public class PropertyManipulatorTest
                 .assertEquals(indexedBean.getTypes(1).getBoolean(), false,
                         "Boolean property of second types element should be set correctly.");
     }
+
+    @Test
+    public void testIsPropertyOf()
+    {
+        IndexedBean bean = ProxyFactory.createAs(IndexedBean.class);
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        Assert.assertTrue(handler.propertyValues.isPropertyOf("types"),
+                "Types array should be a valid property.");
+        Assert.assertTrue(handler.propertyValues.isPropertyOf("types[0]"),
+                "Types array element should be a valid property.");
+        Assert.assertTrue(handler.propertyValues
+                .isPropertyOf("types[0].boolean"),
+                "Types array element nested should be a valid property.");
+
+        Assert.assertFalse(handler.propertyValues.isPropertyOf("foo"));
+        Assert.assertFalse(handler.propertyValues.isPropertyOf("foo[0]"));
+        Assert.assertFalse(handler.propertyValues.isPropertyOf("foo[0].bar"));
+
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+
+        handler = ProxyFactory.getHandler(nested);
+
+        Assert.assertTrue(
+                handler.propertyValues.isPropertyOf("nested.boolean"),
+                "Nested property should pass.");
+
+        Assert.assertFalse(handler.propertyValues.isPropertyOf("foo"));
+        Assert.assertFalse(handler.propertyValues.isPropertyOf("nested.foo"));
+    }
+
+    @Test
+    public void testIsSet()
+    {
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
+
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types"),
+                "Types array should not yet be set.");
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types[0]"),
+                "First type element should not yet be set.");
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+                "types[0].boolean"),
+                "Nested property of first type element should not yet be set.");
+
+        indexedBean.setTypes(new TypesBean[1]);
+
+        Assert.assertTrue(PropertyManipulator.isSet(indexedBean, "types"),
+                "Types array should now be set.");
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types[0]"),
+                "First type element should not yet be set.");
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+                "types[0].boolean"),
+                "Nested property of first type element should not yet be set.");
+
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class);
+
+        indexedBean.setTypes(0, typesBean);
+
+        Assert.assertTrue(PropertyManipulator.isSet(indexedBean, "types[0]"),
+                "First type element should now be set.");
+        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+                "types[0].boolean"),
+                "Nested property of first type element should not yet be set.");
+
+        try
+        {
+            PropertyManipulator.isSet(indexedBean, "foo");
+
+            Assert.fail("Should not be able to reference bad property, foo.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        try
+        {
+            PropertyManipulator.isSet(indexedBean, "foo[0]");
+
+            Assert
+                    .fail("Should not be able to reference bad property, foo[0].");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        try
+        {
+            PropertyManipulator.isSet(indexedBean, "foo[0].bar");
+
+            Assert
+                    .fail("Should not be able to reference bad property, foo[0].bar.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+
+        Assert.assertFalse(PropertyManipulator.isSet(nested, "nested.boolean"),
+                "Nested property should not yet be set.");
+
+        nested.setNested(ProxyFactory.createAs(TypesBean.class));
+        nested.getNested().setBoolean(true);
+
+        Assert.assertTrue(PropertyManipulator.isSet(nested, "nested.boolean"),
+                "Nested property should now be set.");
+    }
+
+    @Test
+    public void testGet()
+    {
+        IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
+
+        Assert.assertNull(PropertyManipulator.get(indexedBean, "types"),
+                "Types should come back as null.");
+
+        indexedBean.setTypes(new TypesBean[1]);
+
+        Assert.assertTrue(Arrays.deepEquals((TypesBean[]) PropertyManipulator
+                .get(indexedBean, "types"), new TypesBean[1]),
+                "Should get empty array.");
+
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class);
+
+        indexedBean.setTypes(0, typesBean);
+
+        Assert.assertEquals(PropertyManipulator.get(indexedBean, "types[0]"),
+                typesBean, "Should get types bean at index.");
+        Assert.assertEquals(PropertyManipulator.get(indexedBean,
+                "types[0].boolean"), false, "Should get uninitialized value.");
+
+        typesBean.setBoolean(true);
+
+        Assert.assertEquals(PropertyManipulator.get(indexedBean,
+                "types[0].boolean"), true, "Should get set value.");
+
+        try
+        {
+            PropertyManipulator.get(indexedBean, "foo");
+
+            Assert.fail("Should not be able to reference bad property, foo.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        try
+        {
+            PropertyManipulator.get(indexedBean, "foo[0]");
+
+            Assert
+                    .fail("Should not be able to reference bad property, foo[0].");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        try
+        {
+            PropertyManipulator.get(indexedBean, "foo[0].bar");
+
+            Assert
+                    .fail("Should not be able to reference bad property, foo[0].bar.");
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+        }
+
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+
+        PropertyManipulator.clear(typesBean, "boolean");
+        nested.setNested(typesBean);
+
+        Assert.assertEquals(PropertyManipulator.get(nested, "nested.boolean"),
+                false, "Nested boolean should have uninitialized value.");
+
+        nested.getNested().setBoolean(true);
+
+        Assert.assertEquals(PropertyManipulator.get(nested, "nested.boolean"),
+                true, "Nested boolean should have set value.");
+    }
+
 }
