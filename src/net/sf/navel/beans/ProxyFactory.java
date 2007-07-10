@@ -32,6 +32,7 @@ package net.sf.navel.beans;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * This is the starting point for working with Navel. It encapsulates the
@@ -136,8 +137,38 @@ public class ProxyFactory
                 new JavaBeanHandler(initialValues, allTypes, initialDelegates));
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * An overload that assumes shallow copy.
+     * 
+     * @param <T>
+     *            Desired interface, must be one the source proxy supports.
+     * @param primaryType
+     *            For pegging the generic parameter.
+     * @param source
+     *            Source to copy, performs a shallow copy.
+     * @return A copy, safely type as T.
+     */
     public static <T> T copyAs(Class<T> primaryType, Object source)
+    {
+        return copyAs(primaryType, false);
+    }
+
+    /**
+     * A convenience version that also checks to see if the cast to T is safe,
+     * then casts and returns as T.
+     * 
+     * @param <T>
+     *            Desired interface, must be one the source proxy supports.
+     * @param primaryType
+     *            For pegging the generic parameter.
+     * @param source
+     *            Source to copy, performs a shallow copy.
+     * @param deep
+     *            Perform a deep copy.
+     * @return A copy, safely type as T.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T copyAs(Class<T> primaryType, Object source, boolean deep)
     {
         if (null == source)
         {
@@ -160,8 +191,8 @@ public class ProxyFactory
                                     "The copy source, %1$s, does not support the requested type, %2$s.",
                                     sourceHandler, primaryType.getName()));
         }
-        
-        return (T) sourceHandler.copy();
+
+        return (T) copy(source, deep);
     }
 
     /**
@@ -170,9 +201,11 @@ public class ProxyFactory
      * 
      * @param source
      *            Bean to copy, must be a Navel bean.
+     * @param deep
+     *            Perform a deep copy.
      * @return A copy of the original bean.
      */
-    public static Object copy(Object source)
+    public static Object copy(Object source, boolean deep)
     {
         if (null == source)
         {
@@ -187,7 +220,33 @@ public class ProxyFactory
                     "Cannot copy anything other than a Navel bean!");
         }
 
-        return sourceHandler.copy();
+        Object copy = sourceHandler.copy();
+
+        if (!deep)
+        {
+            return copy;
+        }
+
+        JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
+
+        Map<String, Object> values = copyHandler.propertyValues.copyValues();
+
+        for (Entry<String, Object> entry : values.entrySet())
+        {
+            Object nestedValue = entry.getValue();
+
+            if (ProxyFactory.getHandler(nestedValue) == null)
+            {
+                continue;
+            }
+
+            String nestedProperty = entry.getKey();
+
+            PropertyManipulator.put(copy, nestedProperty, copy(nestedValue,
+                    true));
+        }
+
+        return copy;
     }
 
     /**
