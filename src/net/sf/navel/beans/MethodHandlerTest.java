@@ -37,8 +37,7 @@ import net.sf.navel.example.BadDelegatedImpl;
 import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedBean;
 import net.sf.navel.example.DelegatedImpl;
-import net.sf.navel.log.LogHelper;
-import net.sf.navel.test.PropertyNames;
+import net.sf.navel.example.PropertyNames;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;

@@ -38,11 +38,11 @@ import java.util.Map;
 import net.sf.navel.example.BadBeanImpl;
 import net.sf.navel.example.IndexedBean;
 import net.sf.navel.example.NestedBean;
+import net.sf.navel.example.PropertyNames;
 import net.sf.navel.example.ReadWriteBean;
 import net.sf.navel.example.SourceBean;
 import net.sf.navel.example.TargetBean;
 import net.sf.navel.example.TypesBean;
-import net.sf.navel.test.PropertyNames;
 
 import org.apache.log4j.Logger;
 import org.testng.Assert;

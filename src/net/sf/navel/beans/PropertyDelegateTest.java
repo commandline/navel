@@ -32,7 +32,6 @@ package net.sf.navel.beans;
 import net.sf.navel.example.CharacterAsString;
 import net.sf.navel.example.CharacterAsStringDelegate;
 import net.sf.navel.example.TypesBean;
-import net.sf.navel.log.LogHelper;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;

@@ -35,7 +35,6 @@ import java.util.Map;
 import net.sf.navel.example.ChildBean;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
-import net.sf.navel.log.LogHelper;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
