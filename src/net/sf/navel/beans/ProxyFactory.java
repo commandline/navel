@@ -33,8 +33,6 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.example.TypesBean;
-
 /**
  * This is the starting point for working with Navel. It encapsulates the
  * creation of dynamic proxies, constructing them with the supplied delegation
