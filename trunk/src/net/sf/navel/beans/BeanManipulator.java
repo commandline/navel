@@ -131,7 +131,7 @@ public class BeanManipulator
      * Utility method to recurse into a description map explicitly for a nested
      * property name and dig out the ultimate value.
      * 
-     * @param name
+     * @param propertyName
      *            Property name, may use dot notation.
      * @param values
      *            Map of possible values, initially the immediate properties of
@@ -139,25 +139,29 @@ public class BeanManipulator
      *            new layer of bean properties.
      * @return Null or the resolved value.
      */
-    public static Object resolveValue(String name, Map<String, Object> values)
+    public static Object resolveValue(final String propertyName,
+            final Map<String, Object> values)
     {
-        int dotIndex = name.indexOf(".");
+        int dotIndex = propertyName.indexOf(".");
 
         if (dotIndex == -1)
         {
-            return values.get(name);
+            return SINGLETON.getNestedBean(propertyName, values);
         }
 
-        String key = name.substring(0, dotIndex);
-        Object subBean = values.get(key);
+        String shallowProperty = propertyName.substring(0, dotIndex);
 
-        if (null == subBean)
+        Object nestedBean = SINGLETON.getNestedBean(shallowProperty, values);
+
+        if (null == nestedBean)
         {
             return null;
         }
 
-        String subName = name.substring(dotIndex + 1, name.length());
-        Map<String, Object> subValues = SINGLETON.describeBean(subBean, false);
+        String subName = propertyName.substring(dotIndex + 1, propertyName
+                .length());
+        Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
+                false);
 
         return resolveValue(subName, subValues);
     }
@@ -295,6 +299,51 @@ public class BeanManipulator
             Object sourceValue = value.getValue();
 
             writeProperty(bean, sourceName, sourceValue);
+        }
+    }
+
+    private Object getNestedBean(String propertyName, Map<String, Object> values)
+    {
+        String shallowProperty = propertyName;
+
+        boolean indexedProperty = false;
+
+        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
+        {
+            shallowProperty = propertyName.substring(0, propertyName
+                    .indexOf('['));
+
+            indexedProperty = true;
+        }
+
+        if (!indexedProperty)
+        {
+            return values.get(shallowProperty);
+        }
+
+        Object array = values.get(shallowProperty);
+
+        if (null == array)
+        {
+            return null;
+        }
+
+        int arrayIndex = IndexedPropertyManipulator.getIndex(propertyName);
+
+        if (PrimitiveSupport.isPrimitiveArray(array.getClass()))
+        {
+            return PrimitiveSupport.getElement(array, arrayIndex);
+        }
+        else
+        {
+            Object[] indexed = (Object[]) array;
+
+            if (null == array)
+            {
+                return null;
+            }
+
+            return indexed[arrayIndex];
         }
     }
 

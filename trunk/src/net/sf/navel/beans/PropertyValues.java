@@ -30,6 +30,7 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
+import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -162,7 +163,7 @@ public class PropertyValues implements Serializable
 
     public boolean containsKey(String property)
     {
-        return values.containsKey(property);
+        return containsKey(this, property);
     }
 
     public Object remove(String property)
@@ -177,47 +178,7 @@ public class PropertyValues implements Serializable
 
     boolean isPropertyOf(String propertyName)
     {
-        int dotIndex = propertyName.indexOf('.');
-
-        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
-                .substring(0, dotIndex);
-
-        for (PropertyDescriptor propertyDescriptor : propertyDescriptors
-                .values())
-        {
-            // keep going if this is not the property we are looking for or
-            // a parent property
-            if (!propertyDescriptor.getName().equals(shallowProperty))
-            {
-                continue;
-            }
-
-            // if this is a leafy property, we're done
-            if (-1 == dotIndex)
-            {
-                return true;
-            }
-
-            // otherwise, recurse on the nested property
-            Object nestedValue = values.get(shallowProperty);
-
-            JavaBeanHandler nestedHandler = ProxyFactory
-                    .getHandler(nestedValue);
-
-            if (null == nestedHandler)
-            {
-                return BeanManipulator.isPropertyOf(propertyDescriptor
-                        .getPropertyType(), propertyName
-                        .substring(dotIndex + 1));
-            }
-            else
-            {
-                return nestedHandler.propertyValues.isPropertyOf(propertyName
-                        .substring(dotIndex + 1));
-            }
-        }
-
-        return false;
+        return isPropertyOf(this, propertyName);
     }
 
     static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
@@ -333,10 +294,18 @@ public class PropertyValues implements Serializable
 
         Class propertyType = propertyDescriptor.getPropertyType();
 
-        Object nestedBean = indexedProperty ? IndexedPropertyManipulator
-                .getIndexed(propertyValues.values, originalName, propertyName,
-                        propertyDescriptor) : propertyValues.values
-                .get(propertyName);
+        Object nestedBean = null;
+
+        if (indexedProperty)
+        {
+            nestedBean = IndexedPropertyManipulator.getIndexed(
+                    propertyValues.values, originalName, propertyName,
+                    propertyDescriptor, true);
+        }
+        else
+        {
+            nestedBean = propertyValues.values.get(propertyName);
+        }
 
         if (null == nestedBean)
         {
@@ -364,5 +333,131 @@ public class PropertyValues implements Serializable
         // recurse on the nested property
         putValue(nestedHandler.propertyValues, propertyTokens, tokenIndex + 1,
                 propertyValue);
+    }
+
+    private boolean isPropertyOf(PropertyValues propertyValues,
+            final String propertyName)
+    {
+        int dotIndex = propertyName.indexOf('.');
+
+        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
+                .substring(0, dotIndex);
+
+        boolean indexedProperty = false;
+
+        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
+        {
+            shallowProperty = propertyName.substring(0, propertyName
+                    .indexOf('['));
+
+            indexedProperty = true;
+        }
+
+        for (PropertyDescriptor propertyDescriptor : propertyDescriptors
+                .values())
+        {
+            // keep going if this is not the property we are looking for or
+            // a parent property
+            if (!propertyDescriptor.getName().equals(shallowProperty))
+            {
+                continue;
+            }
+
+            // if this is a leafy property, we're done
+            if (-1 == dotIndex)
+            {
+                return true;
+            }
+
+            // otherwise, recurse on the nested property
+            if (indexedProperty)
+            {
+                if (!(propertyDescriptor instanceof IndexedPropertyDescriptor))
+                {
+                    return false;
+                }
+
+                IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
+
+                return BeanManipulator.isPropertyOf(indexedDescriptor
+                        .getIndexedPropertyType(), propertyName
+                        .substring(dotIndex + 1));
+            }
+
+            Object nestedValue = propertyValues.values.get(shallowProperty);
+
+            JavaBeanHandler nestedHandler = ProxyFactory
+                    .getHandler(nestedValue);
+
+            if (null == nestedHandler)
+            {
+                return BeanManipulator.isPropertyOf(propertyDescriptor
+                        .getPropertyType(), propertyName
+                        .substring(dotIndex + 1));
+            }
+            else
+            {
+                return isPropertyOf(nestedHandler.propertyValues, propertyName
+                        .substring(dotIndex + 1));
+            }
+        }
+
+        return false;
+    }
+
+    private boolean containsKey(PropertyValues propertyValues,
+            final String propertyName)
+    {
+        int dotIndex = propertyName.indexOf('.');
+
+        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
+                .substring(0, dotIndex);
+
+        boolean indexedProperty = false;
+
+        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
+        {
+            shallowProperty = propertyName.substring(0, propertyName
+                    .indexOf('['));
+
+            indexedProperty = true;
+        }
+
+        // if this is a leafy property, we're done
+        if (-1 == dotIndex && !indexedProperty)
+        {
+            return values.containsKey(shallowProperty);
+        }
+
+        Object nestedBean = null;
+
+        if (indexedProperty)
+        {
+            nestedBean = IndexedPropertyManipulator.getIndexed(
+                    propertyValues.values, propertyName, shallowProperty,
+                    propertyValues.propertyDescriptors.get(shallowProperty),
+                    false);
+            
+            if (-1 == dotIndex)
+            {
+                return nestedBean != null;
+            }
+        }
+        else
+        {
+            nestedBean = propertyValues.values.get(shallowProperty);
+        }
+
+        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(nestedBean);
+
+        if (null == nestedHandler)
+        {
+            return false;
+        }
+        else
+        {
+            return nestedHandler.propertyValues.containsKey(propertyName
+                    .substring(dotIndex + 1));
+        }
     }
 }

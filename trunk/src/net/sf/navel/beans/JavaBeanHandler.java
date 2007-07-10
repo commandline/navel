@@ -209,7 +209,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
         for (Class<?> proxiedInterface : proxiedInterfaces)
         {
-            if (buffer.length() == 0)
+            if (buffer.length() != 0)
             {
                 buffer.append(", ");
             }

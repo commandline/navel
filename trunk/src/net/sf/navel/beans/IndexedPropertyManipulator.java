@@ -203,12 +203,18 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         {
             Object[] indexed = (Object[]) array;
 
+            if (null == array)
+            {
+                return;
+            }
+
             indexed[arrayIndex] = propertyValue;
         }
     }
 
     static Object getIndexed(Map<String, Object> values, String nameWithIndex,
-            String propertyName, PropertyDescriptor propertyDescriptor)
+            String propertyName, PropertyDescriptor propertyDescriptor,
+            boolean lazyCreate)
     {
         Object array = values.get(propertyName);
 
@@ -225,9 +231,14 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         {
             Object[] indexed = (Object[]) array;
 
+            if (null == array)
+            {
+                return null;
+            }
+
             Object nestedValue = indexed[arrayIndex];
 
-            if (null == nestedValue)
+            if (null == nestedValue && lazyCreate)
             {
                 nestedValue = NestedBeanFactory
                         .create(nameWithIndex, propertyDescriptor

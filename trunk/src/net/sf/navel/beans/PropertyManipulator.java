@@ -47,6 +47,46 @@ public class PropertyManipulator
     }
 
     /**
+     * Allows dynamic programming of the internal storage of a JavaBeanHandler,
+     * useful for translation between Navel beans and other kinds of objects or
+     * declarative interrogation of the state of the bean.
+     * 
+     * @param bean
+     *            Object to query, must be a Navel bean.
+     * @param propertyName
+     *            Property to get, may be a nested property using the dot
+     *            notation. Also may be an indexed property.
+     * @return Whatever value is at the indicated property.
+     */
+    public static Object get(Object bean, String propertyName)
+    {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException("Bean argument cannot be null!");
+        }
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
+        }
+
+        if (!handler.propertyValues.isPropertyOf(propertyName))
+        {
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "The property, %1$s, is not a valid one for this proxy, %2$s.",
+                                    propertyName, handler));
+        }
+
+        return BeanManipulator.resolveValue(propertyName,
+                handler.propertyValues.copyValues());
+    }
+
+    /**
      * Allows for dynamic programming of a JavaBean's properties. If the bean
      * argument is a Navel bean, it will use the standard validation to ensure
      * correct names and types. If it is a Navel bean, it will also use the same
@@ -116,6 +156,42 @@ public class PropertyManipulator
     }
 
     /**
+     * Check to see if the specified property has an entry, even one with a null
+     * value, in the storage map.
+     * 
+     * @param bean
+     *            Object to check, must be a Navel bean.
+     * @param propertyName
+     *            Property to check, must be valid for the Navel bean.
+     * @return Whether the internal storage has an entry for this property.
+     */
+    public static boolean isSet(Object bean, String propertyName)
+    {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException("Bean argument cannot be null!");
+        }
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException("Bean must be a Navel bean!");
+        }
+
+        if (!handler.propertyValues.isPropertyOf(propertyName))
+        {
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "The property, %1$s, is not a valid one for this proxy, %2$s.",
+                                    propertyName, handler));
+        }
+
+        return handler.propertyValues.containsKey(propertyName);
+    }
+
+    /**
      * Useful for removing values from the underlying Map, such as when trying
      * to ignore certain property values like for persistence applications.
      * 
@@ -131,7 +207,7 @@ public class PropertyManipulator
         {
             throw new IllegalArgumentException("Bean argument cannot be null!");
         }
-        
+
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
         if (null == handler)
@@ -164,7 +240,7 @@ public class PropertyManipulator
      * @param bean
      *            Must be a Navel bean.
      */
-    public void clear(Object bean)
+    public static void clear(Object bean)
     {
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
