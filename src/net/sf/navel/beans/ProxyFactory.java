@@ -315,6 +315,23 @@ public class ProxyFactory
     }
 
     /**
+     * Convenience method for attaching multiple delegates at once.
+     * 
+     * @param bean
+     *            Existing bean instance to which new delegates will be
+     *            attached.
+     * @param delegates
+     *            New delegates to attach.
+     */
+    public static void attach(Object bean, InterfaceDelegate... delegates)
+    {
+        for (InterfaceDelegate delegate : delegates)
+        {
+            attach(bean, delegate);
+        }
+    }
+
+    /**
      * Utility method that exposes the runtime delegation attachment code.
      * 
      * @param bean
