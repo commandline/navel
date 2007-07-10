@@ -150,7 +150,7 @@ public class ProxyFactory
      */
     public static <T> T copyAs(Class<T> primaryType, Object source)
     {
-        return copyAs(primaryType, false);
+        return copyAs(primaryType, source, false);
     }
 
     /**
