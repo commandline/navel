@@ -99,6 +99,11 @@ class InterfaceDelegateValidator
         for (MethodDescriptor methodDescriptor : methodDescriptors)
         {
             Method method = methodDescriptor.getMethod();
+            
+            if (PropertyHandler.handles(method))
+            {
+                continue;
+            }
 
             try
             {
