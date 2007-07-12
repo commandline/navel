@@ -29,12 +29,11 @@
  */
 package net.sf.navel.example;
 
-
 /**
  * Function interface, to be implemented by a concrete delegate and extended by
  * a property interface and used through that property interface with
  * DelegateBeanHandler.
- *
+ * 
  * @author cmdln
  * @version $Revision: 1.2 $, $Date: 2003/10/14 16:28:44 $
  */
@@ -43,4 +42,10 @@ public interface Delegated
     void doThis(Integer foo, Integer bar);
 
     Integer doThat(Integer foo, Integer bar);
+
+    /**
+     * A property method, to make sure that delegate validation correctly
+     * filters this out.
+     */
+    String getDelegateName();
 }
