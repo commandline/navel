@@ -68,6 +68,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     private transient Set<BeanInfo> proxiedBeanInfo;
 
+    private final String primaryClassName;
+
     private final Set<Class<?>> proxiedInterfaces;
 
     private final PropertyHandler propertyHandler;
@@ -97,8 +99,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
 
-        String primaryClassName = mapTypes(proxiedClasses, tempInfo,
-                tempClasses);
+        this.primaryClassName = mapTypes(proxiedClasses, tempInfo, tempClasses);
 
         this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
@@ -112,6 +113,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     JavaBeanHandler(JavaBeanHandler source)
     {
+        this.primaryClassName = source.primaryClassName;
         this.proxiedInterfaces = Collections
                 .unmodifiableSet(new HashSet<Class<?>>(source.proxiedInterfaces));
         this.proxiedBeanInfo = Collections
@@ -135,6 +137,15 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
                     "Cannot introspect interface, %1$s.", proxiedInterface
                             .getName()), e);
         }
+    }
+
+    /**
+     * Return the classname of the first interface provided during the
+     * construction of the proxy.
+     */
+    public String getPrimaryClassName()
+    {
+        return primaryClassName;
     }
 
     /**
@@ -240,8 +251,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         Class<?>[] copyTypes = new ArrayList<Class<?>>(proxiedInterfaces)
                 .toArray(new Class<?>[proxiedInterfaces.size()]);
 
-        return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(), copyTypes,
-                new JavaBeanHandler(this));
+        return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(),
+                copyTypes, new JavaBeanHandler(this));
     }
 
     boolean proxiesFor(Class<?> proxyInterface)
