@@ -104,7 +104,8 @@ public class PropertyValues implements Serializable
 
     PropertyValues(PropertyValues source)
     {
-        this.propertyDescriptors = Collections.unmodifiableMap(source.propertyDescriptors);
+        this.propertyDescriptors = Collections
+                .unmodifiableMap(source.propertyDescriptors);
 
         this.objectProxy = new ObjectProxy(source.objectProxy);
 
@@ -156,13 +157,21 @@ public class PropertyValues implements Serializable
      */
     public void putAll(Map<String, Object> newValues)
     {
-        Map<String, Object> copy = new HashMap<String, Object>(newValues);
+        // resolution depends on combining existing and new values, specifically
+        // for lists and setting unset values on existing beans
+        Map<String, Object> combined = new HashMap<String, Object>(values);
+        combined.putAll(newValues);
 
-        PropertyValueResolver.resolve(propertyDescriptors, copy);
+        PropertyValueResolver.resolve(propertyDescriptors, combined);
 
-        PropertyValidator.validateAll(propertyDescriptors, copy);
+        // depends on resolution taking care of lists, not presently possible to
+        // validate just the new values
+        PropertyValidator.validateAll(propertyDescriptors, combined);
 
-        values.putAll(copy);
+        // clear out the existing values since the new Map will contain old and
+        // new correctly resolved, validated and combined
+        values.clear();
+        values.putAll(combined);
     }
 
     public Object get(String propertyName)
@@ -446,7 +455,7 @@ public class PropertyValues implements Serializable
                     propertyValues.values, propertyName, shallowProperty,
                     propertyValues.propertyDescriptors.get(shallowProperty),
                     false);
-            
+
             if (-1 == dotIndex)
             {
                 return nestedBean != null;

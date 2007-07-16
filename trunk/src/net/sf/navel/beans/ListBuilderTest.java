@@ -135,15 +135,15 @@ public class ListBuilderTest
 
         listHandler.propertyValues.putAll(rawValues);
 
-        Assert.assertEquals(listBean.getTypesList().size(), 1,
+        Assert.assertEquals(listBean.getTypesList().size(), 2,
                 "List property size should be correct after putAll().");
 
         first = listBean.getTypesList(0);
 
         Assert.assertNotNull(first, "Should still have valid single element.");
-        Assert.assertEquals(first.getInteger(), 2,
+        Assert.assertEquals(first.getInteger(), 1,
                 "Should have correct updated integer value.");
-        Assert.assertEquals(first.getBoolean(), false,
+        Assert.assertEquals(first.getBoolean(), true,
                 "Should have correct updated boolean value.");
     }
 
