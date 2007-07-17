@@ -54,7 +54,7 @@ public interface InterfaceDelegate extends Serializable
      * implementation to gain access to the PropertyValues view into the
      * internal values of a proxied JavaBean.
      */
-    void attach(PropertyValues values);
+    void attach(JavaBeanHandler handler, PropertyValues values);
 
     /**
      * Called when a delegate is detached to clean up the reference to the

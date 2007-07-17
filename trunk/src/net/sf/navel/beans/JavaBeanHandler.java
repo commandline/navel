@@ -68,7 +68,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     private transient Set<BeanInfo> proxiedBeanInfo;
 
-    private final String primaryClassName;
+    private final Class<?> primaryType;
 
     private final Set<Class<?>> proxiedInterfaces;
 
@@ -99,21 +99,23 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
 
-        this.primaryClassName = mapTypes(proxiedClasses, tempInfo, tempClasses);
+        this.primaryType = mapTypes(proxiedClasses, tempInfo, tempClasses);
 
         this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-        this.propertyValues = new PropertyValues(primaryClassName,
+
+        this.propertyValues = new PropertyValues(this.primaryType.getName(),
                 proxiedBeanInfo, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
-        this.delegateMapping = new InterfaceDelegateMapping(proxiedBeanInfo,
-                delegates, propertyValues);
+
+        this.delegateMapping = new InterfaceDelegateMapping(this,
+                proxiedBeanInfo, delegates, propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
     }
 
     JavaBeanHandler(JavaBeanHandler source)
     {
-        this.primaryClassName = source.primaryClassName;
+        this.primaryType = source.primaryType;
         this.proxiedInterfaces = Collections
                 .unmodifiableSet(new HashSet<Class<?>>(source.proxiedInterfaces));
         this.proxiedBeanInfo = Collections
@@ -140,12 +142,11 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
     }
 
     /**
-     * Return the classname of the first interface provided during the
-     * construction of the proxy.
+     * Return the first interface provided during the construction of the proxy.
      */
-    public String getPrimaryClassName()
+    public Class<?> getPrimaryInterface()
     {
-        return primaryClassName;
+        return primaryType;
     }
 
     /**
@@ -212,6 +213,22 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
                         methodName));
     }
 
+    /**
+     * Useful for reflecting on the set of interfaces this proxy supports.
+     * 
+     * @return This set is unmodifiable so is returned directly.
+     */
+    public Set<Class<?>> getProxiedClasses()
+    {
+        return proxiedInterfaces;
+    }
+
+    /**
+     * Used during de-serialization to restore the non serializable
+     * instrospection metadata from the JavaBeans API.
+     * 
+     * @see java.io.ObjectInputValidation#validateObject()
+     */
     public void validateObject() throws InvalidObjectException
     {
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>();
@@ -268,10 +285,10 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
         input.registerValidation(this, 0);
     }
 
-    private final String mapTypes(Class<?>[] proxiedClasses,
+    private final Class<?> mapTypes(Class<?>[] proxiedClasses,
             Set<BeanInfo> tempInfo, Set<Class<?>> tempClasses)
     {
-        String primaryClassName = null;
+        Class<?> candidatePrimary = null;
 
         for (int i = 0; i < proxiedClasses.length; i++)
         {
@@ -293,9 +310,9 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
                                         proxiedInterface.getName(), i));
             }
 
-            if (null == primaryClassName)
+            if (null == candidatePrimary)
             {
-                primaryClassName = proxiedInterface.getName();
+                candidatePrimary = proxiedInterface;
             }
 
             BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
@@ -310,7 +327,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
             mapTypes(proxiedInterface.getInterfaces(), tempInfo, tempClasses);
         }
 
-        return primaryClassName;
+        return candidatePrimary;
     }
 
     /**

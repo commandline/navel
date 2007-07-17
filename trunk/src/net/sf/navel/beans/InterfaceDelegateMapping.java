@@ -70,6 +70,9 @@ class InterfaceDelegateMapping implements Serializable
      * on the total set of interfaces introspected from the construction of the
      * Proxy that JavaBeanHandler supports.
      * 
+     * @param handler
+     *            Only used to provide a reference to the initial set of
+     *            delegates.
      * @param proxiedBeanInfo
      *            All of the JavaBean interfaces the handler supports,
      *            established the total and immutable set for validating new
@@ -81,8 +84,9 @@ class InterfaceDelegateMapping implements Serializable
      *            Necessary to set onto each delegate so it can safely
      *            manipulate the internal state of the JavaBeanHandler.
      */
-    InterfaceDelegateMapping(Set<BeanInfo> proxiedBeanInfo,
-            InterfaceDelegate[] delegates, PropertyValues values)
+    InterfaceDelegateMapping(JavaBeanHandler handler,
+            Set<BeanInfo> proxiedBeanInfo, InterfaceDelegate[] delegates,
+            PropertyValues values)
     {
         this.values = values;
 
@@ -133,7 +137,7 @@ class InterfaceDelegateMapping implements Serializable
 
         for (InterfaceDelegate delegate : delegates)
         {
-            attach(delegate);
+            attach(handler, delegate);
         }
     }
 
@@ -145,7 +149,7 @@ class InterfaceDelegateMapping implements Serializable
                 source.methods));
     }
 
-    final void attach(InterfaceDelegate delegate)
+    final void attach(JavaBeanHandler handler, InterfaceDelegate delegate)
     {
         InterfaceDelegateValidator.validate(delegate);
 
@@ -167,7 +171,7 @@ class InterfaceDelegateMapping implements Serializable
                                     delegatingInterface));
         }
 
-        delegate.attach(values);
+        delegate.attach(handler, values);
         delegations.put(delegatingInterface, delegate);
     }
 
