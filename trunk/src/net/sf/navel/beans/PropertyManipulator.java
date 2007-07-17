@@ -83,7 +83,16 @@ public class PropertyManipulator
         }
 
         return BeanManipulator.resolveValue(propertyName,
-                handler.propertyValues.copyValues());
+                handler.propertyValues.copyValues(false));
+    }
+    
+    /**
+     * Overload that assumes false for flattening of the internal values.
+     * @return
+     */
+    public static Map<String, Object> copyAll(Object bean)
+    {
+        return copyAll(bean, false);
     }
 
     /**
@@ -95,7 +104,7 @@ public class PropertyManipulator
      * 
      * @return A shallow copy of the bean's internal state.
      */
-    public static Map<String, Object> copyAll(Object bean)
+    public static Map<String, Object> copyAll(Object bean, boolean flatten)
     {
         if (null == bean)
         {
@@ -110,7 +119,7 @@ public class PropertyManipulator
                     "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
         }
 
-        return handler.propertyValues.copyValues();
+        return handler.propertyValues.copyValues(flatten);
     }
 
     /**

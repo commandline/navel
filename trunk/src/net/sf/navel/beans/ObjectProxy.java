@@ -120,7 +120,7 @@ class ObjectProxy implements Serializable
 
         if ("toString".equals(method.getName()) && argTypes.length == 0)
         {
-            return filteredToString(values.copyValues());
+            return filteredToString(values.copyValues(false));
         }
 
         try
@@ -194,8 +194,8 @@ class ObjectProxy implements Serializable
 
         JavaBeanHandler otherHandler = (JavaBeanHandler) other;
 
-        return Boolean.valueOf(values.copyValues().equals(
-                otherHandler.propertyValues.copyValues()));
+        return Boolean.valueOf(values.copyValues(false).equals(
+                otherHandler.propertyValues.copyValues(false)));
     }
 
     private String filteredToString(Map<String, Object> values)

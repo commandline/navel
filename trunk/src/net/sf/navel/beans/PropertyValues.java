@@ -119,9 +119,16 @@ public class PropertyValues implements Serializable
      * 
      * @return A shallow copy of the internal values of this instance.
      */
-    public Map<String, Object> copyValues()
+    public Map<String, Object> copyValues(boolean flatten)
     {
-        return new HashMap<String, Object>(values);
+        Map<String, Object> copy = new HashMap<String, Object>(values);
+
+        if (flatten)
+        {
+            BeanManipulator.expandNestedBeans(copy);
+        }
+
+        return copy;
     }
 
     /**

@@ -30,6 +30,8 @@
 package net.sf.navel.beans;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import net.sf.navel.example.IndexedBean;
 import net.sf.navel.example.NestedBean;
@@ -38,6 +40,7 @@ import net.sf.navel.example.TypesBean;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -277,4 +280,45 @@ public class PropertyManipulatorTest
                 true, "Nested boolean should have set value.");
     }
 
+    @Test(dataProvider = "copyAll")
+    public void testCopyAll(int expectedSize, boolean flatten)
+    {
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class);
+        bean.setNested(ProxyFactory.createAs(TypesBean.class));
+
+        bean.getNested().setBoolean(true);
+        bean.getNested().setCharacter('q');
+        bean.getNested().setInteger(100);
+
+        Map<String, Object> values = PropertyManipulator.copyAll(bean, flatten);
+
+        Assert.assertEquals(values.size(), expectedSize, String.format(
+                "Should have had correct size of values Map for flatten, %s.",
+                flatten));
+
+        if (flatten)
+        {
+            for (Entry<String, Object> entry : values.entrySet())
+            {
+                Assert.assertNull(ProxyFactory.getHandler(entry.getValue()),
+                        String.format(
+                                "Property, %s, should not have been a bean!",
+                                entry.getKey()));
+            }
+        }
+        else
+        {
+            Assert.assertEquals(values.get("nested"), bean.getNested(),
+                    "Should have fully populated bean still in the map.");
+        }
+    }
+
+    @DataProvider(name = "copyAll")
+    public Object[][] createData()
+    {
+        return new Object[][]
+        { new Object[]
+        { 1, false }, new Object[]
+        { 3, true } };
+    }
 }

@@ -81,7 +81,7 @@ public class PropertyHandlerTest
         bean.setReadWrite(readWrite);
 
         // can only check write-only via the underlying map
-        values = ProxyFactory.getHandler(bean).propertyValues.copyValues();
+        values = ProxyFactory.getHandler(bean).propertyValues.copyValues(false);
 
         Assert.assertEquals(bean.getReadOnly(), readOnly,
                 "readOnly should equal 1");

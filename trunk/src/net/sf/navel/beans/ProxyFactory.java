@@ -229,7 +229,7 @@ public class ProxyFactory
 
         JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
 
-        Map<String, Object> values = copyHandler.propertyValues.copyValues();
+        Map<String, Object> values = copyHandler.propertyValues.copyValues(false);
 
         for (Entry<String, Object> entry : values.entrySet())
         {
