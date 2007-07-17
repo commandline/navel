@@ -311,7 +311,7 @@ public class ProxyFactory
                     "Cannot attach a delegate to anything other than a Navel bean!");
         }
 
-        handler.delegateMapping.attach(delegate);
+        handler.delegateMapping.attach(handler, delegate);
     }
 
     /**
