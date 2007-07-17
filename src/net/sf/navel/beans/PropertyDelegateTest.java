@@ -109,7 +109,7 @@ public class PropertyDelegateTest
         Assert.assertEquals(typesBean.getCharacter(), 'b',
                 "Live value should be permanently changed.");
 
-        Assert.assertEquals(handler.propertyValues.copyValues().size(), 2,
+        Assert.assertEquals(handler.propertyValues.copyValues(false).size(), 2,
                 "Should have two entries.");
     }
 

@@ -213,7 +213,7 @@ public class MethodHandlerTest
 
         JavaBeanHandler handler = ProxyFactory.getHandler(bean);
 
-        Map<String, Object> values = handler.propertyValues.copyValues();
+        Map<String, Object> values = handler.propertyValues.copyValues(false);
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");
@@ -225,7 +225,7 @@ public class MethodHandlerTest
         Integer result = delegated.doThat(Integer.valueOf(2), Integer.valueOf(3));
 
         // need to fetch values again, since we only every get a shallow copy
-        values = handler.propertyValues.copyValues();
+        values = handler.propertyValues.copyValues(false);
 
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Write only should be set.");

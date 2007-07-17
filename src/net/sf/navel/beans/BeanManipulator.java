@@ -236,7 +236,7 @@ public class BeanManipulator
         return false;
     }
 
-    private static void expandNestedBeans(Map<String, Object> values)
+    static void expandNestedBeans(Map<String, Object> values)
     {
         // to allow modification of the original map
         Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
@@ -255,7 +255,7 @@ public class BeanManipulator
             }
 
             SINGLETON.expandNestedBean(values, entry.getKey(),
-                    handler.propertyValues.copyValues());
+                    handler.propertyValues.copyValues(false));
         }
     }
 

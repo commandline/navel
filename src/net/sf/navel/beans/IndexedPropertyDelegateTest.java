@@ -112,7 +112,7 @@ public class IndexedPropertyDelegateTest
         Assert.assertEquals(indexedBean.getFloats(0), 17.0, 0,
                 "Live value should be permanently changed.");
 
-        Assert.assertEquals(handler.propertyValues.copyValues().size(), 2,
+        Assert.assertEquals(handler.propertyValues.copyValues(false).size(), 2,
                 "Should have two entries.");
     }
 
