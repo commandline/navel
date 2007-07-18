@@ -248,19 +248,21 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
     @Override
     public String toString()
     {
-        StringBuilder buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder("JavaBeanHandler: ");
+        buffer.append(primaryType.getName());
 
         for (Class<?> proxiedInterface : proxiedInterfaces)
         {
-            if (buffer.length() != 0)
+            if (primaryType.equals(proxiedInterface))
             {
-                buffer.append(", ");
+                continue;
             }
 
+            buffer.append(", ");
             buffer.append(proxiedInterface.getName());
         }
 
-        return "JavaBeanHandler: " + buffer.toString();
+        return buffer.toString();
     }
 
     Object copy()
