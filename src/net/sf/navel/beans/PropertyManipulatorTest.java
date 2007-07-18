@@ -118,6 +118,18 @@ public class PropertyManipulatorTest
         Assert.assertTrue(
                 handler.propertyValues.isPropertyOf("nested.boolean"),
                 "Nested property should pass.");
+        
+        nested.setNested(ProxyFactory.createAs(TypesBean.class));
+
+        Assert.assertTrue(
+                handler.propertyValues.isPropertyOf("nested.boolean"),
+                "Nested property after empty set should pass.");
+        
+        nested.getNested().setBoolean(true);
+
+        Assert.assertTrue(
+                handler.propertyValues.isPropertyOf("nested.boolean"),
+                "Nested property after full set should pass.");
 
         Assert.assertFalse(handler.propertyValues.isPropertyOf("foo"));
         Assert.assertFalse(handler.propertyValues.isPropertyOf("nested.foo"));
