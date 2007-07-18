@@ -378,7 +378,7 @@ public class PropertyValues implements Serializable
             indexedProperty = true;
         }
 
-        for (PropertyDescriptor propertyDescriptor : propertyDescriptors
+        for (PropertyDescriptor propertyDescriptor : propertyValues.propertyDescriptors
                 .values())
         {
             // keep going if this is not the property we are looking for or
