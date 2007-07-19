@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class BooleanSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = boolean[].class;
+    public static final Class<?> ARRAY_TYPE = boolean[].class;
 
     private static final BooleanSupport SINGLETON = new BooleanSupport();
     private static final Boolean DEFAULT_VALUE = Boolean.FALSE;
