@@ -342,7 +342,7 @@ public class ProxyFactory
      *            Delegate to attach.
      */
     public static void attach(Object bean, String propertyName,
-            PropertyDelegate delegate)
+            PropertyDelegate<?> delegate)
     {
         JavaBeanHandler handler = getHandler(bean);
 

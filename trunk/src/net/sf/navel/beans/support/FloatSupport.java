@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class FloatSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = float[].class;
+    public static final Class<?> ARRAY_TYPE = float[].class;
 
     private static final FloatSupport SINGLETON = new FloatSupport();
     private static final Float DEFAULT_VALUE = new Float(0.0f);

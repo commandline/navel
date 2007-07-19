@@ -79,7 +79,7 @@ public class MethodHandler implements Serializable
             LOGGER.debug(String.format("Invoking %1$s.", method.getName()));
         }
 
-        Class proxiedInterface = method.getDeclaringClass();
+        Class<?> proxiedInterface = method.getDeclaringClass();
 
         Object delegate = mapping.delegations.get(proxiedInterface);
 

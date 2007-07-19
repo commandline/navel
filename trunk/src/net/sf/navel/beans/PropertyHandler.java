@@ -234,7 +234,7 @@ class PropertyHandler implements Serializable
         {
             if (values.isAttached(propertyName))
             {
-                PropertyDelegate delegate = values.propertyDelegates
+                PropertyDelegate<?> delegate = values.propertyDelegates
                         .get(propertyName);
 
                 if (LOGGER.isDebugEnabled())
@@ -317,7 +317,7 @@ class PropertyHandler implements Serializable
 
         if (values.isAttached(propertyName))
         {
-            PropertyDelegate delegate = values.propertyDelegates
+            PropertyDelegate<?> delegate = values.propertyDelegates
                     .get(propertyName);
 
             return delegate.get(values, propertyName);

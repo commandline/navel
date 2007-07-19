@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class DoubleSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = double[].class;
+    public static final Class<?> ARRAY_TYPE = double[].class;
 
     private static final DoubleSupport SINGLETON = new DoubleSupport();
     private static final Double DEFAULT_VALUE = new Double(0.0d);

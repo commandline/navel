@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class LongSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = long[].class;
+    public static final Class<?> ARRAY_TYPE = long[].class;
 
     private static final LongSupport SINGLETON = new LongSupport();
     private static final Long DEFAULT_VALUE = Long.valueOf(0L);

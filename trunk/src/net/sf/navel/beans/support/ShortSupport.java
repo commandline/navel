@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class ShortSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = short[].class;
+    public static final Class<?> ARRAY_TYPE = short[].class;
 
     private static final ShortSupport SINGLETON = new ShortSupport();
     private static final Short DEFAULT_VALUE = Short.valueOf((short)0);

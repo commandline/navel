@@ -98,7 +98,7 @@ class ObjectProxy implements Serializable
 
         int count = (null == args) ? 0 : args.length;
 
-        Class[] argTypes = new Class[count];
+        Class<?>[] argTypes = new Class<?>[count];
 
         // the only method in Object that takes an argument is equals, and it
         // takes another Object as an argument
@@ -217,7 +217,7 @@ class ObjectProxy implements Serializable
         return primaryClassName + ": " + toPrint.toString();
     }
 
-    private String parseArguments(Class[] argTypes)
+    private String parseArguments(Class<?>[] argTypes)
     {
         if (null == argTypes)
         {
