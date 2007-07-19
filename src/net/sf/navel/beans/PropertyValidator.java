@@ -70,11 +70,11 @@ class PropertyValidator
     }
 
     static void validate(String propertyName,
-            PropertyDescriptor propertyDescriptor, PropertyDelegate delegate)
+            PropertyDescriptor propertyDescriptor, PropertyDelegate<?> delegate)
     {
         if (delegate instanceof IndexedPropertyDelegate)
         {
-            IndexedPropertyDelegate indexedDelegate = (IndexedPropertyDelegate) delegate;
+            IndexedPropertyDelegate<?, ?> indexedDelegate = (IndexedPropertyDelegate<?, ?>) delegate;
 
             Class<?> arrayType = delegate.propertyType();
 

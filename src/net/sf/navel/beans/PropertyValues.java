@@ -317,7 +317,7 @@ public class PropertyValues implements Serializable
             return;
         }
 
-        Class propertyType = propertyDescriptor.getPropertyType();
+        Class<?> propertyType = propertyDescriptor.getPropertyType();
 
         Object nestedBean = null;
 

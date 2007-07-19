@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class IntegerSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = int[].class;
+    public static final Class<?> ARRAY_TYPE = int[].class;
 
     private static final IntegerSupport SINGLETON = new IntegerSupport();
     private static final Integer DEFAULT_VALUE = Integer.valueOf(0);

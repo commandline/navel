@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class CharacterSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = char[].class;
+    public static final Class<?> ARRAY_TYPE = char[].class;
 
     private static final CharacterSupport SINGLETON = new CharacterSupport();
     private static final Character DEFAULT_VALUE = Character.valueOf('\u0000');

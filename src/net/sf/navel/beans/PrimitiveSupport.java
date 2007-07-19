@@ -61,11 +61,11 @@ class PrimitiveSupport
 
     private static final PrimitiveSupport SINGLETON = new PrimitiveSupport();
 
-    private final Map<Class, ArrayManipulator> manipulators;
+    private final Map<Class<?>, ArrayManipulator> manipulators;
 
-    private final Map<Class, DefaultPrimitive> defaults;
+    private final Map<Class<?>, DefaultPrimitive> defaults;
 
-    private final Map<Class, Class> wrappers;
+    private final Map<Class<?>, Class<?>> wrappers;
 
     /**
      * Prevent external instantiation.
@@ -90,7 +90,7 @@ class PrimitiveSupport
      *            Value, typically from the PropertyBeanHandler's underlying
      *            Map.
      */
-    static void validate(String propertyName, Class propertyType,
+    static void validate(String propertyName, Class<?> propertyType,
             Object propertyValue) throws InvalidPropertyValueException
     {
         SINGLETON.validatePrimitive(propertyName, propertyType, propertyValue);
@@ -109,7 +109,7 @@ class PrimitiveSupport
      * @return Is the propertyValue a valid wrapper instance for the property
      *         type?
      */
-    static boolean isValid(Class propertyType, Object propertyValue)
+    static boolean isValid(Class<?> propertyType, Object propertyValue)
     {
         return SINGLETON.isValidPrimitive(propertyType, propertyValue);
     }
@@ -123,7 +123,7 @@ class PrimitiveSupport
      *            and my suspicion is it may change from JVM to JVM.
      * @return Can this class work with the array type?
      */
-    static boolean isPrimitiveArray(Class propertyType)
+    static boolean isPrimitiveArray(Class<?> propertyType)
     {
         return SINGLETON.manipulators.containsKey(propertyType);
     }
@@ -185,7 +185,7 @@ class PrimitiveSupport
      * @return The value itself it it is not a primitive or is not null, an
      *         appropriate primitive default otherwise.
      */
-    static Object handleNull(Class returnType, Object value)
+    static Object handleNull(Class<?> returnType, Object value)
     {
         if (!returnType.isPrimitive() || (null != value))
         {
@@ -211,9 +211,9 @@ class PrimitiveSupport
         return defaultPrimitive.getValue();
     }
 
-    private Map<Class, ArrayManipulator> initManipulators()
+    private Map<Class<?>, ArrayManipulator> initManipulators()
     {
-        Map<Class, ArrayManipulator> manipulators = new HashMap<Class, ArrayManipulator>(
+        Map<Class<?>, ArrayManipulator> manipulators = new HashMap<Class<?>, ArrayManipulator>(
                 8);
         manipulators.put(BooleanSupport.ARRAY_TYPE, BooleanSupport
                 .getInstance());
@@ -230,9 +230,9 @@ class PrimitiveSupport
         return Collections.unmodifiableMap(manipulators);
     }
 
-    private Map<Class, DefaultPrimitive> initDefaults()
+    private Map<Class<?>, DefaultPrimitive> initDefaults()
     {
-        Map<Class, DefaultPrimitive> defaults = new HashMap<Class, DefaultPrimitive>(
+        Map<Class<?>, DefaultPrimitive> defaults = new HashMap<Class<?>, DefaultPrimitive>(
                 8);
 
         defaults.put(Boolean.TYPE, BooleanSupport.getInstance());
@@ -247,9 +247,9 @@ class PrimitiveSupport
         return Collections.unmodifiableMap(defaults);
     }
 
-    private Map<Class, Class> initWrappers()
+    private Map<Class<?>, Class<?>> initWrappers()
     {
-        Map<Class, Class> wrappers = new HashMap<Class, Class>(8);
+        Map<Class<?>, Class<?>> wrappers = new HashMap<Class<?>, Class<?>>(8);
 
         wrappers.put(Boolean.TYPE, Boolean.class);
         wrappers.put(Byte.TYPE, Byte.class);
@@ -263,10 +263,10 @@ class PrimitiveSupport
         return Collections.unmodifiableMap(wrappers);
     }
 
-    private void validatePrimitive(String propertyName, Class propertyType,
+    private void validatePrimitive(String propertyName, Class<?> propertyType,
             Object propertyValue) throws InvalidPropertyValueException
     {
-        Class wrapperClass = wrappers.get(propertyType);
+        Class<?> wrapperClass = wrappers.get(propertyType);
 
         if (!wrapperClass.isInstance(propertyValue))
         {
@@ -287,9 +287,9 @@ class PrimitiveSupport
         }
     }
 
-    private boolean isValidPrimitive(Class propertyType, Object propertyValue)
+    private boolean isValidPrimitive(Class<?> propertyType, Object propertyValue)
     {
-        Class wrapperClass = wrappers.get(propertyType);
+        Class<?> wrapperClass = wrappers.get(propertyType);
 
         if (null == wrapperClass)
         {

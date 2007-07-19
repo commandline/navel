@@ -139,7 +139,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
             return;
         }
 
-        Class[] argTypes = method.getParameterTypes();
+        Class<?>[] argTypes = method.getParameterTypes();
 
         if (argTypes.length != args.length)
         {
@@ -150,7 +150,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
         }
 
         int valueIndex = args.length - 1;
-        Class propertyType = argTypes[valueIndex];
+        Class<?> propertyType = argTypes[valueIndex];
         Object value = args[valueIndex];
 
         if (propertyType.isPrimitive())
@@ -227,7 +227,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
             return null;
         }
 
-        Class[] argTypes = method.getParameterTypes();
+        Class<?>[] argTypes = method.getParameterTypes();
 
         if (argTypes.length > args.length)
         {

@@ -36,7 +36,7 @@ package net.sf.navel.beans.support;
  */
 public class ByteSupport implements ArrayManipulator, DefaultPrimitive
 {
-    public static final Class ARRAY_TYPE = byte[].class;
+    public static final Class<?> ARRAY_TYPE = byte[].class;
 
     private static final ByteSupport SINGLETON = new ByteSupport();
     
