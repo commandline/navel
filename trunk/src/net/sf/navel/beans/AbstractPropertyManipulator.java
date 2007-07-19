@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2003, Thomas Gideon
+ * Copyright (c) 2003-2007, Thomas Gideon
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
