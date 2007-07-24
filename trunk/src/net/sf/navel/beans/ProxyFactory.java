@@ -133,8 +133,9 @@ public class ProxyFactory
                     "Must supply at least interface for the proxy to implement!");
         }
 
-        return Proxy.newProxyInstance(allTypes[0].getClassLoader(), allTypes,
-                new JavaBeanHandler(initialValues, allTypes, initialDelegates));
+        return Proxy.newProxyInstance(Thread.currentThread()
+                .getContextClassLoader(), allTypes, new JavaBeanHandler(
+                initialValues, allTypes, initialDelegates));
     }
 
     /**
@@ -229,7 +230,8 @@ public class ProxyFactory
 
         JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
 
-        Map<String, Object> values = copyHandler.propertyValues.copyValues(false);
+        Map<String, Object> values = copyHandler.propertyValues
+                .copyValues(false);
 
         for (Entry<String, Object> entry : values.entrySet())
         {
