@@ -63,7 +63,7 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
     /**
      * The validateObject method re-populates this during deserialization.
      */
-    private transient Set<BeanInfo> proxiedBeanInfo;
+    transient Set<BeanInfo> proxiedBeanInfo;
 
     /**
      * The validateObject method re-populates this during deserialization.
@@ -119,14 +119,6 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
     public Set<Class<?>> getProxiedInterfaces()
     {
         return proxiedInterfaces;
-    }
-
-    /**
-     * @return the proxiedBeanInfo
-     */
-    public Set<BeanInfo> getProxiedBeanInfo()
-    {
-        return proxiedBeanInfo;
     }
 
     /**

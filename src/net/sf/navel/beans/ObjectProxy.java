@@ -63,11 +63,11 @@ class ObjectProxy implements Serializable
 
     private final Set<String> filterToString;
 
-    ObjectProxy(ProxyDescriptor navelDescriptor)
+    ObjectProxy(ProxyDescriptor proxyDescriptor)
     {
         Set<String> tempFilter = new HashSet<String>();
 
-        for (BeanInfo beanInfo : navelDescriptor.getProxiedBeanInfo())
+        for (BeanInfo beanInfo : proxyDescriptor.proxiedBeanInfo)
         {
 
             IgnoreToString ignore = beanInfo.getBeanDescriptor().getBeanClass()
@@ -80,7 +80,7 @@ class ObjectProxy implements Serializable
         }
 
         this.filterToString = Collections.unmodifiableSet(tempFilter);
-        this.primaryClassName = navelDescriptor.getPrimaryType().getName();
+        this.primaryClassName = proxyDescriptor.getPrimaryType().getName();
     }
 
     ObjectProxy(ObjectProxy source)

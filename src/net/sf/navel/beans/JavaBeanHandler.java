@@ -90,7 +90,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         this.propertyHandler = new PropertyHandler(this.propertyValues);
 
         this.delegateMapping = new InterfaceDelegateMapping(this,
-                proxyDescriptor.getProxiedBeanInfo(), delegates, propertyValues);
+                proxyDescriptor.proxiedBeanInfo, delegates, propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
     }
 
