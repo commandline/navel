@@ -43,14 +43,14 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-public class DefaultNestedBeanHandler implements NestedBeanHandler
+public class DefaultNestedBeanBuilder implements NestedBeanBuilder
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(DefaultNestedBeanHandler.class);
+            .getLogger(DefaultNestedBeanBuilder.class);
 
     /**
-     * @see net.sf.navel.beans.NestedBeanHandler#create(java.lang.String,
+     * @see net.sf.navel.beans.NestedBeanBuilder#create(java.lang.String,
      *      java.lang.Class, java.util.Map)
      */
     public Object create(String propertyName, Class<?> propertyType,
