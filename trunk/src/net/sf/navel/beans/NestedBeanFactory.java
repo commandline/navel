@@ -53,7 +53,7 @@ public class NestedBeanFactory
 
     private static final NestedBeanFactory SINGLETON = new NestedBeanFactory();
 
-    private NestedBeanHandler handler = new DefaultNestedBeanHandler();
+    private NestedBeanBuilder handler = new DefaultNestedBeanBuilder();
 
     /**
      * Register a custom handler, will affect all calls to the BeanManipulator,
@@ -63,7 +63,7 @@ public class NestedBeanFactory
      * @param handler
      *            Custom handler that encapsulates external factory behavior.
      */
-    public static void register(NestedBeanHandler handler)
+    public static void register(NestedBeanBuilder handler)
     {
         if (null == handler)
         {
@@ -77,6 +77,7 @@ public class NestedBeanFactory
                     "Registering new NestedBeanHandler, %1$s.", handler
                             .getClass().getName()));
         }
+        
         SINGLETON.handler = handler;
     }
 

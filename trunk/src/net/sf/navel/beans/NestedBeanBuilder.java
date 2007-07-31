@@ -39,7 +39,7 @@ import java.util.Map;
  * @author cmdln
  * 
  */
-public interface NestedBeanHandler
+public interface NestedBeanBuilder
 {
 
     /**
