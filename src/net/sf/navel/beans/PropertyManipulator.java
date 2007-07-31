@@ -85,9 +85,10 @@ public class PropertyManipulator
         return BeanManipulator.resolveValue(propertyName,
                 handler.propertyValues.copyValues(false));
     }
-    
+
     /**
      * Overload that assumes false for flattening of the internal values.
+     * 
      * @return
      */
     public static Map<String, Object> copyAll(Object bean)
@@ -120,6 +121,33 @@ public class PropertyManipulator
         }
 
         return handler.propertyValues.copyValues(flatten);
+    }
+
+    /**
+     * Allows retrieval of the reflection information provided at construction
+     * time, including the primary interface out of all the supported
+     * interfaces.
+     * 
+     * @param bean
+     *            Must be a navel bean.
+     * @return The reflection descriptor for the proxy.
+     */
+    public static ProxyDescriptor getProxyDescriptor(Object bean)
+    {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException("Bean argument cannot be null!");
+        }
+
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new UnsupportedFeatureException(
+                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
+        }
+
+        return handler.propertyValues.getProxyDescriptor();
     }
 
     /**
