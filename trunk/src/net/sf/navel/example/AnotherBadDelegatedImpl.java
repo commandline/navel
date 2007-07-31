@@ -30,7 +30,6 @@
 package net.sf.navel.example;
 
 import net.sf.navel.beans.InterfaceDelegate;
-import net.sf.navel.beans.JavaBeanHandler;
 import net.sf.navel.beans.PropertyValues;
 
 import org.apache.log4j.Logger;
@@ -62,7 +61,7 @@ public class AnotherBadDelegatedImpl implements InterfaceDelegate
         return Delegated.class;
     }
 
-    public void attach(JavaBeanHandler handler, PropertyValues values)
+    public void attach(PropertyValues values)
     {
         this.values = values;
     }

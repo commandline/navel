@@ -44,7 +44,7 @@ public interface InterfaceDelegate extends Serializable
     /**
      * Indicate which interface in a proxy this delegate is meant to support.
      * 
-     * @return Must be an interface, used to help determin how to route a method
+     * @return Must be an interface, used to help determine how to route a method
      *         call to this delegate.
      */
     Class<?> getDelegatingInterface();
@@ -54,7 +54,7 @@ public interface InterfaceDelegate extends Serializable
      * implementation to gain access to the PropertyValues view into the
      * internal values of a proxied JavaBean.
      */
-    void attach(JavaBeanHandler handler, PropertyValues values);
+    void attach(PropertyValues values);
 
     /**
      * Called when a delegate is detached to clean up the reference to the

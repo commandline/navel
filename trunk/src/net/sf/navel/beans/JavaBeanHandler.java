@@ -38,7 +38,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -89,9 +88,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         this.propertyValues = new PropertyValues(proxyDescriptor, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
 
-        this.delegateMapping = new InterfaceDelegateMapping(this,
-                proxyDescriptor.proxiedBeanInfo, delegates, propertyValues);
-        this.methodHandler = new MethodHandler(delegateMapping);
+        this.delegateMapping = new InterfaceDelegateMapping(this.proxyDescriptor.proxiedBeanInfo, delegates, this.propertyValues);
+        this.methodHandler = new MethodHandler(this.delegateMapping);
     }
 
     JavaBeanHandler(JavaBeanHandler source)
@@ -117,14 +115,6 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                     "Cannot introspect interface, %1$s.", proxiedInterface
                             .getName()), e);
         }
-    }
-
-    /**
-     * Return the first interface provided during the construction of the proxy.
-     */
-    public Class<?> getPrimaryInterface()
-    {
-        return proxyDescriptor.getPrimaryType();
     }
 
     /**
@@ -189,16 +179,6 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         throw new UnsupportedFeatureException(String
                 .format("Could not find a usable target for  method, %1$s.",
                         methodName));
-    }
-
-    /**
-     * Useful for reflecting on the set of interfaces this proxy supports.
-     * 
-     * @return This set is unmodifiable so is returned directly.
-     */
-    public Set<Class<?>> getProxiedClasses()
-    {
-        return proxyDescriptor.getProxiedInterfaces();
     }
 
     @Override
