@@ -37,7 +37,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
- * @author thomas
+ * @author cmdln
  *
  */
 public class ObjectProxyTest
