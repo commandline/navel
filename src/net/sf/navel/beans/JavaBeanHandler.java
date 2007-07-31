@@ -30,20 +30,13 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
-import java.beans.EventSetDescriptor;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInputStream;
-import java.io.ObjectInputValidation;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,8 +50,7 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-public class JavaBeanHandler implements InvocationHandler, Serializable,
-        ObjectInputValidation
+public class JavaBeanHandler implements InvocationHandler, Serializable
 {
 
     private static final long serialVersionUID = 5765950784911097987L;
@@ -66,11 +58,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
     private static final Logger LOGGER = LogManager
             .getLogger(JavaBeanHandler.class);
 
-    private transient Set<BeanInfo> proxiedBeanInfo;
-
-    private final Class<?> primaryType;
-
-    private final Set<Class<?>> proxiedInterfaces;
+    private final ProxyDescriptor proxyDescriptor;
 
     private final PropertyHandler propertyHandler;
 
@@ -96,30 +84,20 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
     JavaBeanHandler(Map<String, Object> initialValues,
             Class<?>[] proxiedClasses, InterfaceDelegate[] delegates)
     {
-        Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
-        Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
+        this.proxyDescriptor = ProxyDescriptor.create(proxiedClasses);
 
-        this.primaryType = mapTypes(proxiedClasses, tempInfo, tempClasses);
-
-        this.proxiedInterfaces = Collections.unmodifiableSet(tempClasses);
-        this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-
-        this.propertyValues = new PropertyValues(this.primaryType.getName(),
-                proxiedBeanInfo, initialValues);
+        this.propertyValues = new PropertyValues(proxyDescriptor, initialValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
 
         this.delegateMapping = new InterfaceDelegateMapping(this,
-                proxiedBeanInfo, delegates, propertyValues);
+                proxyDescriptor.getProxiedBeanInfo(), delegates, propertyValues);
         this.methodHandler = new MethodHandler(delegateMapping);
     }
 
     JavaBeanHandler(JavaBeanHandler source)
     {
-        this.primaryType = source.primaryType;
-        this.proxiedInterfaces = Collections
-                .unmodifiableSet(new HashSet<Class<?>>(source.proxiedInterfaces));
-        this.proxiedBeanInfo = Collections
-                .unmodifiableSet(new HashSet<BeanInfo>(source.proxiedBeanInfo));
+        // since ProxyDescriptor is immutable, this is a safe assignment
+        this.proxyDescriptor = source.proxyDescriptor;
         this.propertyValues = new PropertyValues(source.propertyValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
         this.delegateMapping = new InterfaceDelegateMapping(
@@ -146,7 +124,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
      */
     public Class<?> getPrimaryInterface()
     {
-        return primaryType;
+        return proxyDescriptor.getPrimaryType();
     }
 
     /**
@@ -175,7 +153,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
             return propertyValues.proxyToObject("", method, args);
         }
 
-        if (!proxiedInterfaces.contains(declaringClass))
+        if (!proxyDescriptor.getProxiedInterfaces().contains(declaringClass))
         {
             throw new IllegalStateException(
                     String
@@ -220,40 +198,18 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
      */
     public Set<Class<?>> getProxiedClasses()
     {
-        return proxiedInterfaces;
-    }
-
-    /**
-     * Used during de-serialization to restore the non serializable
-     * instrospection metadata from the JavaBeans API.
-     * 
-     * @see java.io.ObjectInputValidation#validateObject()
-     */
-    public void validateObject() throws InvalidObjectException
-    {
-        Set<BeanInfo> tempInfo = new HashSet<BeanInfo>();
-
-        for (Class<?> proxiedInterface : proxiedInterfaces)
-        {
-            BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
-
-            tempInfo.add(beanInfo);
-        }
-
-        proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-
-        propertyValues.restore(proxiedBeanInfo);
+        return proxyDescriptor.getProxiedInterfaces();
     }
 
     @Override
     public String toString()
     {
         StringBuilder buffer = new StringBuilder("JavaBeanHandler: ");
-        buffer.append(primaryType.getName());
+        buffer.append(proxyDescriptor.getPrimaryType().getName());
 
-        for (Class<?> proxiedInterface : proxiedInterfaces)
+        for (Class<?> proxiedInterface : proxyDescriptor.getProxiedInterfaces())
         {
-            if (primaryType.equals(proxiedInterface))
+            if (proxyDescriptor.getPrimaryType().equals(proxiedInterface))
             {
                 continue;
             }
@@ -267,8 +223,9 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     Object copy()
     {
-        Class<?>[] copyTypes = new ArrayList<Class<?>>(proxiedInterfaces)
-                .toArray(new Class<?>[proxiedInterfaces.size()]);
+        Class<?>[] copyTypes = new ArrayList<Class<?>>(proxyDescriptor
+                .getProxiedInterfaces()).toArray(new Class<?>[proxyDescriptor
+                .getProxiedInterfaces().size()]);
 
         return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(),
                 copyTypes, new JavaBeanHandler(this));
@@ -276,78 +233,6 @@ public class JavaBeanHandler implements InvocationHandler, Serializable,
 
     boolean proxiesFor(Class<?> proxyInterface)
     {
-        return proxiedInterfaces.contains(proxyInterface);
-    }
-
-    private final void readObject(ObjectInputStream input) throws IOException,
-            ClassNotFoundException
-    {
-        input.defaultReadObject();
-
-        input.registerValidation(this, 0);
-    }
-
-    private final Class<?> mapTypes(Class<?>[] proxiedClasses,
-            Set<BeanInfo> tempInfo, Set<Class<?>> tempClasses)
-    {
-        Class<?> candidatePrimary = null;
-
-        for (int i = 0; i < proxiedClasses.length; i++)
-        {
-            Class<?> proxiedInterface = proxiedClasses[i];
-
-            if (null == proxiedInterface)
-            {
-                throw new IllegalArgumentException(String.format(
-                        "Found a null class at index, %1$d!", i));
-            }
-
-            if (!proxiedInterface.isInterface())
-            {
-
-                throw new IllegalArgumentException(
-                        String
-                                .format(
-                                        "The class, %1$s, at index, %2$d, is not an interface.  Only interfaces may be proxied.",
-                                        proxiedInterface.getName(), i));
-            }
-
-            if (null == candidatePrimary)
-            {
-                candidatePrimary = proxiedInterface;
-            }
-
-            BeanInfo beanInfo = JavaBeanHandler.introspect(proxiedInterface);
-
-            tempInfo.add(beanInfo);
-
-            forbidEvents(beanInfo);
-
-            tempClasses.add(proxiedInterface);
-
-            // recurse any interfaces this one extends
-            mapTypes(proxiedInterface.getInterfaces(), tempInfo, tempClasses);
-        }
-
-        return candidatePrimary;
-    }
-
-    /**
-     * Ensure that for the proxied class, there are no events declared, since
-     * PropertyBeanHandler doesn't support events.
-     * 
-     * @param beanInfo
-     *            Introspection data about the proxied class.
-     */
-    private final void forbidEvents(BeanInfo beanInfo)
-            throws UnsupportedFeatureException
-    {
-        EventSetDescriptor[] events = beanInfo.getEventSetDescriptors();
-
-        if ((null != events) && (0 != events.length))
-        {
-            throw new UnsupportedFeatureException(
-                    "PropertyBeanHandler does not support JavaBeans with events.");
-        }
+        return proxyDescriptor.getProxiedInterfaces().contains(proxyInterface);
     }
 }

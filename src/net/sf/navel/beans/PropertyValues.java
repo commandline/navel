@@ -34,10 +34,8 @@ import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -62,54 +60,49 @@ public class PropertyValues implements Serializable
 
     final Map<String, PropertyDelegate<?>> propertyDelegates = new HashMap<String, PropertyDelegate<?>>();
 
-    /**
-     * The restore method re-populates this during deserialization, restore is
-     * called by JavaBeanHandler as part of its custom serialization logic.
-     */
-    @SuppressWarnings("unchecked")
-    private transient Map<String, PropertyDescriptor> propertyDescriptors;
-
     private final Map<String, Object> values;
+
+    private final ProxyDescriptor proxyDescriptor;
 
     final ObjectProxy objectProxy;
 
-    PropertyValues(String primaryClassName, Set<BeanInfo> proxiedBeanInfo,
+    PropertyValues(ProxyDescriptor proxyDescriptor,
             Map<String, Object> initialValues)
     {
-        Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
+        this.proxyDescriptor = proxyDescriptor;
 
         Map<String, Object> initialCopy = null == initialValues ? new HashMap<String, Object>()
                 : new HashMap<String, Object>(initialValues);
 
-        for (BeanInfo beanInfo : proxiedBeanInfo)
-        {
-            tempProperties.putAll(mapProperties(beanInfo));
-        }
-
         // this cleans up nested values, if it hits a Navel bean as a nested
         // property it will try to re-use or instantiate as appropriate,
         // including validating the nested bean
-        PropertyValueResolver.resolve(tempProperties, initialCopy);
+        PropertyValueResolver.resolve(proxyDescriptor.propertyDescriptors,
+                initialCopy);
 
         // only validates the direct properties of this bean, but the step above
         // takes care of ensuring nested properties are valid
-        PropertyValidator.validateAll(tempProperties, initialCopy);
+        PropertyValidator.validateAll(proxyDescriptor.propertyDescriptors,
+                initialCopy);
 
-        this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
-
-        this.objectProxy = new ObjectProxy(primaryClassName, proxiedBeanInfo);
+        this.objectProxy = new ObjectProxy(proxyDescriptor);
 
         this.values = initialCopy;
     }
 
     PropertyValues(PropertyValues source)
     {
-        this.propertyDescriptors = Collections
-                .unmodifiableMap(source.propertyDescriptors);
+        // NavelDescriptor is immutable so safe to share like this
+        this.proxyDescriptor = source.proxyDescriptor;
 
         this.objectProxy = new ObjectProxy(source.objectProxy);
 
         this.values = new HashMap<String, Object>(source.values);
+    }
+
+    public ProxyDescriptor getProxyDescriptor()
+    {
+        return proxyDescriptor;
     }
 
     /**
@@ -169,11 +162,13 @@ public class PropertyValues implements Serializable
         Map<String, Object> combined = new HashMap<String, Object>(values);
         combined.putAll(newValues);
 
-        PropertyValueResolver.resolve(propertyDescriptors, combined);
+        PropertyValueResolver.resolve(proxyDescriptor.propertyDescriptors,
+                combined);
 
         // depends on resolution taking care of lists, not presently possible to
         // validate just the new values
-        PropertyValidator.validateAll(propertyDescriptors, combined);
+        PropertyValidator.validateAll(proxyDescriptor.propertyDescriptors,
+                combined);
 
         // clear out the existing values since the new Map will contain old and
         // new correctly resolved, validated and combined
@@ -219,25 +214,6 @@ public class PropertyValues implements Serializable
         return byNames;
     }
 
-    /**
-     * Used during deserialization of JavaBeanHandler to re-populate the
-     * introspection data that is not Serializable.
-     * 
-     * @param proxiedBeanInfo
-     *            Introspection data from JavaBeanHandler.
-     */
-    void restore(Set<BeanInfo> proxiedBeanInfo)
-    {
-        Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
-
-        for (BeanInfo beanInfo : proxiedBeanInfo)
-        {
-            tempProperties.putAll(PropertyValues.mapProperties(beanInfo));
-        }
-
-        this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
-    }
-
     boolean isAttached(String propertyName)
     {
         return propertyDelegates.containsKey(propertyName)
@@ -255,7 +231,7 @@ public class PropertyValues implements Serializable
                                     propertyName));
         }
 
-        PropertyDescriptor propertyDescriptor = propertyDescriptors
+        PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
                 .get(propertyName);
 
         PropertyValidator.validate(propertyName, propertyDescriptor, delegate);
@@ -288,7 +264,7 @@ public class PropertyValues implements Serializable
             indexedProperty = true;
         }
 
-        PropertyDescriptor propertyDescriptor = propertyValues.propertyDescriptors
+        PropertyDescriptor propertyDescriptor = propertyValues.proxyDescriptor.propertyDescriptors
                 .get(propertyName);
 
         if (null == propertyDescriptor)
@@ -308,7 +284,8 @@ public class PropertyValues implements Serializable
             }
             else
             {
-                PropertyValidator.validate(propertyValues.propertyDescriptors,
+                PropertyValidator.validate(
+                        propertyValues.proxyDescriptor.propertyDescriptors,
                         propertyName, propertyValue);
 
                 propertyValues.values.put(propertyName, propertyValue);
@@ -378,7 +355,7 @@ public class PropertyValues implements Serializable
             indexedProperty = true;
         }
 
-        for (PropertyDescriptor propertyDescriptor : propertyValues.propertyDescriptors
+        for (PropertyDescriptor propertyDescriptor : propertyValues.proxyDescriptor.propertyDescriptors
                 .values())
         {
             // keep going if this is not the property we are looking for or
@@ -460,8 +437,8 @@ public class PropertyValues implements Serializable
         {
             nestedBean = IndexedPropertyManipulator.getIndexed(
                     propertyValues.values, propertyName, shallowProperty,
-                    propertyValues.propertyDescriptors.get(shallowProperty),
-                    false);
+                    propertyValues.proxyDescriptor.propertyDescriptors
+                            .get(shallowProperty), false);
 
             if (-1 == dotIndex)
             {
