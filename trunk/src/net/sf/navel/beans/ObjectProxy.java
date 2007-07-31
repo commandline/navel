@@ -194,8 +194,7 @@ class ObjectProxy implements Serializable
 
         JavaBeanHandler otherHandler = (JavaBeanHandler) other;
 
-        return Boolean.valueOf(values.copyValues(false).equals(
-                otherHandler.propertyValues.copyValues(false)));
+        return Boolean.valueOf(values.equals(otherHandler.propertyValues));
     }
 
     private String filteredToString(Map<String, Object> values)

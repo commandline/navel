@@ -46,7 +46,9 @@ import java.util.Set;
 /**
  * Collects the introspection and reflection data for the proxy in one place,
  * where it can be safely shared. Also tucks away the serialization problems
- * with introspection data which is not serializable.
+ * with introspection data which is not serializable. Despite the transient
+ * members that cannot be flagged as final, this class should be considered
+ * effectively immutable.
  * 
  * @author cmdln
  * 
@@ -139,7 +141,7 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         }
 
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
-        
+
         Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
 
         for (BeanInfo beanInfo : proxiedBeanInfo)
@@ -148,6 +150,46 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         }
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
+    }
+
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (null == obj)
+        {
+            return false;
+        }
+        
+        if (!(obj instanceof ProxyDescriptor))
+        {
+            return false;
+        }
+
+        ProxyDescriptor other = (ProxyDescriptor) obj;
+
+        // primary type needs to be considered, too, as the sets may otherwise
+        // be the same
+        return primaryType.equals(other.primaryType)
+                && proxiedInterfaces.equals(other.proxiedInterfaces);
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode()
+    {
+        int result = 17;
+
+        result = 37 * result + primaryType.hashCode();
+
+        result = 37 * result + proxiedInterfaces.hashCode();
+
+        return result;
     }
 
     private final Class<?> mapTypes(Class<?>[] proxiedClasses,

@@ -214,6 +214,45 @@ public class PropertyValues implements Serializable
         return byNames;
     }
 
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (null == obj)
+        {
+            return false;
+        }
+        
+        if (!(obj instanceof PropertyValues))
+        {
+            return false;
+        }
+
+        PropertyValues other = (PropertyValues) obj;
+
+        return proxyDescriptor.equals(other.proxyDescriptor)
+                && values.equals(other.values);
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+
+    @Override
+    public int hashCode()
+    {
+        int result = 17;
+
+        result = 37 * result + proxyDescriptor.hashCode();
+
+        result = 37 * result + values.hashCode();
+
+        return result;
+    }
+
     boolean isAttached(String propertyName)
     {
         return propertyDelegates.containsKey(propertyName)
