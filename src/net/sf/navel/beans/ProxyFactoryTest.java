@@ -41,6 +41,7 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.navel.example.Delegated;
 import net.sf.navel.example.TypesBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -259,11 +260,15 @@ public class ProxyFactoryTest
     @Test
     public void testCopy()
     {
-        TypesBean source = ProxyFactory.createAs(TypesBean.class);
+        TypesBean source = ProxyFactory.createAs(TypesBean.class, Delegated.class);
+
+        Assert.assertTrue(source instanceof Delegated);
 
         source.setBoolean(true);
 
         TypesBean copy = ProxyFactory.copyAs(TypesBean.class, source);
+        
+        Assert.assertTrue(copy instanceof Delegated);
 
         Assert.assertEquals(source, copy, "Should initially be the same.");
         Assert.assertNotSame(source, copy, "Should not be identical, though.");
