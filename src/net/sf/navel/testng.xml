@@ -2,7 +2,7 @@
 <suite name="All Tests">
   <test name="All Tests">
     <packages>
-      <package name="net.sf.navel.beans"/>
+      <package name="net.sf.navel.beans.*"/>
     </packages>
   </test>
 </suite>
