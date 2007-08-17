@@ -143,6 +143,15 @@ class InterfaceDelegateMapping implements Serializable
         this.values = values;
         this.methods = Collections.unmodifiableSet(new HashSet<Method>(
                 source.methods));
+
+        // the contract of this member is that after init it will *always* have
+        // an entry for each delegating interface, while it may not be safe to
+        // copy the interface delegates, this contract must be preserved for
+        // isAttached to work correctly
+        for (Class<?> interfaceType : source.delegations.keySet())
+        {
+            delegations.put(interfaceType, null);
+        }
     }
 
     final void attach(InterfaceDelegate delegate)
