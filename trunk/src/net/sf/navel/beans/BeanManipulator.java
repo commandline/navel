@@ -266,7 +266,7 @@ public class BeanManipulator
 
         if (0 == properties.length)
         {
-            LOGGER.warn("No properties found for describe.");
+            LOGGER.debug("No properties found for describe.");
 
             return EMPTY;
         }
@@ -349,7 +349,7 @@ public class BeanManipulator
 
         if (0 == propertyTokens.length)
         {
-            LOGGER.warn("Empty property name.");
+            LOGGER.debug("Empty property name.");
 
             return;
         }
@@ -367,7 +367,7 @@ public class BeanManipulator
 
         if (null == property)
         {
-            LOGGER.warn("No property for " + propertyName + ".");
+            LOGGER.debug("No property for " + propertyName + ".");
 
             return;
         }
@@ -386,7 +386,7 @@ public class BeanManipulator
 
             if (null == nestedBean)
             {
-                LOGGER.warn("Nested bean target was null, " + propertyName);
+                LOGGER.debug("Nested bean target was null, " + propertyName);
 
                 return;
             }
