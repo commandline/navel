@@ -95,7 +95,7 @@ public class NestedBeanFactory
      *         otherwise should be a fully constructed object ready to be added
      *         into a PropertyValues instance and used immediately.
      */
-    static Object create(String propertyName, Class<?> propertyType)
+    public static Object create(String propertyName, Class<?> propertyType)
     {
         return create(propertyName, propertyType, null);
     }
@@ -118,7 +118,7 @@ public class NestedBeanFactory
      *         otherwise should be a fully constructed object ready to be added
      *         into a PropertyValues instance and used immediately.
      */
-    static Object create(String propertyName, Class<?> propertyType,
+    public static Object create(String propertyName, Class<?> propertyType,
             Map<String, Object> initialValues)
     {
         return SINGLETON.handler.create(propertyName, propertyType,
