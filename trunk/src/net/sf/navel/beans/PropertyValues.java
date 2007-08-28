@@ -225,7 +225,7 @@ public class PropertyValues implements Serializable
         {
             return false;
         }
-        
+
         if (!(obj instanceof PropertyValues))
         {
             return false;
@@ -500,5 +500,10 @@ public class PropertyValues implements Serializable
             return nestedHandler.propertyValues.containsKey(propertyName
                     .substring(dotIndex + 1));
         }
+    }
+
+    boolean valuesEqual(PropertyValues propertyValues)
+    {
+        return this.values.equals(propertyValues.values);
     }
 }

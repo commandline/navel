@@ -288,4 +288,29 @@ public class PropertyManipulator
 
         handler.propertyValues.clear();
     }
+
+    /**
+     * Compares just the internal storage of two Navel beans for equivalence.
+     * This is similar to the original equals semantic in Navel2.
+     * 
+     * @param oneBean
+     *            One bean to compare.
+     * @param anotherBean
+     *            The other bean to compare.
+     * @return Whether the storage of the two beans is equivalent.
+     */
+    public boolean valuesEqual(Object oneBean, Object anotherBean)
+    {
+        JavaBeanHandler oneHandler = ProxyFactory.getHandler(oneBean);
+        JavaBeanHandler anotherHandler = ProxyFactory.getHandler(anotherBean);
+
+        if (null == oneHandler || null == anotherHandler)
+        {
+            throw new IllegalArgumentException(
+                    "Both beans must be a Navel beans!");
+        }
+
+        return oneHandler.propertyValues
+                .valuesEqual(anotherHandler.propertyValues);
+    }
 }
