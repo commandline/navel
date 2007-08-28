@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -61,6 +62,8 @@ class ObjectProxy implements Serializable
 
     private final String primaryClassName;
 
+    private final String additionalInterfaceNames;
+
     private final Set<String> filterToString;
 
     ObjectProxy(ProxyDescriptor proxyDescriptor)
@@ -81,6 +84,9 @@ class ObjectProxy implements Serializable
 
         this.filterToString = Collections.unmodifiableSet(tempFilter);
         this.primaryClassName = proxyDescriptor.getPrimaryType().getName();
+        this.additionalInterfaceNames = ObjectProxy.printClasses(
+                proxyDescriptor.getPrimaryType(), proxyDescriptor
+                        .getProxiedInterfaces());
     }
 
     ObjectProxy(ObjectProxy source)
@@ -88,6 +94,7 @@ class ObjectProxy implements Serializable
         this.filterToString = Collections
                 .unmodifiableSet(source.filterToString);
         this.primaryClassName = source.primaryClassName;
+        this.additionalInterfaceNames = source.additionalInterfaceNames;
     }
 
     Object proxy(final String message, final PropertyValues values,
@@ -163,6 +170,24 @@ class ObjectProxy implements Serializable
         }
     }
 
+    private static String printClasses(Class<?> primaryType,
+            Set<Class<?>> proxiedInterfaces)
+    {
+        Set<String> sortedInterfaces = new TreeSet<String>();
+
+        for (Class<?> additionalInterface : proxiedInterfaces)
+        {
+            if (additionalInterface.equals(primaryType))
+            {
+                continue;
+            }
+
+            sortedInterfaces.add(additionalInterface.getName());
+        }
+
+        return sortedInterfaces.toString();
+    }
+
     /**
      * The map of the comparison target has to be dug out, otherwise equivalence
      * won't track with the direct proxy of hashCode to the underlying storage
@@ -197,15 +222,19 @@ class ObjectProxy implements Serializable
         return Boolean.valueOf(values.equals(otherHandler.propertyValues));
     }
 
-    private String filteredToString(Map<String, Object> values)
+    String filteredToString(Map<String, Object> values)
     {
         // create a shallow map to filter out ignored properties, as well as to
         // consistently sort by the property names
         Map<String, Object> toPrint = new TreeMap<String, Object>(values);
 
+        String prefix = "NavelBean: {primary type = " + primaryClassName
+                + ", additional interfaces = " + additionalInterfaceNames
+                + ", values = ";
+
         if (filterToString.isEmpty())
         {
-            return primaryClassName + ": " + toPrint.toString();
+            return prefix + toPrint.toString() + "}";
         }
 
         for (String ignoreName : filterToString)
@@ -213,7 +242,7 @@ class ObjectProxy implements Serializable
             toPrint.remove(ignoreName);
         }
 
-        return primaryClassName + ": " + toPrint.toString();
+        return prefix + toPrint.toString() + "}";
     }
 
     private String parseArguments(Class<?>[] argTypes)
