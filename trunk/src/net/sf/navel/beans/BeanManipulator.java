@@ -254,8 +254,15 @@ public class BeanManipulator
                 continue;
             }
 
-            SINGLETON.expandNestedBean(values, entry.getKey(),
-                    handler.propertyValues.copyValues(false));
+            // depth first recursion, will resolved all descendants in the
+            // original map, first
+            Map<String, Object> nestedValues = handler.propertyValues
+                    .copyValues(true);
+
+            // re-write the keys for the immediate properties in the map, the
+            // previous line will have taken care of the more deeply nested
+            // properties
+            SINGLETON.expandNestedBean(values, entry.getKey(), nestedValues);
         }
     }
 
