@@ -34,6 +34,7 @@ import static net.sf.navel.beans.BeanManipulator.describe;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.navel.example.AncestorBean;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
@@ -90,25 +91,17 @@ public class PropertyValueResolverTest
     }
 
     @Test
-    public void testNestedTooDeep()
+    public void testNestedDeeply()
     {
         Map<String, Object> values = new HashMap<String, Object>();
-        values.put("long", Long.valueOf(63));
-        values.put("nested.long", Long.valueOf(42));
-        values.put("nested.too.long", Long.valueOf(42));
+        values.put("name", "foo");
+        values.put("child.long", Long.valueOf(63));
+        values.put("child.nested.long", Long.valueOf(42));
 
-        try
-        {
-            ProxyFactory.createAs(NestedBean.class, values);
+        AncestorBean bean = ProxyFactory.createAs(AncestorBean.class, values);
 
-            Assert
-                    .fail("Should not have been able to construct with an overly deep property name.");
-        }
-        catch (Exception e)
-        {
-            LOGGER.debug("Caught bad value.");
-        }
-
+        Assert.assertEquals(bean.getChild().getNested().getLong(), 42L,
+                "Should have been able to resolve arbitrarily deep.");
     }
 
     @Test
