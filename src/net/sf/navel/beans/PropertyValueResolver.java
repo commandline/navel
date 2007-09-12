@@ -132,19 +132,11 @@ class PropertyValueResolver
             Map<String, Object> collapsed, Set<String> toRemove)
             throws InvalidPropertyValueException
     {
+        int dotIndex = name.indexOf('.');
 
-        String[] split = name.split("\\.");
+        String parentName = name.substring(0, dotIndex);
 
-        if (split.length > 2)
-        {
-            throw new InvalidPropertyValueException(
-                    "Currently unable to recursively deal with nested properties, "
-                            + name);
-        }
-
-        String parentName = split[0];
-
-        String nestedName = split[1];
+        String nestedName = name.substring(dotIndex + 1);
 
         Map<String, Object> nestedValues = null;
 
