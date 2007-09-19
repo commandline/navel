@@ -31,12 +31,14 @@ package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
 import java.beans.EventSetDescriptor;
+import java.beans.MethodDescriptor;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectInputValidation;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,6 +64,13 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
 
     private final Set<Class<?>> proxiedInterfaces;
 
+    private transient Set<Method> methods;
+
+    /**
+     * Interfaces that can have {@link InterfaceDelegate} instances attached.
+     */
+    final Set<Class<?>> withDelegatableMethods;
+
     /**
      * The validateObject method re-populates this during deserialization.
      */
@@ -78,6 +87,8 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);
 
         Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
+        Set<Method> tempMethods = new HashSet<Method>();
+        Set<Class<?>> tempWithDelegatable = new HashSet<Class<?>>();
 
         this.primaryType = mapTypes(proxiedClasses, tempInfo, tempClasses);
 
@@ -87,24 +98,22 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         for (BeanInfo beanInfo : this.proxiedBeanInfo)
         {
             tempProperties.putAll(mapProperties(beanInfo));
+
+            int nonPropertyMethods = filterMethods(tempMethods, beanInfo);
+
+            if (0 == nonPropertyMethods)
+            {
+                continue;
+            }
+
+            tempWithDelegatable
+                    .add(beanInfo.getBeanDescriptor().getBeanClass());
         }
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
-    }
-
-    /**
-     * Factory method allows for future enhancements, like caching if required,
-     * without breaking existing code.
-     * 
-     * @param proxiedClasses
-     *            Classes the proxy under construction will back.
-     * 
-     * @return An immutable, safe to share collection of introspection and
-     *         reflection data.
-     */
-    static ProxyDescriptor create(Class<?>[] proxiedClasses)
-    {
-        return new ProxyDescriptor(proxiedClasses);
+        this.withDelegatableMethods = Collections
+                .unmodifiableSet(tempWithDelegatable);
+        this.methods = Collections.unmodifiableSet(tempMethods);
     }
 
     /**
@@ -143,13 +152,37 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         this.proxiedBeanInfo = Collections.unmodifiableSet(tempInfo);
 
         Map<String, PropertyDescriptor> tempProperties = new HashMap<String, PropertyDescriptor>();
+        Set<Method> tempMethods = new HashSet<Method>();
 
         for (BeanInfo beanInfo : proxiedBeanInfo)
         {
             tempProperties.putAll(PropertyValues.mapProperties(beanInfo));
+
+            filterMethods(tempMethods, beanInfo);
         }
 
         this.propertyDescriptors = Collections.unmodifiableMap(tempProperties);
+        this.methods = Collections.unmodifiableSet(tempMethods);
+    }
+
+    /**
+     * Factory method allows for future enhancements, like caching if required,
+     * without breaking existing code.
+     * 
+     * @param proxiedClasses
+     *            Classes the proxy under construction will back.
+     * 
+     * @return An immutable, safe to share collection of introspection and
+     *         reflection data.
+     */
+    static ProxyDescriptor create(Class<?>[] proxiedClasses)
+    {
+        return new ProxyDescriptor(proxiedClasses);
+    }
+
+    final boolean handles(Method method)
+    {
+        return methods.contains(method);
     }
 
     /**
@@ -163,7 +196,7 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         {
             return false;
         }
-        
+
         if (!(obj instanceof ProxyDescriptor))
         {
             return false;
@@ -190,6 +223,47 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         result = 37 * result + proxiedInterfaces.hashCode();
 
         return result;
+    }
+
+    private static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
+    {
+        Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
+
+        for (PropertyDescriptor propertyDescriptor : beanInfo
+                .getPropertyDescriptors())
+        {
+            byNames.put(propertyDescriptor.getName(), propertyDescriptor);
+        }
+
+        return byNames;
+    }
+
+    private static final int filterMethods(Set<Method> methods, BeanInfo beanInfo)
+    {
+        MethodDescriptor[] methodDescriptors = beanInfo.getMethodDescriptors();
+
+        // don't bother with interfaces that only specify properties and
+        // events
+        if (methodDescriptors.length == 0)
+        {
+            return 0;
+        }
+
+        int nonPropertyCount = 0;
+
+        for (MethodDescriptor methodDescriptor : methodDescriptors)
+        {
+            if (PropertyHandler.handles(methodDescriptor.getMethod()))
+            {
+                continue;
+            }
+
+            methods.add(methodDescriptor.getMethod());
+
+            nonPropertyCount++;
+        }
+
+        return nonPropertyCount;
     }
 
     private final Class<?> mapTypes(Class<?>[] proxiedClasses,
@@ -254,19 +328,6 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
             throw new UnsupportedFeatureException(
                     "PropertyBeanHandler does not support JavaBeans with events.");
         }
-    }
-
-    static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
-    {
-        Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
-
-        for (PropertyDescriptor propertyDescriptor : beanInfo
-                .getPropertyDescriptors())
-        {
-            byNames.put(propertyDescriptor.getName(), propertyDescriptor);
-        }
-
-        return byNames;
     }
 
     private final void readObject(ObjectInputStream input) throws IOException,

@@ -29,15 +29,9 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.BeanInfo;
-import java.beans.MethodDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -61,7 +55,7 @@ class InterfaceDelegateMapping implements Serializable
 
     final Map<Class<?>, InterfaceDelegate> delegations = new HashMap<Class<?>, InterfaceDelegate>();
 
-    final Set<Method> methods;
+    final ProxyDescriptor proxyDescriptor;
 
     private final PropertyValues values;
 
@@ -70,10 +64,10 @@ class InterfaceDelegateMapping implements Serializable
      * on the total set of interfaces introspected from the construction of the
      * Proxy that JavaBeanHandler supports.
      * 
-     * @param proxiedBeanInfo
-     *            All of the JavaBean interfaces the handler supports,
-     *            established the total and immutable set for validating new
-     *            delegates as they are attached.
+     * @param proxyDescriptor
+     *            Wraps all the non-Serializable introspection data into an
+     *            instance that will manually re-build itself on
+     *            de-serialziation.
      * @param delegates
      *            Optional set of delegates to support each of the bean
      *            interfaces.
@@ -81,50 +75,18 @@ class InterfaceDelegateMapping implements Serializable
      *            Necessary to set onto each delegate so it can safely
      *            manipulate the internal state of the JavaBeanHandler.
      */
-    InterfaceDelegateMapping(Set<BeanInfo> proxiedBeanInfo,
+    InterfaceDelegateMapping(ProxyDescriptor proxyDescriptor,
             InterfaceDelegate[] delegates, PropertyValues values)
     {
         this.values = values;
+        this.proxyDescriptor = proxyDescriptor;
 
-        Set<Method> tempMethods = new HashSet<Method>();
-
-        for (BeanInfo beanInfo : proxiedBeanInfo)
+        for (Class<?> delegatingInterface : proxyDescriptor.withDelegatableMethods)
         {
-            MethodDescriptor[] methodDescriptors = beanInfo
-                    .getMethodDescriptors();
-
-            // don't bother with interfaces that only specify properties and
-            // events
-            if (methodDescriptors.length == 0)
-            {
-                continue;
-            }
-
-            int nonPropertyCount = 0;
-
-            for (MethodDescriptor methodDescriptor : methodDescriptors)
-            {
-                if (PropertyHandler.handles(methodDescriptor.getMethod()))
-                {
-                    continue;
-                }
-
-                tempMethods.add(methodDescriptor.getMethod());
-
-                nonPropertyCount++;
-            }
-
-            if (0 == nonPropertyCount)
-            {
-                continue;
-            }
-
             // initialize to null since this is just setting up the fixed key
             // set
-            delegations.put(beanInfo.getBeanDescriptor().getBeanClass(), null);
+            delegations.put(delegatingInterface, null);
         }
-
-        methods = Collections.unmodifiableSet(tempMethods);
 
         if (delegates == null)
         {
@@ -141,8 +103,7 @@ class InterfaceDelegateMapping implements Serializable
             InterfaceDelegateMapping source)
     {
         this.values = values;
-        this.methods = Collections.unmodifiableSet(new HashSet<Method>(
-                source.methods));
+        this.proxyDescriptor = source.proxyDescriptor;
 
         // the contract of this member is that after init it will *always* have
         // an entry for each delegating interface, while it may not be safe to
