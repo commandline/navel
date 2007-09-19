@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.navel.example.Delegated;
+import net.sf.navel.example.DelegatedImpl;
 import net.sf.navel.example.TypesBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -113,7 +114,9 @@ public class ProxyFactoryTest
     public void testSerialization() throws UnsupportedFeatureException,
             InvalidPropertyValueException
     {
-        final TypesBean test = ProxyFactory.createAs(TypesBean.class);
+        final TypesBean test = ProxyFactory.createAs(TypesBean.class, Delegated.class);
+        
+        ProxyFactory.attach(test, new DelegatedImpl());
 
         ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 

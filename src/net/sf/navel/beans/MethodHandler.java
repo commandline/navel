@@ -56,7 +56,7 @@ public class MethodHandler implements Serializable
 
     public boolean handles(Method method)
     {
-        return mapping.methods.contains(method);
+        return mapping.proxyDescriptor.handles(method);
     }
 
     /**
