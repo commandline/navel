@@ -34,6 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /**
  * This is the starting point for working with Navel. It encapsulates the
  * creation of dynamic proxies, constructing them with the supplied delegation
@@ -44,6 +47,9 @@ import java.util.Map.Entry;
  */
 public class ProxyFactory
 {
+
+    private static final Logger LOGGER = LogManager
+            .getLogger(ProxyFactory.class);
 
     /**
      * Overload that narrows the new bean down to the primary type of interest
@@ -133,9 +139,48 @@ public class ProxyFactory
                     "Must supply at least interface for the proxy to implement!");
         }
 
-        return Proxy.newProxyInstance(Thread.currentThread()
-                .getContextClassLoader(), allTypes, new JavaBeanHandler(
-                initialValues, allTypes, initialDelegates));
+        // in some environments, such as Ant, trying harder is required
+        try
+        {
+            return Proxy.newProxyInstance(Thread.currentThread()
+                    .getContextClassLoader(), allTypes, new JavaBeanHandler(
+                    initialValues, allTypes, initialDelegates));
+        }
+        catch (IllegalArgumentException e)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug(
+                        "Failed to instantiate using thread context's loader.",
+                        e);
+                LOGGER.debug(String.format(
+                        "Trying the loader for class, %1$s.", allTypes[0]
+                                .getName()));
+            }
+
+            try
+            {
+                return Proxy.newProxyInstance(allTypes[0].getClassLoader(),
+                        allTypes, new JavaBeanHandler(initialValues, allTypes,
+                                initialDelegates));
+            }
+            catch (IllegalArgumentException again)
+            {
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER
+                            .debug(String
+                                    .format(
+                                            "Failed to instantiate using loader for class, %1$s.",
+                                            allTypes[0].getName()));
+                    LOGGER.debug("Trying the system's loader.");
+                }
+
+                return Proxy.newProxyInstance(ClassLoader
+                        .getSystemClassLoader(), allTypes, new JavaBeanHandler(
+                        initialValues, allTypes, initialDelegates));
+            }
+        }
     }
 
     /**
