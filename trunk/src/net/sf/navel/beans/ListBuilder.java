@@ -343,7 +343,7 @@ class ListBuilder
         {
             if (elementType.isInterface())
             {
-                return ProxyFactory.createAs(elementType, rawValues);
+                return NestedBeanFactory.create("", elementType, rawValues);
             }
             else
             {
