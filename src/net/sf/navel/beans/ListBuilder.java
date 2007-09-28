@@ -244,7 +244,7 @@ class ListBuilder
                 throw new IllegalArgumentException(
                         String
                                 .format(
-                                        "No type found for elements of List type property, %1$s.  Make sure the property name is correctly spelled in the raw values Map.",
+                                        "No type found for elements of List type property, %1$s.  Make sure the property name is correctly spelled in the raw values Map and add the CollectionType annotation if necessary.",
                                         propertyKey));
             }
 
