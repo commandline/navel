@@ -39,8 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -96,7 +94,7 @@ class ListBuilder
         Map<String, Class<?>> elementTypes = ListPropertySupport
                 .introspectListTypes(properties);
 
-        Set<String> flattened = new HashSet<String>();
+        Set<String> toExpand = new HashSet<String>();
 
         Set<String> toRemove = new HashSet<String>();
 
@@ -105,50 +103,40 @@ class ListBuilder
         {
             Entry<String, Object> entry = entryIter.next();
 
-            String flatKey = entry.getKey();
+            Object value = entry.getValue();
 
-            copy.remove(flatKey);
+            String originalExpression = entry.getKey();
 
-            if (flatKey.indexOf('[') == -1 && flatKey.indexOf("]") == -1)
+            if (!(value instanceof List))
+            {
+                copy.remove(originalExpression);
+            }
+
+            if (originalExpression.indexOf('[') == -1
+                    && originalExpression.indexOf("]") == -1)
             {
                 continue;
             }
 
-            String[] tokens = parseFlat(flatKey);
-
-            String propertyKey = tokens[0];
-
-            toRemove.add(flatKey);
-
-            String index = "";
-            String nestedKey = null;
-
-            if (tokens.length == 2)
-            {
-                index = tokens[1];
-            }
-            else
-            {
-                index = tokens[1];
-                nestedKey = stripLeadingDot(tokens[2]);
-            }
-
-            Object value = entry.getValue();
+            ListElementDescriptor elementDescriptor = ListElementDescriptor
+                    .describe(originalExpression);
+            
+            toRemove.add(originalExpression);
 
             // there is no further property munging required,
-            if (null == nestedKey || nestedKey.length() == 0)
+            if (!elementDescriptor.hasNestedProperty())
             {
-                handleWholeNested(copy, propertyKey, index, elementTypes
-                        .get(propertyKey), value);
+                handleWholeNested(copy, elementDescriptor, elementTypes
+                        .get(elementDescriptor.getParentProperty()), value);
 
                 continue;
             }
 
             // add the value to a submap keyed on the nested property token
-            handlePartialNested(copy, flatKey, propertyKey, index, nestedKey,
+            handlePartialNested(copy, originalExpression, elementDescriptor,
                     value);
 
-            flattened.add(propertyKey);
+            toExpand.add(elementDescriptor.getParentProperty());
         }
 
         if (toRemove.isEmpty())
@@ -158,7 +146,7 @@ class ListBuilder
 
         values.keySet().removeAll(toRemove);
 
-        expandFlattened(copy, elementTypes, flattened);
+        expandFlattened(copy, elementTypes, toExpand);
 
         values.putAll(copy);
     }
@@ -230,10 +218,10 @@ class ListBuilder
      */
     @SuppressWarnings("unchecked")
     private void handleWholeNested(Map<String, Object> copy,
-            final String propertyKey, final String index,
+            final ListElementDescriptor elementDescriptor,
             final Class<?> valueType, final Object value)
     {
-        List<Object> nestedList = initializeList(copy, propertyKey);
+        List<Object> nestedList = initializeList(copy, elementDescriptor.getParentProperty());
 
         Object element = value;
 
@@ -245,14 +233,14 @@ class ListBuilder
                         String
                                 .format(
                                         "No type found for elements of List type property, %1$s.  Make sure the property name is correctly spelled in the raw values Map and add the CollectionType annotation if necessary.",
-                                        propertyKey));
+                                        elementDescriptor.getParentProperty()));
             }
 
             element = instantiate(valueType, (Map<String, Object>) value);
         }
 
         // add if the index is empty or unknown
-        if ("".equals(index) || "?".equals(index))
+        if (!elementDescriptor.hasIndex())
         {
             nestedList.add(element);
 
@@ -260,11 +248,9 @@ class ListBuilder
         }
 
         // set if the index is not empty
-        int parsedIndex = parseIndex(propertyKey, index);
+        pad(nestedList, elementDescriptor.getIndex());
 
-        pad(nestedList, parsedIndex);
-
-        nestedList.set(parsedIndex, element);
+        nestedList.set(elementDescriptor.getIndex(), element);
     }
 
     /**
@@ -274,35 +260,34 @@ class ListBuilder
      */
     @SuppressWarnings("unchecked")
     private void handlePartialNested(Map<String, Object> copy, String flatKey,
-            String propertyKey, String index, String nestedKey, Object value)
+            ListElementDescriptor elementDescriptor, Object value)
     {
-        if (index.trim().length() == 0)
+        if (!elementDescriptor.hasIndex())
         {
             throw new IllegalArgumentException(
                     String
                             .format(
                                     "For a fully flattened entry, %1$s, an index value must be provided in the brackets ([]) or the related entries cannot be assembled correctly into appropriate elements of the list property!",
-                                    propertyKey));
+                                    elementDescriptor.getParentProperty()));
         }
 
-        List<Object> nestedList = initializeList(copy, propertyKey);
+        List<Object> nestedList = initializeList(copy, elementDescriptor
+                .getParentProperty());
 
-        int parsedIndex = parseIndex(propertyKey, index);
-
-        pad(nestedList, parsedIndex);
+        pad(nestedList, elementDescriptor.getIndex());
 
         Map<String, Object> subMap = (Map<String, Object>) nestedList
-                .get(parsedIndex);
+                .get(elementDescriptor.getIndex());
 
         if (null == subMap)
         {
             subMap = new HashMap<String, Object>();
 
-            nestedList.set(parsedIndex, subMap);
+            nestedList.set(elementDescriptor.getIndex(), subMap);
         }
 
         // put the value on the submap with the nested property
-        subMap.put(nestedKey, value);
+        subMap.put(elementDescriptor.getNestedProperty(), value);
     }
 
     @SuppressWarnings("unchecked")
@@ -364,52 +349,6 @@ class ListBuilder
         }
     }
 
-    private String[] parseFlat(final String flatKey)
-    {
-        Pattern pattern = Pattern.compile("\\[.*\\]");
-
-        Matcher matcher = pattern.matcher(flatKey);
-
-        boolean found = matcher.find();
-
-        if (!found)
-        {
-            return new String[]
-            { flatKey };
-        }
-
-        String property = flatKey.substring(0, matcher.start());
-        String index = matcher.group();
-        index = index.substring(1, index.length() - 1);
-
-        if (matcher.end() < flatKey.length())
-        {
-            return new String[]
-            { property, index, flatKey.substring(matcher.end() + 1) };
-        }
-        else
-        {
-            return new String[]
-            { property, index };
-        }
-    }
-
-    private int parseIndex(String propertyKey, String index)
-    {
-        try
-        {
-            return Integer.parseInt(index);
-        }
-        catch (NumberFormatException e)
-        {
-            throw new IllegalArgumentException(
-                    String
-                            .format(
-                                    "Index value, %1$s, could not be parsed as a number for use with List property, %2$s.",
-                                    index, propertyKey), e);
-        }
-    }
-
     private void pad(List<Object> list, int index)
     {
         if (list.size() > index)
@@ -423,15 +362,5 @@ class ListBuilder
         {
             list.add(null);
         }
-    }
-
-    private String stripLeadingDot(String toTrim)
-    {
-        if (!toTrim.startsWith("."))
-        {
-            return toTrim;
-        }
-
-        return toTrim.substring(1);
     }
 }
