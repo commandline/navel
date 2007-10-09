@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.navel.example.ChildBean;
+import net.sf.navel.example.MapPropertyBean;
+import net.sf.navel.example.MapPropertyDelegate;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
@@ -96,6 +98,38 @@ public class PropertyValidatorTest
                 "Inherited properties should work.");
         Assert.assertEquals(bean.getChildID(), 4L,
                 "Declared properties should work.");
+    }
+
+    @Test
+    public void testMap()
+    {
+        MapPropertyBean bean = ProxyFactory.createAs(MapPropertyBean.class);
+
+        MapPropertyDelegate delegate = new MapPropertyDelegate();
+
+        try
+        {
+            ProxyFactory.attach(bean, "mapProperty", delegate);
+        }
+        catch (Exception e)
+        {
+            LogHelper.traceError(LOGGER, e);
+
+            Assert.fail("Should have passed validation.");
+        }
+        
+        bean.setIdentifier(1L);
+        bean.setName("foo");
+        
+        Map<String,Object> asMap = bean.getMapProperty();
+        
+        Assert.assertEquals(asMap.size(), 2, "Should return correct view.");
+        
+        PropertyManipulator.clear(bean);
+        
+        asMap = bean.getMapProperty();
+        
+        Assert.assertTrue(asMap.isEmpty(), "Should return correct view.");
     }
 
     @Test

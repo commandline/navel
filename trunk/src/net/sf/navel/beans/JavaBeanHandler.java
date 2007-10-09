@@ -137,8 +137,8 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
                 LOGGER
                         .info(String
                                 .format(
-                                        "Forwarding call for method, %1$s, to internal storage Map.",
-                                        method.getName()));
+                                        "Forwarding call for method, %1$s, on proxy, %2$s, to internal storage Map.",
+                                        method.getName(), proxyDescriptor));
             }
 
             return propertyValues.proxyToObject("", method, args);
@@ -149,17 +149,20 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
             throw new IllegalStateException(
                     String
                             .format(
-                                    "This proxy does not implement the interface, %1$s, on which the method being invoked, %2$s, is declared!",
-                                    declaringClass.getName(), methodName));
+                                    "This proxy, %1$s, does not implement the interface, %2$s, on which the method being invoked, %3$s, is declared!",
+                                    proxyDescriptor, declaringClass.getName(),
+                                    methodName));
         }
 
         if (PropertyHandler.handles(method))
         {
-            if (LOGGER.isInfoEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                LOGGER.info(String.format(
-                        "Handling property access for method, %1$s.",
-                        methodName));
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Handling property access for method, %1$s, on proxy, %2$s.",
+                                        methodName, proxyDescriptor));
             }
 
             return propertyHandler.handle(proxy, method, args);
@@ -167,19 +170,23 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
 
         if (methodHandler.handles(method))
         {
-            if (LOGGER.isInfoEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                LOGGER.info(String.format(
-                        "Forwarding call for method, %1$s, to delegates.",
-                        methodName));
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Forwarding call for method, %1$s, on proxy, %2$s, to delegates.",
+                                        methodName, proxyDescriptor));
             }
 
             return methodHandler.handle(proxy, method, args);
         }
 
-        throw new UnsupportedFeatureException(String
-                .format("Could not find a usable target for  method, %1$s.",
-                        methodName));
+        throw new UnsupportedFeatureException(
+                String
+                        .format(
+                                "Could not find a usable target for method, %1$s, on proxy, %2$s.",
+                                methodName, proxyDescriptor));
     }
 
     @Override
