@@ -37,10 +37,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -60,9 +57,7 @@ class ObjectProxy implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(ObjectProxy.class);
 
-    private final String primaryClassName;
-
-    private final String additionalInterfaceNames;
+    private final ProxyDescriptor proxyDescriptor;
 
     private final Set<String> filterToString;
 
@@ -83,18 +78,14 @@ class ObjectProxy implements Serializable
         }
 
         this.filterToString = Collections.unmodifiableSet(tempFilter);
-        this.primaryClassName = proxyDescriptor.getPrimaryType().getName();
-        this.additionalInterfaceNames = ObjectProxy.printClasses(
-                proxyDescriptor.getPrimaryType(), proxyDescriptor
-                        .getProxiedInterfaces());
+        this.proxyDescriptor = proxyDescriptor;
     }
 
     ObjectProxy(ObjectProxy source)
     {
         this.filterToString = Collections
                 .unmodifiableSet(source.filterToString);
-        this.primaryClassName = source.primaryClassName;
-        this.additionalInterfaceNames = source.additionalInterfaceNames;
+        this.proxyDescriptor = source.proxyDescriptor;
     }
 
     Object proxy(final String message, final PropertyValues values,
@@ -121,13 +112,14 @@ class ObjectProxy implements Serializable
             LOGGER
                     .debug(String
                             .format(
-                                    "Proxying method, %1$s, with arguments (%2$s) to underlying Map.",
-                                    methodName, argString));
+                                    "Proxying method, %1$s, with arguments (%2$s) for proxy, %3$s, to underlying Map.",
+                                    methodName, argString, proxyDescriptor));
         }
 
         if ("toString".equals(method.getName()) && argTypes.length == 0)
         {
-            return filteredToString(values.copyValues(false));
+            return String.format("Navelbean: %1$s, values = %2$s",
+                    proxyDescriptor, values.filteredToString(filterToString));
         }
 
         try
@@ -151,8 +143,9 @@ class ObjectProxy implements Serializable
             throw new UnsupportedFeatureException(
                     String
                             .format(
-                                    "Could not find a usable target for  method, %1$s, with arguments (%2$s).%3$s",
-                                    methodName, argString, message));
+                                    "Could not find a usable target for method, %1$s, with arguments (%2$s) on proxy, %4$s.%3$s",
+                                    methodName, argString, message,
+                                    proxyDescriptor));
         }
         catch (IllegalAccessException e)
         {
@@ -168,24 +161,6 @@ class ObjectProxy implements Serializable
 
             return null;
         }
-    }
-
-    private static String printClasses(Class<?> primaryType,
-            Set<Class<?>> proxiedInterfaces)
-    {
-        Set<String> sortedInterfaces = new TreeSet<String>();
-
-        for (Class<?> additionalInterface : proxiedInterfaces)
-        {
-            if (additionalInterface.equals(primaryType))
-            {
-                continue;
-            }
-
-            sortedInterfaces.add(additionalInterface.getName());
-        }
-
-        return sortedInterfaces.toString();
     }
 
     /**
@@ -220,29 +195,6 @@ class ObjectProxy implements Serializable
         JavaBeanHandler otherHandler = (JavaBeanHandler) other;
 
         return Boolean.valueOf(values.equals(otherHandler.propertyValues));
-    }
-
-    String filteredToString(Map<String, Object> values)
-    {
-        // create a shallow map to filter out ignored properties, as well as to
-        // consistently sort by the property names
-        Map<String, Object> toPrint = new TreeMap<String, Object>(values);
-
-        String prefix = "NavelBean: {primary type = " + primaryClassName
-                + ", additional interfaces = " + additionalInterfaceNames
-                + ", values = ";
-
-        if (filterToString.isEmpty())
-        {
-            return prefix + toPrint.toString() + "}";
-        }
-
-        for (String ignoreName : filterToString)
-        {
-            toPrint.remove(ignoreName);
-        }
-
-        return prefix + toPrint.toString() + "}";
     }
 
     private String parseArguments(Class<?>[] argTypes)

@@ -101,9 +101,9 @@ class PropertyValueResolver
 
             String name = entry.getKey();
 
-            if (LOGGER.isDebugEnabled())
+            if (LOGGER.isTraceEnabled())
             {
-                LOGGER.debug("Working on " + name + ".");
+                LOGGER.trace("Working on " + name + ".");
             }
 
             if (name.indexOf('.') < 0)

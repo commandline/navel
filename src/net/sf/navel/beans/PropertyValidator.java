@@ -110,13 +110,13 @@ class PropertyValidator
                                     delegate.propertyType(), propertyName));
         }
 
-        if (!propertyDescriptor.getPropertyType().equals(
+        if (!propertyDescriptor.getPropertyType().isAssignableFrom(
                 delegate.propertyType()))
         {
             throw new InvalidDelegateException(
                     String
                             .format(
-                                    "Invalid type, %1$s, for PropertyDelegate.  Property, %2$s, requires type, %3$s.",
+                                    "Invalid type, %1$s, for PropertyDelegate.  Type for property, %2$s, must be assignable to, %3$s.",
                                     delegate.propertyType(), propertyName,
                                     propertyDescriptor.getPropertyType()));
         }

@@ -124,8 +124,8 @@ class InterfaceDelegateMapping implements Serializable
         if (!delegations.containsKey(delegatingInterface))
         {
             throw new IllegalArgumentException(String.format(
-                    "The proxy does not implement the interface, %1$s.",
-                    delegatingInterface.getName()));
+                    "The proxy, %1$s, does not implement the interface, %2$s.",
+                    proxyDescriptor, delegatingInterface.getName()));
         }
 
         if (delegations.get(delegatingInterface) != null)
@@ -133,8 +133,8 @@ class InterfaceDelegateMapping implements Serializable
             LOGGER
                     .warn(String
                             .format(
-                                    "InterfaceDelegate already mapped for interface, %1$s, overwriting!",
-                                    delegatingInterface));
+                                    "InterfaceDelegate already mapped for interface, %1$s, on proxy, %2$s, overwriting!",
+                                    delegatingInterface, proxyDescriptor));
         }
 
         delegate.attach(values);
@@ -148,8 +148,8 @@ class InterfaceDelegateMapping implements Serializable
             throw new InvalidDelegateException(
                     String
                             .format(
-                                    "The interface, %1$s, is not one supported by this object!",
-                                    interfaceType.getName()));
+                                    "The interface, %1$s, is not one supported by this proxy, %2$s!",
+                                    interfaceType.getName(), proxyDescriptor));
         }
 
         return delegations.get(interfaceType) != null;
@@ -160,8 +160,8 @@ class InterfaceDelegateMapping implements Serializable
         if (!delegations.containsKey(delegatingInterface))
         {
             throw new IllegalArgumentException(String.format(
-                    "The proxy does not implement the interface, %1$s.",
-                    delegatingInterface.getName()));
+                    "The proxy, %1$s, does not implement the interface, %2$s.",
+                    proxyDescriptor, delegatingInterface.getName()));
         }
 
         return delegations.remove(delegatingInterface) != null;

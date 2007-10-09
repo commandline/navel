@@ -34,8 +34,11 @@ import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -253,6 +256,30 @@ public class PropertyValues implements Serializable
         return result;
     }
 
+    /**
+     * @see java.lang.Object#toString()
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public String toString()
+    {
+        return filteredToString(Collections.EMPTY_SET);
+    }
+
+    String filteredToString(Set<String> filterToString)
+    {
+        // create a shallow map to filter out ignored properties, as well as to
+        // consistently sort by the property names
+        Map<String, Object> toPrint = new TreeMap<String, Object>(values);
+
+        for (String ignoreName : filterToString)
+        {
+            toPrint.remove(ignoreName);
+        }
+
+        return String.format("propertyValues = %1$s", toPrint);
+    }
+
     boolean isAttached(String propertyName)
     {
         return propertyDelegates.containsKey(propertyName)
@@ -266,8 +293,8 @@ public class PropertyValues implements Serializable
             LOGGER
                     .warn(String
                             .format(
-                                    "PropertyDelegate already mapped for property, %1$s, overwriting!",
-                                    propertyName));
+                                    "PropertyDelegate already mapped for property, %1$s, on proxy, %2$s, overwriting!",
+                                    propertyName, proxyDescriptor));
         }
 
         PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
@@ -309,8 +336,8 @@ public class PropertyValues implements Serializable
         if (null == propertyDescriptor)
         {
             throw new InvalidPropertyValueException(String.format(
-                    "No property descriptor for property name, %1$s.",
-                    propertyName));
+                    "No property descriptor for property name, %1$s, on proxy, %2$s.",
+                    propertyName, proxyDescriptor));
         }
 
         if (1 == propertyTokens.length - tokenIndex)

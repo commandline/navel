@@ -73,9 +73,9 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
     public void handleWrite(PropertyDescriptor property, String propertyName,
             Object bean, Object value)
     {
-        if (LOGGER.isDebugEnabled())
+        if (LOGGER.isTraceEnabled())
         {
-            LOGGER.debug("Inside IndexedPropertyManipulator.handleWrite().");
+            LOGGER.trace("Inside IndexedPropertyManipulator.handleWrite().");
         }
 
         if (!(property instanceof IndexedPropertyDescriptor))
@@ -119,9 +119,9 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
     public Object handleRead(PropertyDescriptor property, String propertyName,
             Object bean)
     {
-        if (LOGGER.isDebugEnabled())
+        if (LOGGER.isTraceEnabled())
         {
-            LOGGER.debug("Inside IndexedPropertyManipulator.handleRead().");
+            LOGGER.trace("Inside IndexedPropertyManipulator.handleRead().");
         }
 
         if (!(property instanceof IndexedPropertyDescriptor))
@@ -137,7 +137,13 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         if (MISSING_INDEX == index)
         {
-            LOGGER.warn("No index found for indexed read.");
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug(String.format(
+                        "No index found for indexed read of property, %1$s.",
+                        propertyName));
+            }
+
             return null;
         }
 
@@ -155,7 +161,12 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         if ((-1 == braceStart) || (-1 == braceEnd) || (braceEnd <= braceStart))
         {
-            LOGGER.warn("One or both braces missing or invalid positioning.");
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "One or both braces missing or invalid positioning for read of property, %1$s.",
+                                    propertyName));
+
             return -1;
         }
 
@@ -178,7 +189,11 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         }
         catch (NumberFormatException e)
         {
-            LOGGER.warn(indexString + " cannot be parsed as an int.");
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "%1$s cannot be parsed as an int for read on property, $2%s.",
+                                    indexString, propertyName));
 
             return -1;
         }

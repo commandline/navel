@@ -63,11 +63,11 @@ class PropertyHandler implements Serializable
 
     private static final String BEING = "is";
 
-    private PropertyValues values;
+    private PropertyValues propertyValues;
 
-    PropertyHandler(PropertyValues values)
+    PropertyHandler(PropertyValues properyValues)
     {
-        this.values = values;
+        this.propertyValues = properyValues;
     }
 
     static boolean handles(Method method)
@@ -111,7 +111,9 @@ class PropertyHandler implements Serializable
 
         if (LOGGER.isDebugEnabled())
         {
-            LOGGER.debug("Invoking " + methodName);
+            LOGGER.debug(String.format(
+                    "Invoking method, %1$s, on proxy, %2$s.", methodName,
+                    propertyValues.getProxyDescriptor()));
 
             if (args != null)
             {
@@ -154,9 +156,9 @@ class PropertyHandler implements Serializable
 
         if (1 == args.length)
         {
-            if (values.isAttached(propertyName))
+            if (propertyValues.isAttached(propertyName))
             {
-                PropertyDelegate delegate = values.propertyDelegates
+                PropertyDelegate delegate = propertyValues.propertyDelegates
                         .get(propertyName);
 
                 if (LOGGER.isDebugEnabled())
@@ -164,16 +166,18 @@ class PropertyHandler implements Serializable
                     LOGGER
                             .debug(String
                                     .format(
-                                            "Delegating write on property, %1$s, to delegate, %2$s",
-                                            propertyName, delegate));
+                                            "Delegating write on property, %1$s, for proxy, %2$s, to delegate, %3$s",
+                                            propertyName, propertyValues
+                                                    .getProxyDescriptor(),
+                                            delegate));
                 }
 
-                delegate.set(values, propertyName, args[0]);
+                delegate.set(propertyValues, propertyName, args[0]);
 
                 return;
             }
 
-            values.put(propertyName, args[0]);
+            propertyValues.put(propertyName, args[0]);
         }
         else if (2 == args.length)
         {
@@ -182,7 +186,7 @@ class PropertyHandler implements Serializable
         else
         {
             throw new IllegalArgumentException(
-                    "PropertyBeanHandler only supports writing simple and indexed properties.");
+                    "Navel only supports writing simple and indexed properties.");
         }
     }
 
@@ -191,13 +195,13 @@ class PropertyHandler implements Serializable
     {
         int index = getIndex(args[0], true);
 
-        Object value = values.get(propertyName);
+        Object value = propertyValues.get(propertyName);
 
-        if (values.isAttached(propertyName))
+        if (propertyValues.isAttached(propertyName))
         {
             // the PropertyValidator ensures at attachment time that this is a
             // safe cast
-            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) values.propertyDelegates
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues.propertyDelegates
                     .get(propertyName);
 
             if (LOGGER.isDebugEnabled())
@@ -205,11 +209,12 @@ class PropertyHandler implements Serializable
                 LOGGER
                         .debug(String
                                 .format(
-                                        "Delegating write on property, %1$s, to delegate, %2$s",
-                                        propertyName, delegate));
+                                        "Delegating write on property, %1$s, for proxy, %2$s, to delegate, %3$s",
+                                        propertyName, propertyValues
+                                                .getProxyDescriptor(), delegate));
             }
 
-            delegate.set(values, propertyName, index, args[1]);
+            delegate.set(propertyValues, propertyName, index, args[1]);
 
             return;
         }
@@ -232,9 +237,9 @@ class PropertyHandler implements Serializable
 
         if ((null == args) || (0 == args.length))
         {
-            if (values.isAttached(propertyName))
+            if (propertyValues.isAttached(propertyName))
             {
-                PropertyDelegate<?> delegate = values.propertyDelegates
+                PropertyDelegate<?> delegate = propertyValues.propertyDelegates
                         .get(propertyName);
 
                 if (LOGGER.isDebugEnabled())
@@ -242,14 +247,15 @@ class PropertyHandler implements Serializable
                     LOGGER
                             .debug(String
                                     .format(
-                                            "Delegating read on property, %1$s, to delegate, %2$s",
-                                            propertyName, delegate));
+                                            "Delegating read on property, %1$s, for proxy, %2$s, to delegate, %3$s",
+                                            propertyName, propertyValues.getProxyDescriptor(), delegate));
                 }
 
-                return delegate.get(values, propertyName);
+                return delegate.get(propertyValues, propertyName);
             }
 
-            return handleNull(method.getReturnType(), values.get(propertyName));
+            return handleNull(method.getReturnType(), propertyValues
+                    .get(propertyName));
         }
         else if (1 == args.length)
         {
@@ -258,7 +264,7 @@ class PropertyHandler implements Serializable
         else
         {
             throw new IllegalArgumentException(
-                    "PropertyBeanHandler only supports reading simple and indexed properties.");
+                    "Navel only supports reading simple and indexed properties.");
         }
     }
 
@@ -267,7 +273,7 @@ class PropertyHandler implements Serializable
     {
         int index = getIndex(args[0], false);
 
-        Object value = values.get(propertyName);
+        Object value = propertyValues.get(propertyName);
 
         if (null == value)
         {
@@ -275,21 +281,21 @@ class PropertyHandler implements Serializable
             return null;
         }
 
-        if (values.isAttached(propertyName))
+        if (propertyValues.isAttached(propertyName))
         {
             // the PropertyValidator ensures this is a safe cast at the time the
             // delegate is attached
-            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) values.propertyDelegates
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues.propertyDelegates
                     .get(propertyName);
 
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug(String.format(
-                        "Delegating read on property, %1$s, to delegate, %2$s",
-                        propertyName, delegate));
+                        "Delegating read on property, %1$s, for proxy, %2$s, to delegate, %3$s",
+                        propertyName, propertyValues.getProxyDescriptor(), delegate));
             }
 
-            return delegate.get(values, propertyName, index);
+            return delegate.get(propertyValues, propertyName, index);
         }
 
         if (isPrimitiveArray(value.getClass()))
@@ -299,14 +305,14 @@ class PropertyHandler implements Serializable
 
         if (List.class.isAssignableFrom(value.getClass()))
         {
-            List indexed = (List) values.get(propertyName);
+            List indexed = (List) propertyValues.get(propertyName);
 
             Object element = indexed.get(index);
 
             return element;
         }
 
-        Object[] indexed = (Object[]) values.get(propertyName);
+        Object[] indexed = (Object[]) propertyValues.get(propertyName);
 
         return indexed[index];
     }
@@ -315,15 +321,15 @@ class PropertyHandler implements Serializable
     {
         String propertyName = getPropertyName(methodName, BEING);
 
-        if (values.isAttached(propertyName))
+        if (propertyValues.isAttached(propertyName))
         {
-            PropertyDelegate<?> delegate = values.propertyDelegates
+            PropertyDelegate<?> delegate = propertyValues.propertyDelegates
                     .get(propertyName);
 
-            return delegate.get(values, propertyName);
+            return delegate.get(propertyValues, propertyName);
         }
 
-        return handleNull(Boolean.class, values.get(propertyName));
+        return handleNull(Boolean.class, propertyValues.get(propertyName));
     }
 
     private String getPropertyName(String methodName, String prefix)

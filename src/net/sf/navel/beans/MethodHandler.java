@@ -76,7 +76,9 @@ public class MethodHandler implements Serializable
     {
         if (LOGGER.isDebugEnabled())
         {
-            LOGGER.debug(String.format("Invoking %1$s.", method.getName()));
+            LOGGER.debug(String.format(
+                    "Invoking method, %1$s, on proxy, %2$s.", method.getName(),
+                    mapping.proxyDescriptor));
         }
 
         Class<?> proxiedInterface = method.getDeclaringClass();
@@ -85,18 +87,26 @@ public class MethodHandler implements Serializable
 
         if (null == delegate)
         {
-            throw new IllegalStateException(String.format(
-                    "No InterfaceDelegate instance found for interface, %1$s!", proxiedInterface
-                            .getName()));
+            throw new IllegalStateException(
+                    String
+                            .format(
+                                    "No InterfaceDelegate instance found for interface, %1$s, attached to proxy, %2$s!",
+                                    proxiedInterface.getName(),
+                                    mapping.proxyDescriptor));
         }
 
         if (LOGGER.isTraceEnabled())
         {
-            LOGGER.trace(String.format("Found delegate for %1$s.",
-                    proxiedInterface.getName()));
+            LOGGER
+                    .trace(String
+                            .format(
+                                    "Found delegate for method, %1$s, implemented by proxy, %2$s.",
+                                    proxiedInterface.getName(),
+                                    mapping.proxyDescriptor));
         }
-        
-        Method delegateMethod = delegate.getClass().getMethod(method.getName(), method.getParameterTypes());
+
+        Method delegateMethod = delegate.getClass().getMethod(method.getName(),
+                method.getParameterTypes());
 
         return delegateMethod.invoke(delegate, args);
     }

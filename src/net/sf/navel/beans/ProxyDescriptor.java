@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Collects the introspection and reflection data for the proxy in one place,
@@ -225,7 +226,22 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         return result;
     }
 
-    private static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
+    /**
+     * @see java.lang.Object#toString()
+     */
+
+    @Override
+    public String toString()
+    {
+        return String
+                .format(
+                        "proxyDescriptor = {primary type = %1$s, additional interfaces = %2$s}",
+                        primaryType.getName(), printClasses(primaryType,
+                                proxiedInterfaces));
+    }
+
+    private static final Map<String, PropertyDescriptor> mapProperties(
+            BeanInfo beanInfo)
     {
         Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
 
@@ -238,7 +254,8 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         return byNames;
     }
 
-    private static final int filterMethods(Set<Method> methods, BeanInfo beanInfo)
+    private static final int filterMethods(Set<Method> methods,
+            BeanInfo beanInfo)
     {
         MethodDescriptor[] methodDescriptors = beanInfo.getMethodDescriptors();
 
@@ -336,5 +353,23 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         input.defaultReadObject();
 
         input.registerValidation(this, 0);
+    }
+
+    private String printClasses(Class<?> primaryType,
+            Set<Class<?>> proxiedInterfaces)
+    {
+        Set<String> sortedInterfaces = new TreeSet<String>();
+
+        for (Class<?> additionalInterface : proxiedInterfaces)
+        {
+            if (additionalInterface.equals(primaryType))
+            {
+                continue;
+            }
+
+            sortedInterfaces.add(additionalInterface.getName());
+        }
+
+        return sortedInterfaces.toString();
     }
 }
