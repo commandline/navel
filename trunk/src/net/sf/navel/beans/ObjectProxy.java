@@ -149,17 +149,19 @@ class ObjectProxy implements Serializable
         }
         catch (IllegalAccessException e)
         {
-            LOGGER
-                    .warn("Illegal access proxying Object methods to internal Map.");
-
-            return null;
+            throw new IllegalStateException(
+                    String
+                            .format(
+                                    "Illegal access proxying Object method, %1$s, to internal Map for proxy, %2$s.",
+                                    methodName, proxyDescriptor), e);
         }
         catch (InvocationTargetException e)
         {
-            LOGGER
-                    .warn("Error invoking while proxying Object methods to internal Map.");
-
-            return null;
+            throw new IllegalStateException(
+                    String
+                            .format(
+                                    "Error invoking while proxying Object method, %1$s, to internal Map for proxy, %2$s.",
+                                    methodName, proxyDescriptor), e);
         }
     }
 
