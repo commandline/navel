@@ -160,8 +160,9 @@ class ObjectProxy implements Serializable
             throw new IllegalStateException(
                     String
                             .format(
-                                    "Error invoking while proxying Object method, with arguments (%2$s) %1$s, to internal Map for proxy, %3$s.",
-                                    methodName, argString, proxyDescriptor), e);
+                                    "Exception, %1$s, occured in reflection invocation while proxying Object method, %2$s, with arguments (%3$s) to internal Map for proxy, %4$s.",
+                                    e.getMessage(), methodName, argString,
+                                    proxyDescriptor), e);
         }
     }
 
