@@ -134,6 +134,18 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
     }
 
     /**
+     * @return The {@link PropertyDescriptor} values for all of the proxy's
+     *         interfaces keyed by each property's name. The map returned is not
+     *         modifiable and will throw an exception if an alteration is
+     *         attempted.
+     */
+    public Map<String, PropertyDescriptor> getPropertyDescriptors()
+    {
+        // this is already unmodifiabe, so safe to share as is
+        return propertyDescriptors;
+    }
+
+    /**
      * Used during de-serialization to restore the non serializable
      * instrospection metadata from the JavaBeans API.
      * 
