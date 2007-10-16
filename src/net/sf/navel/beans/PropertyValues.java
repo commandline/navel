@@ -69,6 +69,8 @@ public class PropertyValues implements Serializable
 
     final ObjectProxy objectProxy;
 
+    private final boolean immutable;
+
     PropertyValues(ProxyDescriptor proxyDescriptor,
             Map<String, Object> initialValues)
     {
@@ -91,16 +93,22 @@ public class PropertyValues implements Serializable
         this.objectProxy = new ObjectProxy(proxyDescriptor);
 
         this.values = initialCopy;
+
+        this.immutable = false;
     }
 
-    PropertyValues(PropertyValues source)
+    PropertyValues(PropertyValues source, boolean immutable)
     {
         // NavelDescriptor is immutable so safe to share like this
         this.proxyDescriptor = source.proxyDescriptor;
 
         this.objectProxy = new ObjectProxy(source.objectProxy);
 
-        this.values = new HashMap<String, Object>(source.values);
+        this.immutable = immutable;
+
+        Map<String, Object> copy = new HashMap<String, Object>(source.values);
+
+        this.values = immutable ? Collections.unmodifiableMap(copy) : copy;
     }
 
     public ProxyDescriptor getProxyDescriptor()
@@ -141,6 +149,8 @@ public class PropertyValues implements Serializable
      */
     public void put(String propertyName, Object value)
     {
+        checkImmutable();
+
         String[] propertyTokens = propertyName.split("\\.");
 
         if (0 == propertyTokens.length)
@@ -160,6 +170,8 @@ public class PropertyValues implements Serializable
      */
     public void putAll(Map<String, Object> newValues)
     {
+        checkImmutable();
+        
         // resolution depends on combining existing and new values, specifically
         // for lists and setting unset values on existing beans
         Map<String, Object> combined = new HashMap<String, Object>(values);
@@ -191,11 +203,15 @@ public class PropertyValues implements Serializable
 
     public Object remove(String property)
     {
+        checkImmutable();
+        
         return values.remove(property);
     }
 
     public void clear()
     {
+        checkImmutable();
+        
         values.clear();
     }
 
@@ -315,6 +331,17 @@ public class PropertyValues implements Serializable
         return objectProxy.proxy(message, this, method, args);
     }
 
+    private void checkImmutable()
+    {
+        if (!immutable)
+        {
+            return;
+        }
+
+        throw new UnsupportedOperationException(
+                "This bean is immutable.  It was created with ProxyFactory.unmodifiableObject(), use ProxyFactory.copy() to create a copy safe to modify.");
+    }
+
     private void putValue(PropertyValues propertyValues,
             String[] propertyTokens, int tokenIndex, Object propertyValue)
     {
@@ -335,9 +362,11 @@ public class PropertyValues implements Serializable
 
         if (null == propertyDescriptor)
         {
-            throw new InvalidPropertyValueException(String.format(
-                    "No property descriptor for property name, %1$s, on proxy, %2$s.",
-                    propertyName, proxyDescriptor));
+            throw new InvalidPropertyValueException(
+                    String
+                            .format(
+                                    "No property descriptor for property name, %1$s, on proxy, %2$s.",
+                                    propertyName, proxyDescriptor));
         }
 
         if (1 == propertyTokens.length - tokenIndex)

@@ -281,4 +281,89 @@ public class ProxyFactoryTest
         Assert.assertFalse(source.equals(copy),
                 "Should be able to change one and not affect the other.");
     }
+    
+    @Test
+    public void testUnmodifiable()
+    {
+        TypesBean source = ProxyFactory.createAs(TypesBean.class);
+        source.setBoolean(true);
+        
+        TypesBean unmodifiable = ProxyFactory.unmodifiableObjectAs(TypesBean.class, source);
+        
+        Assert.assertTrue(PropertyManipulator.isSet(unmodifiable, "boolean"));
+        Assert.assertEquals(unmodifiable.getBoolean(), true);
+        
+        try
+        {
+            unmodifiable.setBoolean(false);
+            
+            Assert.fail("Should not be able to write through interface.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.put(unmodifiable, "boolean", false);
+            
+            Assert.fail("Should not be able to write dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            Map<String,Object> values = new HashMap<String, Object>(1);
+            values.put("boolean", false);
+            
+            PropertyManipulator.putAll(unmodifiable, values);
+            
+            Assert.fail("Should not be able to write all dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.clear(unmodifiable, "boolean");
+            
+            Assert.fail("Should not be able to clear dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.clear(unmodifiable);
+            
+            Assert.fail("Should not be able to clear all dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+    }
 }
