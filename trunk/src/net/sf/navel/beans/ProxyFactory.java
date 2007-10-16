@@ -51,6 +51,13 @@ public class ProxyFactory
     private static final Logger LOGGER = LogManager
             .getLogger(ProxyFactory.class);
 
+    private static final ProxyFactory SINGLETON = new ProxyFactory();
+
+    private ProxyFactory()
+    {
+        // enforce Singleton pattern
+    }
+
     /**
      * Overload that narrows the new bean down to the primary type of interest
      * and set the initial values.
@@ -253,6 +260,20 @@ public class ProxyFactory
      */
     public static Object copy(Object source, boolean deep)
     {
+        return SINGLETON.copyObject(source, deep, false);
+    }
+
+    /**
+     * Generic version that helps ensure type safety.
+     * 
+     * @see #unmodifiableObject(Object)
+     * @param source
+     *            Bean to copy, must be a Navel bean.
+     * @return An immutable copy of the original bean.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T unmodifiableObjectAs(Class<T> primaryType, Object source)
+    {
         if (null == source)
         {
             return null;
@@ -266,34 +287,33 @@ public class ProxyFactory
                     "Cannot copy anything other than a Navel bean!");
         }
 
-        Object copy = sourceHandler.copy();
-
-        if (!deep)
+        if (!sourceHandler.proxiesFor(primaryType))
         {
-            return copy;
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "The copy source, %1$s, does not support the requested type, %2$s.",
+                                    sourceHandler, primaryType.getName()));
         }
 
-        JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
+        return (T) unmodifiableObject(source);
+    }
 
-        Map<String, Object> values = copyHandler.propertyValues
-                .copyValues(false);
-
-        for (Entry<String, Object> entry : values.entrySet())
-        {
-            Object nestedValue = entry.getValue();
-
-            if (ProxyFactory.getHandler(nestedValue) == null)
-            {
-                continue;
-            }
-
-            String nestedProperty = entry.getKey();
-
-            PropertyManipulator.put(copy, nestedProperty, copy(nestedValue,
-                    true));
-        }
-
-        return copy;
+    /**
+     * Performs a deep copy of all the proxy support code, a deep copy of the
+     * internal bean state, and marks the internal bean state as immutable which
+     * only protects the internal PropertyValues. Any attempts to change the
+     * value portion of the return object will throw an unchecked exception. All
+     * kinds of delegates may be attached and detached as this affects the
+     * behavior of the instance but not its state as such.
+     * 
+     * @param source
+     *            Bean to copy, must be a Navel bean.
+     * @return An immutable copy of the original bean.
+     */
+    public static Object unmodifiableObject(Object source)
+    {
+        return SINGLETON.copyObject(source, true, true);
     }
 
     /**
@@ -506,5 +526,51 @@ public class ProxyFactory
         }
 
         return handler.propertyValues.getProxyDescriptor();
+    }
+
+    private Object copyObject(Object source, boolean deep,
+            boolean immutableValues)
+    {
+        if (null == source)
+        {
+            return null;
+        }
+
+        JavaBeanHandler sourceHandler = getHandler(source);
+
+        if (null == sourceHandler)
+        {
+            throw new UnsupportedFeatureException(
+                    "Cannot copy anything other than a Navel bean!");
+        }
+
+        Object copy = sourceHandler.copy(immutableValues);
+
+        if (!deep)
+        {
+            return copy;
+        }
+
+        JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
+
+        Map<String, Object> values = copyHandler.propertyValues
+                .copyValues(false);
+
+        for (Entry<String, Object> entry : values.entrySet())
+        {
+            Object nestedValue = entry.getValue();
+
+            if (ProxyFactory.getHandler(nestedValue) == null)
+            {
+                continue;
+            }
+
+            String nestedProperty = entry.getKey();
+
+            PropertyManipulator.put(copy, nestedProperty, copyObject(
+                    nestedValue, true, immutableValues));
+        }
+
+        return copy;
     }
 }
