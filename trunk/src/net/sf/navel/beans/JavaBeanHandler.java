@@ -93,11 +93,11 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         this.methodHandler = new MethodHandler(this.delegateMapping);
     }
 
-    JavaBeanHandler(JavaBeanHandler source, boolean immutableValues)
+    JavaBeanHandler(JavaBeanHandler source, boolean deepValueCopy, boolean immutableValues)
     {
         // since ProxyDescriptor is immutable, this is a safe assignment
         this.proxyDescriptor = source.proxyDescriptor;
-        this.propertyValues = new PropertyValues(source.propertyValues, immutableValues);
+        this.propertyValues = new PropertyValues(source.propertyValues, deepValueCopy, immutableValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
         this.delegateMapping = new InterfaceDelegateMapping(
                 this.propertyValues, source.delegateMapping);
@@ -209,14 +209,14 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         return buffer.toString();
     }
 
-    Object copy(boolean immutableValues)
+    Object copy(boolean deepValueCopy, boolean immutableValues)
     {
         Class<?>[] copyTypes = new ArrayList<Class<?>>(proxyDescriptor
                 .getProxiedInterfaces()).toArray(new Class<?>[proxyDescriptor
                 .getProxiedInterfaces().size()]);
 
         return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(),
-                copyTypes, new JavaBeanHandler(this, immutableValues));
+                copyTypes, new JavaBeanHandler(this, deepValueCopy, immutableValues));
     }
 
     boolean proxiesFor(Class<?> proxyInterface)

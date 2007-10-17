@@ -32,7 +32,6 @@ package net.sf.navel.beans;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -544,32 +543,7 @@ public class ProxyFactory
                     "Cannot copy anything other than a Navel bean!");
         }
 
-        Object copy = sourceHandler.copy(immutableValues);
-
-        if (!deep)
-        {
-            return copy;
-        }
-
-        JavaBeanHandler copyHandler = ProxyFactory.getHandler(copy);
-
-        Map<String, Object> values = copyHandler.propertyValues
-                .copyValues(false);
-
-        for (Entry<String, Object> entry : values.entrySet())
-        {
-            Object nestedValue = entry.getValue();
-
-            if (ProxyFactory.getHandler(nestedValue) == null)
-            {
-                continue;
-            }
-
-            String nestedProperty = entry.getKey();
-
-            PropertyManipulator.put(copy, nestedProperty, copyObject(
-                    nestedValue, true, immutableValues));
-        }
+        Object copy = sourceHandler.copy(deep, immutableValues);
 
         return copy;
     }

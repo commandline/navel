@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -97,8 +98,12 @@ public class PropertyValues implements Serializable
         this.immutable = false;
     }
 
-    PropertyValues(PropertyValues source, boolean immutable)
+    PropertyValues(PropertyValues source, final boolean deep,
+            final boolean immutable)
     {
+        // if immutable is true, it requires a deep copy
+        boolean qualifiedDeep = deep || immutable;
+
         // NavelDescriptor is immutable so safe to share like this
         this.proxyDescriptor = source.proxyDescriptor;
 
@@ -106,9 +111,34 @@ public class PropertyValues implements Serializable
 
         this.immutable = immutable;
 
-        Map<String, Object> copy = new HashMap<String, Object>(source.values);
+        // shallow copy
+        Map<String, Object> valuesCopy = new HashMap<String, Object>(source.values);
 
-        this.values = immutable ? Collections.unmodifiableMap(copy) : copy;
+        // deep copy, if requested either directly or as a consequence of requesting an immutable copy
+        if (qualifiedDeep)
+        {
+            // iterate the source since so that the copy can be safely modified
+            for (Entry<String, Object> entry : source.values.entrySet())
+            {
+                Object nestedValue = entry.getValue();
+
+                if (ProxyFactory.getHandler(nestedValue) == null)
+                {
+                    continue;
+                }
+
+                String nestedProperty = entry.getKey();
+
+                // deep and unmodifiable carry all the way throughout the copied graph
+                Object nestedCopy = immutable ? ProxyFactory
+                        .unmodifiableObject(nestedValue) : ProxyFactory.copy(
+                        nestedValue, true);
+
+                valuesCopy.put(nestedProperty, nestedCopy);
+            }
+        }
+
+        this.values = immutable ? Collections.unmodifiableMap(valuesCopy) : valuesCopy;
     }
 
     public ProxyDescriptor getProxyDescriptor()
@@ -171,7 +201,7 @@ public class PropertyValues implements Serializable
     public void putAll(Map<String, Object> newValues)
     {
         checkImmutable();
-        
+
         // resolution depends on combining existing and new values, specifically
         // for lists and setting unset values on existing beans
         Map<String, Object> combined = new HashMap<String, Object>(values);
@@ -204,14 +234,14 @@ public class PropertyValues implements Serializable
     public Object remove(String property)
     {
         checkImmutable();
-        
+
         return values.remove(property);
     }
 
     public void clear()
     {
         checkImmutable();
-        
+
         values.clear();
     }
 
