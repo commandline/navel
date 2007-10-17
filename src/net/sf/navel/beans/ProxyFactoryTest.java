@@ -43,6 +43,7 @@ import java.util.Map;
 
 import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedImpl;
+import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.TypesBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -281,6 +282,58 @@ public class ProxyFactoryTest
         Assert.assertFalse(source.equals(copy),
                 "Should be able to change one and not affect the other.");
     }
+
+    @Test
+    public void testNestedShallow()
+    {
+        NestedBean source = ProxyFactory.createAs(NestedBean.class);
+        source.setNested(ProxyFactory.createAs(TypesBean.class));
+        source.setBoolean(true);
+        source.getNested().setBoolean(true);
+
+        NestedBean copy = ProxyFactory.copyAs(NestedBean.class, source);
+
+        Assert.assertEquals(source, copy, "Should initially be the same.");
+        Assert.assertNotSame(source, copy, "Should not be identical, though.");
+
+        Assert.assertEquals(source.getNested(), copy.getNested(), "Nested should initially be the same.");
+        Assert.assertSame(source.getNested(), copy.getNested(), "Nested should be identical.");
+
+        copy.setBoolean(false);
+        copy.getNested().setBoolean(false);
+
+        Assert.assertFalse(source.equals(copy),
+                "Should be able to change one and not affect the other.");
+
+        Assert.assertEquals(copy.getNested(), source.getNested(),
+                "On a shallow copy, changes to nested should affect both.");
+    }
+
+    @Test
+    public void testNestedDeep()
+    {
+        NestedBean source = ProxyFactory.createAs(NestedBean.class);
+        source.setNested(ProxyFactory.createAs(TypesBean.class));
+        source.setBoolean(true);
+        source.getNested().setBoolean(true);
+
+        NestedBean copy = ProxyFactory.copyAs(NestedBean.class, source, true);
+
+        Assert.assertEquals(source, copy, "Should initially be the same.");
+        Assert.assertNotSame(source, copy, "Should not be identical, though.");
+
+        Assert.assertEquals(source.getNested(), copy.getNested(), "Nested should initially be the same.");
+        Assert.assertNotSame(source.getNested(), copy.getNested(), "Nested should not be identical.");
+
+        copy.setBoolean(false);
+        copy.getNested().setBoolean(false);
+
+        Assert.assertFalse(source.equals(copy),
+                "Should be able to change one and not affect the other.");
+
+        Assert.assertFalse(copy.getNested().equals(source.getNested()),
+                "On a deep copy, changes to nested should not affect both.");
+    }
     
     @Test
     public void testUnmodifiable()
@@ -355,6 +408,106 @@ public class ProxyFactoryTest
         try
         {
             PropertyManipulator.clear(unmodifiable);
+            
+            Assert.fail("Should not be able to clear all dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+    }
+    
+    @Test
+    public void testNestedUnmodifiable()
+    {
+        NestedBean source = ProxyFactory.createAs(NestedBean.class);
+        source.setNested(ProxyFactory.createAs(TypesBean.class));
+        source.getNested().setBoolean(true);
+        
+        NestedBean unmodifiable = ProxyFactory.unmodifiableObjectAs(NestedBean.class, source);
+        
+        Assert.assertTrue(PropertyManipulator.isSet(unmodifiable.getNested(), "boolean"));
+        Assert.assertEquals(unmodifiable.getNested().getBoolean(), true);
+        
+        try
+        {
+            unmodifiable.setBoolean(true);
+            
+            Assert.fail("Should not be able to write through interface.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            unmodifiable.getNested().setBoolean(false);
+            
+            Assert.fail("Should not be able to write through interface.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.put(unmodifiable.getNested(), "boolean", false);
+            
+            Assert.fail("Should not be able to write dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            Map<String,Object> values = new HashMap<String, Object>(1);
+            values.put("boolean", false);
+            
+            PropertyManipulator.putAll(unmodifiable.getNested(), values);
+            
+            Assert.fail("Should not be able to write all dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.clear(unmodifiable.getNested(), "boolean");
+            
+            Assert.fail("Should not be able to clear dynamically.");
+        }
+        catch (UnsupportedOperationException e)
+        {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().startsWith("This bean is immutable."));
+            
+            LogHelper.traceError(LOGGER, e);
+        }
+        
+        try
+        {
+            PropertyManipulator.clear(unmodifiable.getNested());
             
             Assert.fail("Should not be able to clear all dynamically.");
         }
