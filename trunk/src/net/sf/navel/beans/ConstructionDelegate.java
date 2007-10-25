@@ -68,13 +68,15 @@ public interface ConstructionDelegate
      * @param initialValues
      *            May be empty, will never be null; allows type augmentation
      *            based on the initial values for a new {@link JavaBeanHandler}.
+     *            The value based in will be immutable as this method is not
+     *            meant to alter the state of the bean under construction.
      * @return Any additional interfaces that the {@link Proxy} should implement
      *         or null if no additional interfaces should be added. Any
      *         duplicates from other {@link ConstructionDelegate} instances
      *         invoked before {@link Proxy} creation will be eliminated.
      */
-    Collection<Class<?>> additionalTypes(int nestingDepth,
-            Class<?> thisType, Class<?> primaryType, Class<?>[] allTypes,
+    Collection<Class<?>> additionalTypes(int nestingDepth, Class<?> thisType,
+            Class<?> primaryType, Class<?>[] allTypes,
             Map<String, Object> initialValues);
 
     /**

@@ -35,7 +35,6 @@ import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -93,11 +92,13 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         this.methodHandler = new MethodHandler(this.delegateMapping);
     }
 
-    JavaBeanHandler(JavaBeanHandler source, boolean deepValueCopy, boolean immutableValues)
+    JavaBeanHandler(JavaBeanHandler source, boolean deepValueCopy,
+            boolean immutableValues)
     {
         // since ProxyDescriptor is immutable, this is a safe assignment
         this.proxyDescriptor = source.proxyDescriptor;
-        this.propertyValues = new PropertyValues(source.propertyValues, deepValueCopy, immutableValues);
+        this.propertyValues = new PropertyValues(source.propertyValues,
+                deepValueCopy, immutableValues);
         this.propertyHandler = new PropertyHandler(this.propertyValues);
         this.delegateMapping = new InterfaceDelegateMapping(
                 this.propertyValues, source.delegateMapping);
@@ -214,9 +215,11 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         Class<?>[] copyTypes = new ArrayList<Class<?>>(proxyDescriptor
                 .getProxiedInterfaces()).toArray(new Class<?>[proxyDescriptor
                 .getProxiedInterfaces().size()]);
-
-        return Proxy.newProxyInstance(ProxyFactory.class.getClassLoader(),
-                copyTypes, new JavaBeanHandler(this, deepValueCopy, immutableValues));
+        
+        JavaBeanHandler newHandler = new JavaBeanHandler(this, deepValueCopy,
+                immutableValues);
+        
+        return ProxyFactory.create(newHandler, null, copyTypes, new InterfaceDelegate[0]);
     }
 
     boolean proxiesFor(Class<?> proxyInterface)

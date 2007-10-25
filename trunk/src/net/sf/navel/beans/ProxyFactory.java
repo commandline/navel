@@ -32,6 +32,7 @@ package net.sf.navel.beans;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -56,7 +57,7 @@ public class ProxyFactory
     private static final Logger LOGGER = LogManager
             .getLogger(ProxyFactory.class);
 
-    private static final ProxyFactory SINGLETON = new ProxyFactory();
+    static final ProxyFactory SINGLETON = new ProxyFactory();
 
     private static final int MAX_NESTING_DEPTH = 10;
 
@@ -69,6 +70,16 @@ public class ProxyFactory
         // enforce Singleton pattern
     }
 
+    /**
+     * Register custom construction logic, to give Navel beans the ability to
+     * behave more closely to concrete Java Beans that can have whatever
+     * constructions scheme is required.
+     * 
+     * @param forType
+     *            Interface for which the custom logic will be registered.
+     * @param delegate
+     *            Implementation that provides the custom logic.
+     */
     public static void register(Class<?> forType, ConstructionDelegate delegate)
     {
         if (null == forType)
@@ -104,8 +115,7 @@ public class ProxyFactory
     public static <B> B createAs(Class<B> primaryType,
             Class<?>... additionalTypes)
     {
-        return ProxyFactory.createAs(primaryType,
-                new HashMap<String, Object>(), additionalTypes);
+        return ProxyFactory.createAs(primaryType, null, additionalTypes);
     }
 
     /**
@@ -118,7 +128,7 @@ public class ProxyFactory
      */
     public static Object create(Class<?>... allTypes)
     {
-        return ProxyFactory.create(new HashMap<String, Object>(), allTypes,
+        return ProxyFactory.create(null, allTypes,
                 new InterfaceDelegate[0]);
     }
 
@@ -169,59 +179,7 @@ public class ProxyFactory
     public static Object create(Map<String, Object> initialValues,
             Class<?>[] allTypes, InterfaceDelegate[] initialDelegates)
     {
-        if (allTypes.length <= 0)
-        {
-            throw new IllegalArgumentException(
-                    "Must supply at least interface for the proxy to implement!");
-        }
-
-        incrementNesting();
-
-        // in some environments, such as Ant, trying harder is required
-        try
-        {
-            return SINGLETON.instantiate(Thread.currentThread()
-                    .getContextClassLoader(), allTypes, initialValues,
-                    initialDelegates);
-        }
-        catch (IllegalArgumentException e)
-        {
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug(
-                        "Failed to instantiate using thread context's loader.",
-                        e);
-                LOGGER.debug(String.format(
-                        "Trying the loader for class, %1$s.", allTypes[0]
-                                .getName()));
-            }
-
-            try
-            {
-                return SINGLETON.instantiate(allTypes[0].getClassLoader(),
-                        allTypes, initialValues, initialDelegates);
-            }
-            catch (IllegalArgumentException again)
-            {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER
-                            .debug(String
-                                    .format(
-                                            "Failed to instantiate using loader for class, %1$s.",
-                                            allTypes[0].getName()));
-                    LOGGER.debug("Trying the system's loader.");
-                }
-
-                return SINGLETON.instantiate(
-                        ClassLoader.getSystemClassLoader(), allTypes,
-                        initialValues, initialDelegates);
-            }
-        }
-        finally
-        {
-            decrementNesting();
-        }
+        return create(null, initialValues, allTypes, initialDelegates);
     }
 
     /**
@@ -562,6 +520,83 @@ public class ProxyFactory
         return handler.propertyValues.getProxyDescriptor();
     }
 
+    /**
+     * Package private overload required to satisfy copy logic, allowing the
+     * copy code in JavaBeanHandler to provide its own handler copy.
+     * 
+     * @param handler
+     *            If null, should trigger creation of a new handler; otherwise
+     *            use the one provided.
+     * @param initialValues
+     *            Initial property values the proxy will have, checked to see if
+     *            they are valid. May only be null if the handler argument is
+     *            not null.
+     * @param allTypes
+     *            All of the interfaces the proxy will implement.
+     * @param initialDelegates
+     *            Delegates to map in initially.
+     * @return A proxy that extends all of the specified types and has the
+     *         specified initial property values.
+     */
+    static Object create(JavaBeanHandler handler,
+            Map<String, Object> initialValues, Class<?>[] allTypes,
+            InterfaceDelegate[] initialDelegates)
+    {
+        if (allTypes.length <= 0)
+        {
+            throw new IllegalArgumentException(
+                    "Must supply at least interface for the proxy to implement!");
+        }
+
+        incrementNesting();
+
+        // in some environments, such as Ant, trying harder is required
+        try
+        {
+            return SINGLETON.instantiate(Thread.currentThread()
+                    .getContextClassLoader(), handler, allTypes, initialValues,
+                    initialDelegates);
+        }
+        catch (IllegalArgumentException e)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug(
+                        "Failed to instantiate using thread context's loader.",
+                        e);
+                LOGGER.debug(String.format(
+                        "Trying the loader for class, %1$s.", allTypes[0]
+                                .getName()));
+            }
+
+            try
+            {
+                return SINGLETON.instantiate(allTypes[0].getClassLoader(),
+                        handler, allTypes, initialValues, initialDelegates);
+            }
+            catch (IllegalArgumentException again)
+            {
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER
+                            .debug(String
+                                    .format(
+                                            "Failed to instantiate using loader for class, %1$s.",
+                                            allTypes[0].getName()));
+                    LOGGER.debug("Trying the system's loader.");
+                }
+
+                return SINGLETON.instantiate(
+                        ClassLoader.getSystemClassLoader(), handler, allTypes,
+                        initialValues, initialDelegates);
+            }
+        }
+        finally
+        {
+            decrementNesting();
+        }
+    }
+
     private static void incrementNesting()
     {
         if (null == nestingDepth.get())
@@ -595,17 +630,18 @@ public class ProxyFactory
         }
     }
 
-    private Object instantiate(ClassLoader loader, Class<?>[] allTypes,
-            Map<String, Object> initialValues,
+    private Object instantiate(ClassLoader loader, JavaBeanHandler handler,
+            Class<?>[] allTypes, Map<String, Object> initialValues,
             InterfaceDelegate[] initialDelegates)
     {
         // keep the pre-init logic local to creation of the Proxy
-        Class<?>[] amendedTypes = SINGLETON.doBeforeInit(initialValues,
-                allTypes);
+        Class<?>[] amendedTypes = null == handler ? allTypes : doBeforeInit(
+                initialValues, allTypes);
 
-        Object bean = Proxy.newProxyInstance(loader, amendedTypes,
-                new JavaBeanHandler(initialValues, amendedTypes,
-                        initialDelegates));
+        JavaBeanHandler newHandler = null == handler ? new JavaBeanHandler(
+                initialValues, amendedTypes, initialDelegates) : handler;
+
+        Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
 
         // keep the post-init logic local to creation of the Proxy
         doAfterInit(bean, amendedTypes);
@@ -634,9 +670,14 @@ public class ProxyFactory
         return copy;
     }
 
+    @SuppressWarnings("unchecked")
     private Class<?>[] doBeforeInit(Map<String, Object> initialValues,
             Class<?>[] allTypes)
     {
+        Map<String, Object> initialFixedCopy = null == initialValues ? Collections.EMPTY_MAP
+                : initialValues;
+        initialFixedCopy = Collections.unmodifiableMap(initialFixedCopy);
+
         List<Class<?>> combinedTypes = new LinkedList<Class<?>>(Arrays
                 .asList(allTypes));
 
@@ -655,7 +696,7 @@ public class ProxyFactory
 
             Collection<Class<?>> additionalTypes = delegate.additionalTypes(
                     nestingDepth.get(), allTypes[0], singleType, allTypes,
-                    initialValues);
+                    initialFixedCopy);
 
             // null is acceptable to indicate a no-op
             if (null == additionalTypes)
