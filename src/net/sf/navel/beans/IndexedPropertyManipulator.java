@@ -255,9 +255,8 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
             if (null == nestedValue && lazyCreate)
             {
-                nestedValue = NestedBeanFactory
-                        .create(nameWithIndex, propertyDescriptor
-                                .getPropertyType().getComponentType());
+                nestedValue = ProxyFactory.create(propertyDescriptor
+                        .getPropertyType().getComponentType());
 
                 indexed[arrayIndex] = nestedValue;
             }

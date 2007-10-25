@@ -227,7 +227,7 @@ class PropertyValueResolver
         // create a new Navel bean, the parent map doesn't have one, yet
         if (!parentValues.containsKey(name))
         {
-            return NestedBeanFactory.create(name, propClass, values);
+            return ProxyFactory.create(values, new Class<?>[] { propClass }, new InterfaceDelegate[0]);
         }
 
         Object nestedValue = parentValues.get(name);

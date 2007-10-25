@@ -436,7 +436,7 @@ public class PropertyValues implements Serializable
 
         if (null == nestedBean)
         {
-            nestedBean = NestedBeanFactory.create(originalName, propertyType);
+            nestedBean = ProxyFactory.create(propertyType);
 
             if (null == nestedBean)
             {
