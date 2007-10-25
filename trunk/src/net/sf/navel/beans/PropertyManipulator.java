@@ -51,6 +51,8 @@ public class PropertyManipulator
      * useful for translation between Navel beans and other kinds of objects or
      * declarative interrogation of the state of the bean.
      * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * 
      * @param bean
      *            Object to query, must be a Navel bean.
      * @param propertyName
@@ -89,6 +91,8 @@ public class PropertyManipulator
     /**
      * Overload that assumes false for flattening of the internal values.
      * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * 
      * @return
      */
     public static Map<String, Object> copyAll(Object bean)
@@ -99,6 +103,8 @@ public class PropertyManipulator
     /**
      * Allows a copy of the bean's internal state to be retrieve by an arbitrary
      * caller.
+     * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Must be navel bean.
@@ -129,6 +135,8 @@ public class PropertyManipulator
      * correct names and types. If it is a Navel bean, it will also use the same
      * logic as the ProxyFactory to initialize uninitialized nested properties
      * of those are interfaces so can be properly proxied.
+     * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Target whose property, simply or nested, to set.
@@ -165,6 +173,8 @@ public class PropertyManipulator
      * the supplied Map to ensure it is consistent with the JavaBean's
      * interfaces.
      * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * 
      * @param bean
      *            Target bean to apply the Map argument, must be a Navel bean.
      *            To apply a Map to a plain, old JavaBean, use BeanManipulator.
@@ -195,6 +205,8 @@ public class PropertyManipulator
     /**
      * Check to see if the specified property has an entry, even one with a null
      * value, in the storage map.
+     * 
+     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Object to check, must be a Navel bean.
