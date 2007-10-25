@@ -99,6 +99,23 @@ public class ProxyFactory
     }
 
     /**
+     * Useful for testing but should not be necessary, otherwise.
+     * 
+     * @param forType
+     *            Type for which a delegate, if it exists, will be removed.
+     * @return The delegate instance, if there is one, or null.
+     */
+    public static ConstructionDelegate unregister(Class<?> forType)
+    {
+        if (!SINGLETON.constructionDelegates.containsKey(forType))
+        {
+            return null;
+        }
+
+        return SINGLETON.constructionDelegates.remove(forType);
+    }
+
+    /**
      * Overload that narrows the new bean down to the primary type of interest
      * and set the initial values.
      * 
@@ -128,8 +145,7 @@ public class ProxyFactory
      */
     public static Object create(Class<?>... allTypes)
     {
-        return ProxyFactory.create(null, allTypes,
-                new InterfaceDelegate[0]);
+        return ProxyFactory.create(null, allTypes, new InterfaceDelegate[0]);
     }
 
     /**
