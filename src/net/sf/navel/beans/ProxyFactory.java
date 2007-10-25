@@ -646,20 +646,24 @@ public class ProxyFactory
         }
     }
 
+    /*
+     * This methid keeps the custom initialization hook logic close to the
+     * actual point of instantiation of the dynamic Proxy.
+     */
     private Object instantiate(ClassLoader loader, JavaBeanHandler handler,
             Class<?>[] allTypes, Map<String, Object> initialValues,
             InterfaceDelegate[] initialDelegates)
     {
-        // keep the pre-init logic local to creation of the Proxy
-        Class<?>[] amendedTypes = null == handler ? allTypes : doBeforeInit(
-                initialValues, allTypes);
+        // only perform the pre-init for a new instance, NOT for a copy
+        Class<?>[] amendedTypes = null == handler ? doBeforeInit(initialValues,
+                allTypes) : allTypes;
 
         JavaBeanHandler newHandler = null == handler ? new JavaBeanHandler(
                 initialValues, amendedTypes, initialDelegates) : handler;
 
         Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
 
-        // keep the post-init logic local to creation of the Proxy
+        // perform the post-init for new and copy both
         doAfterInit(bean, amendedTypes);
 
         return bean;
