@@ -328,7 +328,7 @@ class ListBuilder
         {
             if (elementType.isInterface())
             {
-                return NestedBeanFactory.create("", elementType, rawValues);
+                return ProxyFactory.create(rawValues, new Class<?>[] { elementType }, new InterfaceDelegate[0]);
             }
             else
             {
