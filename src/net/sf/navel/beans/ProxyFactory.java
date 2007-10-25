@@ -30,8 +30,14 @@
 package net.sf.navel.beans;
 
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -52,9 +58,33 @@ public class ProxyFactory
 
     private static final ProxyFactory SINGLETON = new ProxyFactory();
 
+    private static final int MAX_NESTING_DEPTH = 10;
+
+    private final Map<Class<?>, ConstructionDelegate> constructionDelegates = new HashMap<Class<?>, ConstructionDelegate>();
+
+    private static ThreadLocal<Integer> nestingDepth = new ThreadLocal<Integer>();
+
     private ProxyFactory()
     {
         // enforce Singleton pattern
+    }
+
+    public static void register(Class<?> forType, ConstructionDelegate delegate)
+    {
+        if (null == forType)
+        {
+            throw new IllegalArgumentException(
+                    "Cannot register a ConstructorDelegate for a null type.");
+        }
+
+        if (null == delegate)
+        {
+            throw new IllegalArgumentException(String.format(
+                    "Cannot register a null delegate for type, $1%s.", forType
+                            .getName()));
+        }
+
+        SINGLETON.constructionDelegates.put(forType, delegate);
     }
 
     /**
@@ -145,12 +175,14 @@ public class ProxyFactory
                     "Must supply at least interface for the proxy to implement!");
         }
 
+        incrementNesting();
+
         // in some environments, such as Ant, trying harder is required
         try
         {
-            return Proxy.newProxyInstance(Thread.currentThread()
-                    .getContextClassLoader(), allTypes, new JavaBeanHandler(
-                    initialValues, allTypes, initialDelegates));
+            return SINGLETON.instantiate(Thread.currentThread()
+                    .getContextClassLoader(), allTypes, initialValues,
+                    initialDelegates);
         }
         catch (IllegalArgumentException e)
         {
@@ -166,9 +198,8 @@ public class ProxyFactory
 
             try
             {
-                return Proxy.newProxyInstance(allTypes[0].getClassLoader(),
-                        allTypes, new JavaBeanHandler(initialValues, allTypes,
-                                initialDelegates));
+                return SINGLETON.instantiate(allTypes[0].getClassLoader(),
+                        allTypes, initialValues, initialDelegates);
             }
             catch (IllegalArgumentException again)
             {
@@ -182,10 +213,14 @@ public class ProxyFactory
                     LOGGER.debug("Trying the system's loader.");
                 }
 
-                return Proxy.newProxyInstance(ClassLoader
-                        .getSystemClassLoader(), allTypes, new JavaBeanHandler(
-                        initialValues, allTypes, initialDelegates));
+                return SINGLETON.instantiate(
+                        ClassLoader.getSystemClassLoader(), allTypes,
+                        initialValues, initialDelegates);
             }
+        }
+        finally
+        {
+            decrementNesting();
         }
     }
 
@@ -527,6 +562,57 @@ public class ProxyFactory
         return handler.propertyValues.getProxyDescriptor();
     }
 
+    private static void incrementNesting()
+    {
+        if (null == nestingDepth.get())
+        {
+            nestingDepth.set(0);
+        }
+        else
+        {
+            nestingDepth.set(nestingDepth.get() + 1);
+        }
+
+        if (nestingDepth.get() > MAX_NESTING_DEPTH)
+        {
+            throw new IllegalStateException(
+                    String
+                            .format(
+                                    "Exceeded maximum nesting depth, %1$d, for delegate construction using registered ConstructorDelegat instnance.  Make sure to check the nestingDepth argument to ConstructorDelegate's methods.",
+                                    MAX_NESTING_DEPTH));
+        }
+    }
+
+    private static void decrementNesting()
+    {
+        if (nestingDepth.get() == 0)
+        {
+            nestingDepth.remove();
+        }
+        else
+        {
+            nestingDepth.set(nestingDepth.get() - 1);
+        }
+    }
+
+    private Object instantiate(ClassLoader loader, Class<?>[] allTypes,
+            Map<String, Object> initialValues,
+            InterfaceDelegate[] initialDelegates)
+    {
+        // keep the pre-init logic local to creation of the Proxy
+        Class<?>[] amendedTypes = SINGLETON.doBeforeInit(initialValues,
+                allTypes);
+
+        Object bean = Proxy.newProxyInstance(loader, amendedTypes,
+                new JavaBeanHandler(initialValues, amendedTypes,
+                        initialDelegates));
+
+        // keep the post-init logic local to creation of the Proxy
+        doAfterInit(bean, amendedTypes);
+
+        return bean;
+    }
+
     private Object copyObject(Object source, boolean deep,
             boolean immutableValues)
     {
@@ -546,5 +632,87 @@ public class ProxyFactory
         Object copy = sourceHandler.copy(deep, immutableValues);
 
         return copy;
+    }
+
+    private Class<?>[] doBeforeInit(Map<String, Object> initialValues,
+            Class<?>[] allTypes)
+    {
+        List<Class<?>> combinedTypes = new LinkedList<Class<?>>(Arrays
+                .asList(allTypes));
+
+        // using a separate set makes the containment check cheaper
+        Set<Class<?>> uniqueTypes = new HashSet<Class<?>>(combinedTypes);
+
+        for (Class<?> singleType : allTypes)
+        {
+            if (!constructionDelegates.containsKey(singleType))
+            {
+                continue;
+            }
+
+            ConstructionDelegate delegate = constructionDelegates
+                    .get(singleType);
+
+            Collection<Class<?>> additionalTypes = delegate.additionalTypes(
+                    nestingDepth.get(), allTypes[0], singleType, allTypes,
+                    initialValues);
+
+            // null is acceptable to indicate a no-op
+            if (null == additionalTypes)
+            {
+                continue;
+            }
+
+            // the size of the additional type collection is expected to be
+            // small, so not presently concerned about nesting loops
+            for (Class<?> additionalType : additionalTypes)
+            {
+                if (null == additionalType)
+                {
+                    throw new IllegalStateException(
+                            "Do not include any null types in the return Collection for ConstructorDelegate.additionalTypes().");
+                }
+
+                if (!additionalType.isInterface())
+                {
+                    throw new IllegalStateException(
+                            String
+                                    .format(
+                                            "The type, %1$s, is not an interface.  The additional types returned by ConstructorDelegate.additionalTypes() must all be interfaces.",
+                                            additionalType.getName()));
+                }
+
+                if (uniqueTypes.contains(additionalType))
+                {
+                    continue;
+                }
+
+                // add the new interfaces to the end so as not to inadvertently
+                // clobber
+                // the special zeroth element, the primary type
+                combinedTypes.add(additionalType);
+
+                // guard against duplication of the newly added
+                uniqueTypes.add(additionalType);
+            }
+        }
+
+        return combinedTypes.toArray(new Class<?>[combinedTypes.size()]);
+    }
+
+    private void doAfterInit(Object bean, Class<?>[] allTypes)
+    {
+        for (Class<?> singleType : allTypes)
+        {
+            if (!constructionDelegates.containsKey(singleType))
+            {
+                continue;
+            }
+
+            ConstructionDelegate delegate = constructionDelegates
+                    .get(singleType);
+
+            delegate.init(nestingDepth.get(), singleType, bean);
+        }
     }
 }
