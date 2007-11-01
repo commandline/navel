@@ -219,7 +219,7 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         JavaBeanHandler newHandler = new JavaBeanHandler(this, deepValueCopy,
                 immutableValues);
         
-        return ProxyFactory.create(newHandler, null, copyTypes, new InterfaceDelegate[0]);
+        return ProxyFactory.create(newHandler, null, null, copyTypes, new InterfaceDelegate[0]);
     }
 
     boolean proxiesFor(Class<?> proxyInterface)

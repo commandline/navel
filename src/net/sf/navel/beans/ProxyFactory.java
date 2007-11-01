@@ -30,6 +30,7 @@
 package net.sf.navel.beans;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -136,19 +137,6 @@ public class ProxyFactory
     }
 
     /**
-     * Overload that does not set any initial values.
-     * 
-     * @param allTypes
-     *            All of the interfaces the proxy will implement.
-     * @return A proxy that extends all of the specified types and has no
-     *         initial property values.
-     */
-    public static Object create(Class<?>... allTypes)
-    {
-        return ProxyFactory.create(null, allTypes, new InterfaceDelegate[0]);
-    }
-
-    /**
      * Overload that narrows the new bean down to the primary type of interest
      * and does not set any initial values.
      * 
@@ -168,19 +156,65 @@ public class ProxyFactory
     public static <B> B createAs(Class<B> primaryType,
             Map<String, Object> initialValues, Class<?>... additionalTypes)
     {
+        return ProxyFactory.createAs(primaryType, null, initialValues,
+                additionalTypes);
+    }
+
+    /**
+     * Overload that narrows the new bean down to the primary type of interest
+     * and does not set any initial values.
+     * 
+     * @param <B>
+     *            The preferred return type.
+     * @param primaryType
+     *            Class argument to fulfill the return type generic parameter.
+     * @param constructorArguments
+     *            Not required, may be null; just passed to constructor
+     *            delegates to provide an optional set of state for construction
+     *            but not to be directly added to internal storage. If not
+     *            supplied, the initial values argument will be passed to any
+     *            {@link ConstructionDelegate} instances registered for the
+     *            proxy's types, instead.
+     * @param initialValues
+     *            Initial property values the proxy will have, checked to see if
+     *            they are valid.
+     * @param additionalTypes
+     *            Optional, additional types this object will implement.
+     * @return An instance of the primary type that also extends all of the
+     *         optionalTypes.
+     */
+    @SuppressWarnings("unchecked")
+    public static <B> B createAs(Class<B> primaryType,
+            Map<String, Object> constructorArguments,
+            Map<String, Object> initialValues, Class<?>... additionalTypes)
+    {
         Class<?>[] allTypes = new Class<?>[additionalTypes.length + 1];
 
         allTypes[0] = primaryType;
         System.arraycopy(additionalTypes, 0, allTypes, 1,
                 additionalTypes.length);
 
-        return (B) ProxyFactory.create(initialValues, allTypes,
-                new InterfaceDelegate[0]);
+        return (B) ProxyFactory.create(constructorArguments, initialValues,
+                allTypes, new InterfaceDelegate[0]);
     }
 
     /**
-     * Fully specified factory method for generating a new Navel backed dynamic
-     * proxy.
+     * Overload that does not set any initial values or constructor arguments.
+     * 
+     * @param allTypes
+     *            All of the interfaces the proxy will implement.
+     * @return A proxy that extends all of the specified types and has no
+     *         initial property values.
+     */
+    public static Object create(Class<?>... allTypes)
+    {
+        return ProxyFactory.create(null, allTypes, new InterfaceDelegate[0]);
+    }
+
+    /**
+     * Overload that uses the initial values to set the beans initial state and
+     * the same values to pass in as constructor arguments for any registered
+     * instances of {@link ConstructionDelegate}.
      * 
      * @param initialValues
      *            Initial property values the proxy will have, checked to see if
@@ -195,7 +229,37 @@ public class ProxyFactory
     public static Object create(Map<String, Object> initialValues,
             Class<?>[] allTypes, InterfaceDelegate[] initialDelegates)
     {
-        return create(null, initialValues, allTypes, initialDelegates);
+        return ProxyFactory.create(null, null, initialValues, allTypes,
+                initialDelegates);
+    }
+
+    /**
+     * Fully specified factory method for generating a new Navel backed dynamic
+     * proxy.
+     * 
+     * @param constructorArguments
+     *            Not required, may be null; just passed to constructor
+     *            delegates to provide an optional set of state for construction
+     *            but not to be directly added to internal storage. If not
+     *            supplied, the initial values argument will be passed to any
+     *            {@link ConstructionDelegate} instances registered for the
+     *            proxy's types, instead.
+     * @param initialValues
+     *            Initial property values the proxy will have, checked to see if
+     *            they are valid.
+     * @param allTypes
+     *            All of the interfaces the proxy will implement.
+     * @param initialDelegates
+     *            Delegates to map in initially.
+     * @return A proxy that extends all of the specified types and has the
+     *         specified initial property values.
+     */
+    public static Object create(Map<String, Object> constructorArguments,
+            Map<String, Object> initialValues, Class<?>[] allTypes,
+            InterfaceDelegate[] initialDelegates)
+    {
+        return ProxyFactory.create(null, constructorArguments, initialValues,
+                allTypes, initialDelegates);
     }
 
     /**
@@ -543,6 +607,13 @@ public class ProxyFactory
      * @param handler
      *            If null, should trigger creation of a new handler; otherwise
      *            use the one provided.
+     * @param constructorArguments
+     *            Not required, may be null; just passed to constructor
+     *            delegates to provide an optional set of state for construction
+     *            but not to be directly added to internal storage. If not
+     *            supplied, the initial values argument will be passed to any
+     *            {@link ConstructionDelegate} instances registered for the
+     *            proxy's types, instead.
      * @param initialValues
      *            Initial property values the proxy will have, checked to see if
      *            they are valid. May only be null if the handler argument is
@@ -555,6 +626,7 @@ public class ProxyFactory
      *         specified initial property values.
      */
     static Object create(JavaBeanHandler handler,
+            Map<String, Object> constructorArguments,
             Map<String, Object> initialValues, Class<?>[] allTypes,
             InterfaceDelegate[] initialDelegates)
     {
@@ -570,8 +642,8 @@ public class ProxyFactory
         try
         {
             return SINGLETON.instantiate(Thread.currentThread()
-                    .getContextClassLoader(), handler, allTypes, initialValues,
-                    initialDelegates);
+                    .getContextClassLoader(), handler, allTypes,
+                    constructorArguments, initialValues, initialDelegates);
         }
         catch (IllegalArgumentException e)
         {
@@ -588,7 +660,8 @@ public class ProxyFactory
             try
             {
                 return SINGLETON.instantiate(allTypes[0].getClassLoader(),
-                        handler, allTypes, initialValues, initialDelegates);
+                        handler, allTypes, constructorArguments, initialValues,
+                        initialDelegates);
             }
             catch (IllegalArgumentException again)
             {
@@ -604,7 +677,7 @@ public class ProxyFactory
 
                 return SINGLETON.instantiate(
                         ClassLoader.getSystemClassLoader(), handler, allTypes,
-                        initialValues, initialDelegates);
+                        constructorArguments, initialValues, initialDelegates);
             }
         }
         finally
@@ -651,12 +724,28 @@ public class ProxyFactory
      * actual point of instantiation of the dynamic Proxy.
      */
     private Object instantiate(ClassLoader loader, JavaBeanHandler handler,
-            Class<?>[] allTypes, Map<String, Object> initialValues,
+            Class<?>[] allTypes, Map<String, Object> constructorArguments,
+            Map<String, Object> initialValues,
             InterfaceDelegate[] initialDelegates)
     {
         // only perform the pre-init for a new instance, NOT for a copy
-        Class<?>[] amendedTypes = null == handler ? doBeforeInit(initialValues,
-                allTypes) : allTypes;
+        Class<?>[] amendedTypes = null;
+
+        if (null == handler)
+        {
+            if (null == constructorArguments)
+            {
+            amendedTypes = doBeforeInit(initialValues, allTypes);
+            }
+            else
+            {
+                amendedTypes = doBeforeInit(constructorArguments, allTypes);
+            }
+        }
+        else
+        {
+            amendedTypes = allTypes;
+        }
 
         JavaBeanHandler newHandler = null == handler ? new JavaBeanHandler(
                 initialValues, amendedTypes, initialDelegates) : handler;
@@ -691,20 +780,24 @@ public class ProxyFactory
     }
 
     @SuppressWarnings("unchecked")
-    private Class<?>[] doBeforeInit(Map<String, Object> initialValues,
+    private Class<?>[] doBeforeInit(Map<String, Object> constructorArguments,
             Class<?>[] allTypes)
     {
-        Map<String, Object> initialFixedCopy = null == initialValues ? Collections.EMPTY_MAP
-                : initialValues;
-        initialFixedCopy = Collections.unmodifiableMap(initialFixedCopy);
+        Map<String, Object> fixedArgCopy = null == constructorArguments ? Collections.EMPTY_MAP
+                : constructorArguments;
+        fixedArgCopy = Collections.unmodifiableMap(fixedArgCopy);
 
         List<Class<?>> combinedTypes = new LinkedList<Class<?>>(Arrays
                 .asList(allTypes));
 
+        List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
+
+        flattenAllInterfaces(allWithParents, allTypes);
+
         // using a separate set makes the containment check cheaper
         Set<Class<?>> uniqueTypes = new HashSet<Class<?>>(combinedTypes);
 
-        for (Class<?> singleType : allTypes)
+        for (Class<?> singleType : allWithParents)
         {
             if (!constructionDelegates.containsKey(singleType))
             {
@@ -714,9 +807,14 @@ public class ProxyFactory
             ConstructionDelegate delegate = constructionDelegates
                     .get(singleType);
 
+            if (null == delegate)
+            {
+                continue;
+            }
+
             Collection<Class<?>> additionalTypes = delegate.additionalTypes(
                     nestingDepth.get(), allTypes[0], singleType, allTypes,
-                    initialFixedCopy);
+                    fixedArgCopy);
 
             // null is acceptable to indicate a no-op
             if (null == additionalTypes)
@@ -763,7 +861,11 @@ public class ProxyFactory
 
     private void doAfterInit(Object bean, Class<?>[] allTypes)
     {
-        for (Class<?> singleType : allTypes)
+        List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
+
+        flattenAllInterfaces(allWithParents, allTypes);
+
+        for (Class<?> singleType : allWithParents)
         {
             if (!constructionDelegates.containsKey(singleType))
             {
@@ -773,7 +875,34 @@ public class ProxyFactory
             ConstructionDelegate delegate = constructionDelegates
                     .get(singleType);
 
+            if (null == delegate)
+            {
+                continue;
+            }
+
             delegate.init(nestingDepth.get(), singleType, bean);
+        }
+    }
+
+    /*
+     * build flat list of all interfaces by traversing and adding any interfaces
+     * elements in allTypes extend
+     */
+    private void flattenAllInterfaces(List<Class<?>> allTypesWithParents,
+            Class<?>[] allTypes)
+    {
+        for (Class<?> forType : allTypes)
+        {
+            Class<?>[] interfaces = forType.getInterfaces();
+
+            allTypesWithParents.add(forType);
+
+            if (null == interfaces)
+            {
+                continue;
+            }
+
+            flattenAllInterfaces(allTypesWithParents, interfaces);
         }
     }
 }
