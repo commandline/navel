@@ -56,10 +56,17 @@ class PropertyValueResolver
             .getLogger(PropertyValueResolver.class);
 
     private static final PropertyValueResolver SINGLETON = new PropertyValueResolver();
+    
+    private NestedResolver resolver = new DefaultNestedResolver();
 
     private PropertyValueResolver()
     {
         // enforce Singleton pattern
+    }
+    
+    static void register(NestedResolver resolver)
+    {
+        SINGLETON.resolver = resolver;
     }
 
     /**
@@ -85,7 +92,8 @@ class PropertyValueResolver
         ListBuilder.filter(properties, values);
     }
 
-    private void resolveNested(Map<String, PropertyDescriptor> properties, Map<String, Object> values)
+    private void resolveNested(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> values)
     {
         Map<String, Object> collapsed = new HashMap<String, Object>();
         Set<String> toRemove = new HashSet<String>();
@@ -164,8 +172,9 @@ class PropertyValueResolver
     }
 
     @SuppressWarnings("unchecked")
-    private void buildNestedBeans(Map<String, PropertyDescriptor> properties, Map<String, Object> parentValues,
-            Map<String, Object> collapsed) throws InvalidPropertyValueException
+    private void buildNestedBeans(Map<String, PropertyDescriptor> properties,
+            Map<String, Object> parentValues, Map<String, Object> collapsed)
+            throws InvalidPropertyValueException
     {
         // copy so we can iterate the copy and use it to modify the original map
         Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
@@ -224,13 +233,21 @@ class PropertyValueResolver
             Class<?> propClass, Map<String, Object> values)
             throws InvalidPropertyValueException, UnsupportedFeatureException
     {
-        // create a new Navel bean, the parent map doesn't have one, yet
-        if (!parentValues.containsKey(name))
-        {
-            return ProxyFactory.create(values, new Class<?>[] { propClass }, new InterfaceDelegate[0]);
-        }
 
-        Object nestedValue = parentValues.get(name);
+        Object nestedValue = null;
+
+        // create a new Navel bean, the parent map doesn't have one, yet
+        if (parentValues.containsKey(name))
+        {
+            nestedValue = parentValues.get(name);
+        }
+        else
+        {
+            // provide the constructor arguments but defer the initial values to
+            // allow any custom resolution to occur
+            nestedValue = ProxyFactory.create(values, null, new Class<?>[]
+            { propClass }, new InterfaceDelegate[0]);
+        }
 
         JavaBeanHandler handler = ProxyFactory.getHandler(nestedValue);
 
@@ -240,7 +257,7 @@ class PropertyValueResolver
         }
         else
         {
-            handler.propertyValues.putAll(values);
+            resolver.resolve(nestedValue, values);
         }
 
         return nestedValue;
