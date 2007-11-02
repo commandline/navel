@@ -118,7 +118,19 @@ public class ProxyFactory
             throw new IllegalArgumentException(
                     "Cannot register a null delegate for the default constructor.");
         }
+
         SINGLETON.defaultConstructor = delegate;
+    }
+
+    public void registerResolver(NestedResolver resolver)
+    {
+        if (null == resolver)
+        {
+            throw new IllegalArgumentException(
+                    "Cannot register a null NestedResolver.");
+        }
+
+        PropertyValueResolver.register(resolver);
     }
 
     /**
