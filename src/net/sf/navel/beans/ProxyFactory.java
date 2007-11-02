@@ -735,7 +735,7 @@ public class ProxyFactory
         {
             if (null == constructorArguments)
             {
-            amendedTypes = doBeforeInit(initialValues, allTypes);
+                amendedTypes = doBeforeInit(initialValues, allTypes);
             }
             else
             {
