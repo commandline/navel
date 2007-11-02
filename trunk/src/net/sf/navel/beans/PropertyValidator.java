@@ -132,7 +132,7 @@ class PropertyValidator
         if (!properties.containsKey(propertyName))
         {
             throw new InvalidPropertyValueException(String.format(
-                    "This JavaBean, $1%s, does not have a property, %2$s.",
+                    "This JavaBean, %1$s, does not have a property, %2$s.",
                     proxyDescriptor, propertyName));
         }
 
