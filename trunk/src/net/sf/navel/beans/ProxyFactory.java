@@ -122,7 +122,15 @@ public class ProxyFactory
         SINGLETON.defaultConstructor = delegate;
     }
 
-    public void registerResolver(NestedResolver resolver)
+    /**
+     * Register an alternate strategy for handling the mass setting of values on
+     * any beans instantiated during the course of evaluating dot notations.
+     * 
+     * @param resolver
+     *            Implementation that should handling the derived maps for a new
+     *            or existing bean to pass property validation.
+     */
+    public static void registerResolver(NestedResolver resolver)
     {
         if (null == resolver)
         {
