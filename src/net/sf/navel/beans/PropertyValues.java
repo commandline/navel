@@ -88,8 +88,7 @@ public class PropertyValues implements Serializable
 
         // only validates the direct properties of this bean, but the step above
         // takes care of ensuring nested properties are valid
-        PropertyValidator.validateAll(proxyDescriptor.propertyDescriptors,
-                initialCopy);
+        PropertyValidator.validateAll(proxyDescriptor, initialCopy);
 
         this.objectProxy = new ObjectProxy(proxyDescriptor);
 
@@ -112,9 +111,11 @@ public class PropertyValues implements Serializable
         this.immutable = immutable;
 
         // shallow copy
-        Map<String, Object> valuesCopy = new HashMap<String, Object>(source.values);
+        Map<String, Object> valuesCopy = new HashMap<String, Object>(
+                source.values);
 
-        // deep copy, if requested either directly or as a consequence of requesting an immutable copy
+        // deep copy, if requested either directly or as a consequence of
+        // requesting an immutable copy
         if (qualifiedDeep)
         {
             // iterate the source since so that the copy can be safely modified
@@ -129,7 +130,8 @@ public class PropertyValues implements Serializable
 
                 String nestedProperty = entry.getKey();
 
-                // deep and unmodifiable carry all the way throughout the copied graph
+                // deep and unmodifiable carry all the way throughout the copied
+                // graph
                 Object nestedCopy = immutable ? ProxyFactory
                         .unmodifiableObject(nestedValue) : ProxyFactory.copy(
                         nestedValue, true);
@@ -138,7 +140,8 @@ public class PropertyValues implements Serializable
             }
         }
 
-        this.values = immutable ? Collections.unmodifiableMap(valuesCopy) : valuesCopy;
+        this.values = immutable ? Collections.unmodifiableMap(valuesCopy)
+                : valuesCopy;
     }
 
     public ProxyDescriptor getProxyDescriptor()
@@ -212,8 +215,7 @@ public class PropertyValues implements Serializable
 
         // depends on resolution taking care of lists, not presently possible to
         // validate just the new values
-        PropertyValidator.validateAll(proxyDescriptor.propertyDescriptors,
-                combined);
+        PropertyValidator.validateAll(proxyDescriptor, combined);
 
         // clear out the existing values since the new Map will contain old and
         // new correctly resolved, validated and combined
@@ -409,8 +411,7 @@ public class PropertyValues implements Serializable
             }
             else
             {
-                PropertyValidator.validate(
-                        propertyValues.proxyDescriptor.propertyDescriptors,
+                PropertyValidator.validate(propertyValues.proxyDescriptor,
                         propertyName, propertyValue);
 
                 propertyValues.values.put(propertyName, propertyValue);
