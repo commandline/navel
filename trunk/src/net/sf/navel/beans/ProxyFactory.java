@@ -64,6 +64,8 @@ public class ProxyFactory
 
     private final Map<Class<?>, ConstructionDelegate> constructionDelegates = new HashMap<Class<?>, ConstructionDelegate>();
 
+    private ConstructionDelegate defaultConstructor = DefaultConstructor.CONSTRUCTOR;
+
     private static ThreadLocal<Integer> nestingDepth = new ThreadLocal<Integer>();
 
     private ProxyFactory()
@@ -97,6 +99,26 @@ public class ProxyFactory
         }
 
         SINGLETON.constructionDelegates.put(forType, delegate);
+    }
+
+    /**
+     * Register a single constructor to be called on all proxies,
+     * unconditionally. The {@link ConstructionDelegate} interface still
+     * provides enough information in the formal arguments that an arbitrary
+     * implementation can do conditional work on its own.
+     * 
+     * @param delegate
+     *            Delegate to be called for every proxy, in case an application
+     *            has rules to be executed everywhere.
+     */
+    public static void registerDefault(ConstructionDelegate delegate)
+    {
+        if (null == delegate)
+        {
+            throw new IllegalArgumentException(
+                    "Cannot register a null delegate for the default constructor.");
+        }
+        SINGLETON.defaultConstructor = delegate;
     }
 
     /**
@@ -787,15 +809,28 @@ public class ProxyFactory
                 : constructorArguments;
         fixedArgCopy = Collections.unmodifiableMap(fixedArgCopy);
 
+        Class<?> primaryType = allTypes[0];
+
         List<Class<?>> combinedTypes = new LinkedList<Class<?>>(Arrays
                 .asList(allTypes));
+
+        // using a separate set makes the containment check cheaper
+        Set<Class<?>> uniqueTypes = new HashSet<Class<?>>(combinedTypes);
+
+        // run the registered default
+        Collection<Class<?>> additionalTypes = defaultConstructor
+                .additionalTypes(nestingDepth.get(), primaryType, primaryType,
+                        allTypes, fixedArgCopy);
+
+        // null is acceptable to indicate a no-op
+        if (null != additionalTypes)
+        {
+            addAdditionalTypes(additionalTypes, uniqueTypes, combinedTypes);
+        }
 
         List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
 
         flattenAllInterfaces(allWithParents, allTypes);
-
-        // using a separate set makes the containment check cheaper
-        Set<Class<?>> uniqueTypes = new HashSet<Class<?>>(combinedTypes);
 
         for (Class<?> singleType : allWithParents)
         {
@@ -812,9 +847,8 @@ public class ProxyFactory
                 continue;
             }
 
-            Collection<Class<?>> additionalTypes = delegate.additionalTypes(
-                    nestingDepth.get(), allTypes[0], singleType, allTypes,
-                    fixedArgCopy);
+            additionalTypes = delegate.additionalTypes(nestingDepth.get(),
+                    primaryType, singleType, allTypes, fixedArgCopy);
 
             // null is acceptable to indicate a no-op
             if (null == additionalTypes)
@@ -822,38 +856,7 @@ public class ProxyFactory
                 continue;
             }
 
-            // the size of the additional type collection is expected to be
-            // small, so not presently concerned about nesting loops
-            for (Class<?> additionalType : additionalTypes)
-            {
-                if (null == additionalType)
-                {
-                    throw new IllegalStateException(
-                            "Do not include any null types in the return Collection for ConstructorDelegate.additionalTypes().");
-                }
-
-                if (!additionalType.isInterface())
-                {
-                    throw new IllegalStateException(
-                            String
-                                    .format(
-                                            "The type, %1$s, is not an interface.  The additional types returned by ConstructorDelegate.additionalTypes() must all be interfaces.",
-                                            additionalType.getName()));
-                }
-
-                if (uniqueTypes.contains(additionalType))
-                {
-                    continue;
-                }
-
-                // add the new interfaces to the end so as not to inadvertently
-                // clobber
-                // the special zeroth element, the primary type
-                combinedTypes.add(additionalType);
-
-                // guard against duplication of the newly added
-                uniqueTypes.add(additionalType);
-            }
+            addAdditionalTypes(additionalTypes, uniqueTypes, combinedTypes);
         }
 
         return combinedTypes.toArray(new Class<?>[combinedTypes.size()]);
@@ -861,6 +864,8 @@ public class ProxyFactory
 
     private void doAfterInit(Object bean, Class<?>[] allTypes)
     {
+        defaultConstructor.init(nestingDepth.get(), allTypes[0], bean);
+
         List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
 
         flattenAllInterfaces(allWithParents, allTypes);
@@ -881,6 +886,44 @@ public class ProxyFactory
             }
 
             delegate.init(nestingDepth.get(), singleType, bean);
+        }
+    }
+
+    private void addAdditionalTypes(Collection<Class<?>> additionalTypes,
+            Set<Class<?>> uniqueTypes, List<Class<?>> combinedTypes)
+    {
+
+        // the size of the additional type collection is expected to be
+        // small, so not presently concerned about nesting loops
+        for (Class<?> additionalType : additionalTypes)
+        {
+            if (null == additionalType)
+            {
+                throw new IllegalStateException(
+                        "Do not include any null types in the return Collection for ConstructorDelegate.additionalTypes().");
+            }
+
+            if (!additionalType.isInterface())
+            {
+                throw new IllegalStateException(
+                        String
+                                .format(
+                                        "The type, %1$s, is not an interface.  The additional types returned by ConstructorDelegate.additionalTypes() must all be interfaces.",
+                                        additionalType.getName()));
+            }
+
+            if (uniqueTypes.contains(additionalType))
+            {
+                continue;
+            }
+
+            // add the new interfaces to the end so as not to inadvertently
+            // clobber
+            // the special zeroth element, the primary type
+            combinedTypes.add(additionalType);
+
+            // guard against duplication of the newly added
+            uniqueTypes.add(additionalType);
         }
     }
 
