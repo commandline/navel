@@ -54,19 +54,20 @@ class PropertyValidator
         // enforce Singleton pattern
     }
 
-    static void validateAll(Map<String, PropertyDescriptor> properties,
+    static void validateAll(ProxyDescriptor proxyDescriptor,
             Map<String, Object> values)
     {
         for (Entry<String, Object> entry : values.entrySet())
         {
-            validate(properties, entry.getKey(), entry.getValue());
+            validate(proxyDescriptor, entry.getKey(), entry.getValue());
         }
     }
 
-    static void validate(Map<String, PropertyDescriptor> properties,
-            String propertyName, Object propertyValue)
+    static void validate(ProxyDescriptor proxyDescriptor, String propertyName,
+            Object propertyValue)
     {
-        SINGLETON.validateProperty(properties, propertyName, propertyValue);
+        SINGLETON
+                .validateProperty(proxyDescriptor, propertyName, propertyValue);
     }
 
     static void validate(String propertyName,
@@ -122,14 +123,17 @@ class PropertyValidator
         }
     }
 
-    private void validateProperty(Map<String, PropertyDescriptor> properties,
+    private void validateProperty(ProxyDescriptor proxyDescriptor,
             String propertyName, Object propertyValue)
     {
+        Map<String, PropertyDescriptor> properties = proxyDescriptor
+                .getPropertyDescriptors();
+
         if (!properties.containsKey(propertyName))
         {
             throw new InvalidPropertyValueException(String.format(
-                    "This JavaBean does not have a property, %1$s.",
-                    propertyName));
+                    "This JavaBean, $1%s, does not have a property, %2$s.",
+                    proxyDescriptor, propertyName));
         }
 
         PropertyDescriptor propertyDescriptor = properties.get(propertyName);
@@ -183,8 +187,9 @@ class PropertyValidator
             throw new InvalidPropertyValueException(
                     String
                             .format(
-                                    "Navel bean value, %1$s, cannot be assigned to property type, %2$s, for property, %3$s.",
-                                    propertyValue, propertyType, propertyName));
+                                    "Navel bean value, %1$s, cannot be assigned to property type, %2$s, for property, %3$s, of bean, %4$s.",
+                                    propertyValue, propertyType, propertyName,
+                                    proxyDescriptor));
         }
 
         if (!propertyType.isAssignableFrom(valueType))
@@ -192,9 +197,10 @@ class PropertyValidator
             throw new InvalidPropertyValueException(
                     String
                             .format(
-                                    "Value, %1$s, of type, %2$s, is not a valid value for property, %3$s, of type, %4$s.",
+                                    "Value, %1$s, of type, %2$s, is not a valid value for property, %3$s, of type, %4$s, of bean, %5$s.",
                                     propertyValue, valueType.getName(),
-                                    propertyName, propertyType.getName()));
+                                    propertyName, propertyType.getName(),
+                                    proxyDescriptor));
         }
     }
 }
