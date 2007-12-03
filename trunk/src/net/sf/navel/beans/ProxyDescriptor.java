@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Map.Entry;
 
 /**
  * Collects the introspection and reflection data for the proxy in one place,
@@ -98,7 +99,13 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
 
         for (BeanInfo beanInfo : this.proxiedBeanInfo)
         {
-            tempProperties.putAll(mapProperties(beanInfo));
+            Class<?> candidateBeanClass = beanInfo.getBeanDescriptor()
+                    .getBeanClass();
+            Map<String, PropertyDescriptor> forType = mapProperties(beanInfo);
+
+            checkConflicts(tempProperties, forType, candidateBeanClass);
+
+            tempProperties.putAll(forType);
 
             int nonPropertyMethods = filterMethods(tempMethods, beanInfo);
 
@@ -264,6 +271,39 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         }
 
         return byNames;
+    }
+
+    private static void checkConflicts(
+            Map<String, PropertyDescriptor> entriesSoFar,
+            Map<String, PropertyDescriptor> forType, Class<?> candidateBeanClass)
+    {
+        for (Entry<String, PropertyDescriptor> newEntry : forType.entrySet())
+        {
+            if (!entriesSoFar.containsKey(newEntry.getKey()))
+            {
+                continue;
+            }
+
+            PropertyDescriptor existingDescriptor = entriesSoFar.get(newEntry
+                    .getKey());
+            PropertyDescriptor newDescriptor = newEntry.getValue();
+
+            if (!existingDescriptor.getPropertyType().equals(
+                    newDescriptor.getPropertyType()))
+            {
+                throw new IllegalStateException(
+                        String
+                                .format(
+                                        "The property, %1$s, of type, %2$s, on the interface, %3$s, conflicts on type with the property, %4$s, of type, %5$s, on interface, %6$s.",
+                                        newDescriptor.getName(), newDescriptor
+                                                .getPropertyType(),
+                                        candidateBeanClass.getName(),
+                                        existingDescriptor.getName(),
+                                        existingDescriptor.getPropertyType(),
+                                        existingDescriptor.getWriteMethod()
+                                                .getDeclaringClass().getName()));
+            }
+        }
     }
 
     private static final int filterMethods(Set<Method> methods,
