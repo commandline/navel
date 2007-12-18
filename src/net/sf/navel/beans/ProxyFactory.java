@@ -794,8 +794,11 @@ public class ProxyFactory
 
         Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
 
-        // perform the post-init for new and copy both
-        doAfterInit(bean, amendedTypes);
+        // only perform the post-init for a new instance, NOT for a copy
+        if (null == handler)
+        {
+            doAfterInit(bean, amendedTypes);
+        }
 
         return bean;
     }
