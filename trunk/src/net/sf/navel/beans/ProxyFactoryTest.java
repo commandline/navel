@@ -45,6 +45,7 @@ import net.sf.navel.example.AnotherConflictBean;
 import net.sf.navel.example.ConflictBean;
 import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedImpl;
+import net.sf.navel.example.IdentityBean;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.NestedConstructor;
 import net.sf.navel.example.TypesBean;
@@ -286,6 +287,34 @@ public class ProxyFactoryTest
 
         Assert.assertFalse(source.equals(copy),
                 "Should be able to change one and not affect the other.");
+    }
+
+    @Test
+    public void testView()
+    {
+        TypesBean source = ProxyFactory.createAs(TypesBean.class,IdentityBean.class);
+
+        source.setBoolean(true);
+
+        Assert.assertTrue(source instanceof IdentityBean);
+        
+        IdentityBean idBean = (IdentityBean) source;
+        
+        idBean.setID(1000);
+
+        IdentityBean copy = ProxyFactory.viewAs(IdentityBean.class, source);
+
+        Assert.assertTrue(copy instanceof IdentityBean);
+        Assert.assertFalse(copy instanceof TypesBean);
+
+        Assert.assertFalse(source.equals(copy), "Should not initially be the same.");
+        Assert.assertNotSame(source, copy, "Should not be identical, either.");
+        
+        copy.setID(2000);
+        
+        Assert.assertEquals(idBean.getID(), 1000);
+        Assert.assertEquals(copy.getID(), 2000);
+        Assert.assertFalse(BeanManipulator.isPropertyOf(copy, "boolean"));
     }
 
     @Test

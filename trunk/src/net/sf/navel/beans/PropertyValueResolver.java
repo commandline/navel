@@ -246,7 +246,7 @@ class PropertyValueResolver
             // provide the constructor arguments but defer the initial values to
             // allow any custom resolution to occur
             nestedValue = ProxyFactory.create(values, null, new Class<?>[]
-            { propClass }, new InterfaceDelegate[0]);
+            { propClass });
         }
 
         JavaBeanHandler handler = ProxyFactory.getHandler(nestedValue);

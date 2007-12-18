@@ -207,7 +207,7 @@ public class ProxyFactory
                 additionalTypes.length);
 
         return (B) ProxyFactory.create(constructorArguments, initialValues,
-                allTypes, new InterfaceDelegate[0]);
+                allTypes);
     }
 
     /**
@@ -220,7 +220,7 @@ public class ProxyFactory
      */
     public static Object create(Class<?>... allTypes)
     {
-        return ProxyFactory.create(null, allTypes, new InterfaceDelegate[0]);
+        return ProxyFactory.create(null, allTypes);
     }
 
     /**
@@ -233,16 +233,13 @@ public class ProxyFactory
      *            they are valid.
      * @param allTypes
      *            All of the interfaces the proxy will implement.
-     * @param initialDelegates
-     *            Delegates to map in initially.
      * @return A proxy that extends all of the specified types and has the
      *         specified initial property values.
      */
     public static Object create(Map<String, Object> initialValues,
-            Class<?>[] allTypes, InterfaceDelegate[] initialDelegates)
+            Class<?>[] allTypes)
     {
-        return ProxyCreator.create(null, null, initialValues, allTypes,
-                initialDelegates);
+        return ProxyCreator.create(null, null, initialValues, allTypes);
     }
 
     /**
@@ -261,17 +258,14 @@ public class ProxyFactory
      *            they are valid.
      * @param allTypes
      *            All of the interfaces the proxy will implement.
-     * @param initialDelegates
-     *            Delegates to map in initially.
      * @return A proxy that extends all of the specified types and has the
      *         specified initial property values.
      */
     public static Object create(Map<String, Object> constructorArguments,
-            Map<String, Object> initialValues, Class<?>[] allTypes,
-            InterfaceDelegate[] initialDelegates)
+            Map<String, Object> initialValues, Class<?>[] allTypes)
     {
         return ProxyCreator.create(null, constructorArguments, initialValues,
-                allTypes, initialDelegates);
+                allTypes);
     }
 
     /**
@@ -291,7 +285,7 @@ public class ProxyFactory
     public static <T> T viewAs(Class<T> primaryType, Object source,
             Class<?>... subTypes)
     {
-        return ProxyFactory.viewAs(primaryType, false, subTypes);
+        return ProxyFactory.viewAs(primaryType, source, false, subTypes);
     }
 
     /**
@@ -320,7 +314,7 @@ public class ProxyFactory
         allTypes[0] = primaryType;
         System.arraycopy(subTypes, 0, allTypes, 1, subTypes.length);
 
-        return (T) ProxyCopier.subset(source, deepCopy, subTypes);
+        return (T) ProxyCopier.subset(source, deepCopy, allTypes);
     }
 
     /**

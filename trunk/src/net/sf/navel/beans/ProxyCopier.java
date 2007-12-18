@@ -29,9 +29,19 @@
  */
 package net.sf.navel.beans;
 
+import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 /**
+ * Support code for all of the copy operations, including generating views based
+ * on a subset of a proxy's types as a copy.
+ * 
  * @author cmdln
  * 
  */
@@ -45,11 +55,44 @@ class ProxyCopier
         // enforce Singleton pattern
     }
 
+    /**
+     * A fully type compatible copy, copies the {@link PropertyDelegate}
+     * instances, too, so that the public properties as seen from the accessors,
+     * mutators is consistent with the source.
+     * 
+     * @param source
+     *            Object to copy.
+     * @param deep
+     *            Recurse and copy any nested Navel beans or only copy
+     *            references.
+     * @param immutableValues
+     *            Whether the values portion of the copy, including the
+     *            {@link PropertyDelegate} instances, is fixed so that trying to
+     *            alter any portion of it throws an unchecked exception.
+     * @return A copy that is consistent, value-wise, with the source.
+     */
     static Object copy(Object source, boolean deep, boolean immutableValues)
     {
         return SINGLETON.copyObject(source, deep, immutableValues);
     }
-    
+
+    /**
+     * A copy that implements a subset of the types implemented by the source
+     * and whose value portion is filtered down to just those values that are
+     * compatible with the new interface set. Will also copy references to valid
+     * property delegates.
+     * 
+     * @param source
+     *            Object to copy.
+     * @param deep
+     *            Recurse and copy any nested Navel beans or only copy
+     *            references.
+     * @param immutableValues
+     *            Whether the values portion of the copy, including the
+     *            {@link PropertyDelegate} instances, is fixed so that trying to
+     *            alter any portion of it throws an unchecked exception.
+     * @return A copy that is consistent, value-wise, with the source.
+     */
     static Object subset(Object source, boolean deep, Class<?>... subTypes)
     {
         return SINGLETON.copySubset(source, deep, subTypes);
@@ -63,9 +106,11 @@ class ProxyCopier
             return null;
         }
 
-        JavaBeanHandler sourceHandler = getHandler(source);
+        JavaBeanHandler sourceHandler = ProxyFactory.getRequiredHandler(source,
+                "Cannot copy anything other than a Navel bean!");
 
-        ProxyDescriptor sourceDescriptor = sourceHandler.propertyValues.getProxyDescriptor();
+        ProxyDescriptor sourceDescriptor = sourceHandler.propertyValues
+                .getProxyDescriptor();
 
         JavaBeanHandler newHandler = new JavaBeanHandler(sourceHandler, deep,
                 immutableValues);
@@ -74,8 +119,7 @@ class ProxyCopier
                 .getProxiedInterfaces()).toArray(new Class<?>[sourceDescriptor
                 .getProxiedInterfaces().size()]);
 
-        return ProxyCreator.create(newHandler, null, null, copyTypes,
-                new InterfaceDelegate[0]);
+        return ProxyCreator.create(newHandler, null, null, copyTypes);
     }
 
     private Object copySubset(Object source, boolean deep, Class<?>[] subTypes)
@@ -84,22 +128,68 @@ class ProxyCopier
         {
             return null;
         }
-        
-        JavaBeanHandler sourceHandler = getHandler(source);
 
-        return null;
-    }
-    
-    private JavaBeanHandler getHandler(Object bean)
-    {
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+        JavaBeanHandler sourceHandler = ProxyFactory.getRequiredHandler(source,
+                "Cannot copy anything other than a Navel bean!");
 
-        if (null == handler)
+        ProxyDescriptor sourceDescriptor = sourceHandler.propertyValues
+                .getProxyDescriptor();
+
+        Collection<Class<?>> subTypesSet = new ArrayList<Class<?>>(Arrays
+                .asList(subTypes));
+
+        Set<Class<?>> sourceTypes = sourceDescriptor.getProxiedInterfaces();
+
+        if (!sourceTypes.containsAll(subTypesSet))
         {
-            throw new UnsupportedFeatureException(
-                    "Cannot copy anything other than a Navel bean!");
+            throw new IllegalArgumentException(
+                    String
+                            .format(
+                                    "The requested sub-types, %1$s, are not a property subset of those supported by the source, %1$s.",
+                                    Arrays.deepToString(subTypes), source));
         }
         
-        return handler;
+        ProxyDescriptor proxyDescriptor = new ProxyDescriptor(subTypes);
+
+        Map<String, Object> subValues = null;
+        
+        if (subTypesSet.containsAll(sourceTypes))
+        {
+            sourceHandler.propertyValues.copyValues(false);
+        }
+        else
+        {
+            subValues = filterValues(
+                    proxyDescriptor, sourceHandler.propertyValues.copyValues(false));
+        }
+        
+        PropertyValues propertyValues = new PropertyValues(proxyDescriptor, subValues);
+
+        JavaBeanHandler newHandler = new JavaBeanHandler(propertyValues);
+
+        return ProxyCreator.create(newHandler, null, null, subTypes);
+    }
+
+    private Map<String, Object> filterValues(ProxyDescriptor proxyDescriptor,
+            Map<String, Object> sourceValues)
+    {
+        Map<String, Object> newValues = new HashMap<String, Object>();
+
+        Map<String, PropertyDescriptor> propertyDescriptors = proxyDescriptor
+                .getPropertyDescriptors();
+
+        for (Entry<String, Object> sourceEntry : sourceValues.entrySet())
+        {
+            String sourceKey = sourceEntry.getKey();
+
+            if (!propertyDescriptors.containsKey(sourceKey))
+            {
+                continue;
+            }
+
+            newValues.put(sourceKey, sourceEntry.getValue());
+        }
+
+        return newValues;
     }
 }
