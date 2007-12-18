@@ -36,6 +36,10 @@ import java.io.Serializable;
  * overriding of the default behavior and provides access to the PropertyValues
  * component within the proxy to read and manipulate the bean's internal state.
  * 
+ * Since the get and set calls provide direct access to the internal storage of
+ * the delegating bean, implementers of this interface should be stateless. This
+ * is also required to work safely with the copy methods on {@link ProxyFactory}.
+ * 
  * @author cmdln
  * 
  */

@@ -62,7 +62,7 @@ public class PropertyValues implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(PropertyValues.class);
 
-    final Map<String, PropertyDelegate<?>> propertyDelegates = new HashMap<String, PropertyDelegate<?>>();
+    private final Map<String, PropertyDelegate<?>> propertyDelegates;
 
     private final Map<String, Object> values;
 
@@ -93,7 +93,7 @@ public class PropertyValues implements Serializable
         this.objectProxy = new ObjectProxy(proxyDescriptor);
 
         this.values = initialCopy;
-
+        this.propertyDelegates = new HashMap<String, PropertyDelegate<?>>();
         this.immutable = false;
     }
 
@@ -142,6 +142,12 @@ public class PropertyValues implements Serializable
 
         this.values = immutable ? Collections.unmodifiableMap(valuesCopy)
                 : valuesCopy;
+        // implementers of PropertyDelegate must be stateless to avoid problems
+        // with this shallow copy
+        this.propertyDelegates = immutable ? Collections
+                .unmodifiableMap(source.propertyDelegates)
+                : new HashMap<String, PropertyDelegate<?>>(
+                        source.propertyDelegates);
     }
 
     public ProxyDescriptor getProxyDescriptor()
@@ -247,6 +253,16 @@ public class PropertyValues implements Serializable
         values.clear();
     }
 
+    public boolean isImmutable()
+    {
+        return immutable;
+    }
+
+    PropertyDelegate<?> getPropertyDelegate(String propertyName)
+    {
+        return propertyDelegates.get(propertyName);
+    }
+
     boolean isPropertyOf(String propertyName)
     {
         return isPropertyOf(this, propertyName);
@@ -336,6 +352,8 @@ public class PropertyValues implements Serializable
 
     void attach(String propertyName, PropertyDelegate<?> delegate)
     {
+        checkImmutable();
+
         if (propertyDelegates.get(propertyName) != null)
         {
             LOGGER

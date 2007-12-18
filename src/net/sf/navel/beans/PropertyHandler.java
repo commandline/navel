@@ -158,8 +158,8 @@ class PropertyHandler implements Serializable
         {
             if (propertyValues.isAttached(propertyName))
             {
-                PropertyDelegate delegate = propertyValues.propertyDelegates
-                        .get(propertyName);
+                PropertyDelegate delegate = propertyValues
+                        .getPropertyDelegate(propertyName);
 
                 if (LOGGER.isDebugEnabled())
                 {
@@ -201,8 +201,8 @@ class PropertyHandler implements Serializable
         {
             // the PropertyValidator ensures at attachment time that this is a
             // safe cast
-            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues.propertyDelegates
-                    .get(propertyName);
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues
+                    .getPropertyDelegate(propertyName);
 
             if (LOGGER.isDebugEnabled())
             {
@@ -239,8 +239,8 @@ class PropertyHandler implements Serializable
         {
             if (propertyValues.isAttached(propertyName))
             {
-                PropertyDelegate<?> delegate = propertyValues.propertyDelegates
-                        .get(propertyName);
+                PropertyDelegate<?> delegate = propertyValues
+                        .getPropertyDelegate(propertyName);
 
                 if (LOGGER.isDebugEnabled())
                 {
@@ -248,7 +248,9 @@ class PropertyHandler implements Serializable
                             .debug(String
                                     .format(
                                             "Delegating read on property, %1$s, for proxy, %2$s, to delegate, %3$s",
-                                            propertyName, propertyValues.getProxyDescriptor(), delegate));
+                                            propertyName, propertyValues
+                                                    .getProxyDescriptor(),
+                                            delegate));
                 }
 
                 return delegate.get(propertyValues, propertyName);
@@ -285,14 +287,17 @@ class PropertyHandler implements Serializable
         {
             // the PropertyValidator ensures this is a safe cast at the time the
             // delegate is attached
-            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues.propertyDelegates
-                    .get(propertyName);
+            IndexedPropertyDelegate delegate = (IndexedPropertyDelegate) propertyValues
+                    .getPropertyDelegate(propertyName);
 
             if (LOGGER.isDebugEnabled())
             {
-                LOGGER.debug(String.format(
-                        "Delegating read on property, %1$s, for proxy, %2$s, to delegate, %3$s",
-                        propertyName, propertyValues.getProxyDescriptor(), delegate));
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Delegating read on property, %1$s, for proxy, %2$s, to delegate, %3$s",
+                                        propertyName, propertyValues
+                                                .getProxyDescriptor(), delegate));
             }
 
             return delegate.get(propertyValues, propertyName, index);
@@ -323,8 +328,8 @@ class PropertyHandler implements Serializable
 
         if (propertyValues.isAttached(propertyName))
         {
-            PropertyDelegate<?> delegate = propertyValues.propertyDelegates
-                    .get(propertyName);
+            PropertyDelegate<?> delegate = propertyValues
+                    .getPropertyDelegate(propertyName);
 
             return delegate.get(propertyValues, propertyName);
         }
