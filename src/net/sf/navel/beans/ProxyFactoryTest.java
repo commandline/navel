@@ -46,6 +46,7 @@ import net.sf.navel.example.ConflictBean;
 import net.sf.navel.example.Delegated;
 import net.sf.navel.example.DelegatedImpl;
 import net.sf.navel.example.NestedBean;
+import net.sf.navel.example.NestedConstructor;
 import net.sf.navel.example.TypesBean;
 
 import org.apache.log4j.ConsoleAppender;
@@ -318,6 +319,8 @@ public class ProxyFactoryTest
     @Test
     public void testNestedDeep()
     {
+        ProxyFactory.unregister(NestedBean.class);
+        
         NestedBean source = ProxyFactory.createAs(NestedBean.class);
         source.setNested(ProxyFactory.createAs(TypesBean.class));
         source.setBoolean(true);
@@ -568,5 +571,19 @@ public class ProxyFactoryTest
         {
             LogHelper.traceError(LOGGER, e);
         }
+    }
+    
+    @Test
+    public void testImmutableWithConstructorDelegate()
+    {
+        ProxyFactory.register(NestedBean.class, new NestedConstructor());
+        
+        NestedBean nestedBean = ProxyFactory.createAs(NestedBean.class);
+        
+        Assert.assertNotNull(nestedBean.getNested(), "Constructor should have initialized nested property.");
+        
+        NestedBean immutableCopy = ProxyFactory.unmodifiableObjectAs(NestedBean.class, nestedBean);
+        
+        Assert.assertNotNull(immutableCopy.getNested(), "Copy should have carried over nested property.");
     }
 }
