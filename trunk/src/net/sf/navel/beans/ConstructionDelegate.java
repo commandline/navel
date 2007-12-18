@@ -50,6 +50,10 @@ public interface ConstructionDelegate
      * implement based on information made available declaratively through the
      * create call.
      * 
+     * Any kind of copy on {@link ProxyFactory}, including those that produce
+     * unmodifiable beans, will bypass this method on construction as the
+     * contract of copy is to preserve exactly the typing of the source.
+     * 
      * @param nestingDepth
      *            For directly or indirectly recursive relationships between
      *            types, this argument lets the delegate consider nesting depth
@@ -80,11 +84,25 @@ public interface ConstructionDelegate
             Map<String, Object> initialValues);
 
     /**
-     * This code will get invoked any any new Navel been that implements the
+     * This code will get invoked any any new Navel bean that implements the
      * type for which this instance is registered immediately after the
      * {@link Proxy} is created but before the reference is returned out of
      * {@link ProxyFactory} making this suitable to do custom "construction"
      * work.
+     * 
+     * The implementer should take care of both direct value initialization on
+     * the bean argument and attachment of any stock {@link PropertyDelegate}
+     * instances, as these are both germane to the initial observable state of
+     * the object under construction.
+     * 
+     * This code will <em>not</em> get invoked during a copy of any kind, this
+     * includes {@link ProxyFactory#unmodifiableObject(Object)} and
+     * {@link ProxyFactory#unmodifiableObjectAs(Class, Object)}.
+     * 
+     * Copy operations will perform a shallow copy of the source's already
+     * attached {@link PropertyDelegate} instances, so copies will carry forward
+     * synthetic properties consistent with their sources and should prevent any
+     * issues with copy bypassing the call into this method.
      * 
      * @param nestingDepth
      *            For directly or indirectly recursive relationships between
@@ -99,6 +117,37 @@ public interface ConstructionDelegate
      *            Dynamic {@link Proxy} that was just created, provided so that
      *            its state may be initialized as desired.
      */
-    void init(int nestingDepth, Class<?> thisType, Object bean);
+    void initValues(int nestingDepth, Class<?> thisType, Object bean);
+
+    /**
+     * This code will get invoked any any new Navel been that implements the
+     * type for which this instance is registered immediately after the
+     * {@link Proxy} is created but before the reference is returned out of
+     * {@link ProxyFactory} making this suitable to do custom "construction"
+     * work.
+     * 
+     * The implementer should take care of both direct value initialization on
+     * the bean argument and attachment of any stock {@link PropertyDelegate}
+     * instances, as these are both germane to the initial observable state of
+     * the object under construction.
+     * 
+     * This code <em>will</em> get invoked during a copy of all kinds, this
+     * includes {@link ProxyFactory#unmodifiableObject(Object)} and
+     * {@link ProxyFactory#unmodifiableObjectAs(Class, Object)}.
+     * 
+     * @param nestingDepth
+     *            For directly or indirectly recursive relationships between
+     *            types, this argument lets the delegate consider nesting depth
+     *            as part of its criteria as to whether it should do anything
+     *            special.
+     * @param thisType
+     *            This is the type that triggered the call into the delegate,
+     *            specifically. Navel will guarantee that it is safe to cast the
+     *            bean argument to this type.
+     * @param bean
+     *            Dynamic {@link Proxy} that was just created, provided so that
+     *            its state may be initialized as desired.
+     */
+    void initBehaviors(int nestingDepth, Class<?> thisType, Object bean);
 
 }

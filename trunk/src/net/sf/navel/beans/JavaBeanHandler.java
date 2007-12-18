@@ -35,7 +35,6 @@ import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.log4j.LogManager;
@@ -208,18 +207,6 @@ public class JavaBeanHandler implements InvocationHandler, Serializable
         }
 
         return buffer.toString();
-    }
-
-    Object copy(boolean deepValueCopy, boolean immutableValues)
-    {
-        Class<?>[] copyTypes = new ArrayList<Class<?>>(proxyDescriptor
-                .getProxiedInterfaces()).toArray(new Class<?>[proxyDescriptor
-                .getProxiedInterfaces().size()]);
-        
-        JavaBeanHandler newHandler = new JavaBeanHandler(this, deepValueCopy,
-                immutableValues);
-        
-        return ProxyFactory.create(newHandler, null, null, copyTypes, new InterfaceDelegate[0]);
     }
 
     boolean proxiesFor(Class<?> proxyInterface)
