@@ -770,10 +770,14 @@ public class ProxyFactory
             Map<String, Object> initialValues,
             InterfaceDelegate[] initialDelegates)
     {
-        // only perform the pre-init for a new instance, NOT for a copy
         Class<?>[] amendedTypes = null;
 
-        if (null == handler)
+        // if the caller supplied a handler, then it is a copy; the handler is a
+        // result of JavaBeanHandler's copy constructor
+        boolean copy = handler != null;
+
+        // only perform the pre-init for a new instance, NOT for a copy
+        if (!copy)
         {
             if (null == constructorArguments)
             {
@@ -794,11 +798,9 @@ public class ProxyFactory
 
         Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
 
-        // only perform the post-init for a new instance, NOT for a copy
-        if (null == handler)
-        {
-            doAfterInit(bean, amendedTypes);
-        }
+        // allow the post init code to know if this is a copy so it can
+        // condition value and behavior handling appropriately
+        doAfterInit(copy, bean, amendedTypes);
 
         return bean;
     }
@@ -811,7 +813,7 @@ public class ProxyFactory
             return null;
         }
 
-        JavaBeanHandler sourceHandler = getHandler(source);
+        JavaBeanHandler sourceHandler = ProxyFactory.getHandler(source);
 
         if (null == sourceHandler)
         {
@@ -819,9 +821,18 @@ public class ProxyFactory
                     "Cannot copy anything other than a Navel bean!");
         }
 
-        Object copy = sourceHandler.copy(deep, immutableValues);
+        ProxyDescriptor sourceDescriptor = ProxyFactory
+                .getProxyDescriptor(source);
 
-        return copy;
+        JavaBeanHandler newHandler = new JavaBeanHandler(sourceHandler, deep,
+                immutableValues);
+
+        Class<?>[] copyTypes = new ArrayList<Class<?>>(sourceDescriptor
+                .getProxiedInterfaces()).toArray(new Class<?>[sourceDescriptor
+                .getProxiedInterfaces().size()]);
+
+        return ProxyFactory.create(newHandler, null, null, copyTypes,
+                new InterfaceDelegate[0]);
     }
 
     @SuppressWarnings("unchecked")
@@ -885,9 +896,15 @@ public class ProxyFactory
         return combinedTypes.toArray(new Class<?>[combinedTypes.size()]);
     }
 
-    private void doAfterInit(Object bean, Class<?>[] allTypes)
+    private void doAfterInit(boolean copy, Object bean, Class<?>[] allTypes)
     {
-        defaultConstructor.init(nestingDepth.get(), allTypes[0], bean);
+        if (!copy)
+        {
+            defaultConstructor
+                    .initValues(nestingDepth.get(), allTypes[0], bean);
+        }
+
+        defaultConstructor.initBehaviors(nestingDepth.get(), allTypes[0], bean);
 
         List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
 
@@ -908,7 +925,12 @@ public class ProxyFactory
                 continue;
             }
 
-            delegate.init(nestingDepth.get(), singleType, bean);
+            if (!copy)
+            {
+                delegate.initValues(nestingDepth.get(), singleType, bean);
+            }
+
+            delegate.initBehaviors(nestingDepth.get(), singleType, bean);
         }
     }
 

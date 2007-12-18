@@ -41,9 +41,9 @@ import java.util.Map;
  */
 public class DefaultConstructor implements ConstructionDelegate
 {
-    
+
     public static final ConstructionDelegate CONSTRUCTOR = new DefaultConstructor();
-    
+
     private DefaultConstructor()
     {
         // enforce SINGLETON pattern
@@ -64,13 +64,22 @@ public class DefaultConstructor implements ConstructionDelegate
     }
 
     /**
-     * @see net.sf.navel.beans.ConstructionDelegate#init(int, java.lang.Class,
-     *      java.lang.Object)
+     * @see net.sf.navel.beans.ConstructionDelegate#initValues(int, Class,
+     *      Object)
      */
-
-    public void init(int nestingDepth, Class<?> thisType, Object bean)
+    public void initValues(int nestingDepth, Class<?> thisType, Object bean)
     {
         // do nothing
     }
 
+    /**
+     * @see net.sf.navel.beans.ConstructionDelegate#initBehaviors(int,
+     *      java.lang.Class, java.lang.Object)
+     */
+
+    public void initBehaviors(int nestingDepth, Class<?> thisType, Object bean)
+    {
+        // do nothing
+
+    }
 }

@@ -37,13 +37,15 @@ import net.sf.navel.beans.ProxyFactory;
 
 /**
  * @author thomas
- *
+ * 
  */
 public class NestedConstructor implements ConstructionDelegate
 {
 
     /**
-     * @see net.sf.navel.beans.ConstructionDelegate#additionalTypes(int, java.lang.Class, java.lang.Class, java.lang.Class<?>[], java.util.Map)
+     * @see net.sf.navel.beans.ConstructionDelegate#additionalTypes(int,
+     *      java.lang.Class, java.lang.Class, java.lang.Class<?>[],
+     *      java.util.Map)
      */
 
     public Collection<Class<?>> additionalTypes(int nestingDepth,
@@ -55,20 +57,30 @@ public class NestedConstructor implements ConstructionDelegate
     }
 
     /**
-     * @see net.sf.navel.beans.ConstructionDelegate#init(int, java.lang.Class, java.lang.Object)
+     * @see net.sf.navel.beans.ConstructionDelegate#initValues(int, Class,
+     *      Object)
      */
 
-    public void init(int nestingDepth, Class<?> thisType, Object bean)
+    public void initValues(int nestingDepth, Class<?> thisType, Object bean)
     {
         if (nestingDepth > 1)
         {
             return;
         }
-        
+
         // only initialize one level deep
         NestedBean nestedBean = (NestedBean) bean;
-        
+
         nestedBean.setNested(ProxyFactory.createAs(TypesBean.class));
     }
 
+    /**
+     * @see net.sf.navel.beans.ConstructionDelegate#initBehaviors(int,
+     *      java.lang.Class, java.lang.Object)
+     */
+
+    public void initBehaviors(int nestingDepth, Class<?> thisType, Object bean)
+    {
+        // do nothing
+    }
 }
