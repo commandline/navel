@@ -319,8 +319,6 @@ public class ProxyFactoryTest
     @Test
     public void testNestedDeep()
     {
-        ProxyFactory.unregister(NestedBean.class);
-        
         NestedBean source = ProxyFactory.createAs(NestedBean.class);
         source.setNested(ProxyFactory.createAs(TypesBean.class));
         source.setBoolean(true);
