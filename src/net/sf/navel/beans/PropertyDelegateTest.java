@@ -112,6 +112,53 @@ public class PropertyDelegateTest
         Assert.assertEquals(handler.propertyValues.copyValues(false).size(), 2,
                 "Should have two entries.");
     }
+    
+    @Test
+    public void testWithCopy()
+    {
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                StringBean.class);
+
+        ProxyFactory.attach(typesBean, "string",
+                new CharacterAsStringDelegate());
+        
+        TypesBean copyBean = ProxyFactory.copyAs(TypesBean.class, typesBean, true);
+
+        StringBean stringBean = (StringBean) copyBean;
+        
+        ProxyFactory.detach(typesBean, "string");
+
+        Assert.assertTrue(
+                ProxyFactory.isAttached(copyBean, "string"),
+                "Should spot the property delegate on the copy.");
+
+        copyBean.setCharacter('a');
+
+        Assert.assertEquals(stringBean.getString(), "a",
+                "Should have gotten the correct view.");
+
+        stringBean.setString("b");
+
+        Assert.assertEquals(copyBean.getCharacter(), 'b',
+                "Updating the view should have updated the live value.");
+
+        ProxyFactory.detach(copyBean, "string");
+
+        Assert.assertFalse(ProxyFactory
+                .isAttached(copyBean, "string"),
+                "Should not longer have the property delegate.");
+        
+        stringBean.setString("foo");
+
+        Assert.assertEquals(stringBean.getString(), "foo",
+                "Detaching should restore original behavior.");
+
+        Assert.assertEquals(copyBean.getCharacter(), 'b',
+                "Live value should be permanently changed.");
+
+        Assert.assertEquals(PropertyManipulator.copyAll(copyBean).size(), 2,
+                "Should have two entries.");
+    }
 
     @Test
     public void breakValidation()
