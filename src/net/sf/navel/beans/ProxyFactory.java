@@ -305,7 +305,11 @@ public class ProxyFactory
     }
 
     /**
-     * An overload that assumes shallow copy.
+     * An overload that assumes shallow copy. Also performs a shallow copy of
+     * any property delegates, to keep synthetic properties consistent with the
+     * source. This means the new bean will share the exact same
+     * {@link PropertyDelegate} instances as the source, but those delegates
+     * should be stateless so should not be a problem.
      * 
      * @param <T>
      *            Desired interface, must be one the source proxy supports.
@@ -322,7 +326,11 @@ public class ProxyFactory
 
     /**
      * A convenience version that also checks to see if the cast to T is safe,
-     * then casts and returns as T.
+     * then casts and returns as T. Also performs a shallow copy of any property
+     * delegates, to keep synthetic properties consistent with the source. This
+     * means the new bean will share the exact same {@link PropertyDelegate}
+     * instances as the source, but those delegates should be stateless so
+     * should not be a problem.
      * 
      * @param <T>
      *            Desired interface, must be one the source proxy supports.
@@ -364,7 +372,11 @@ public class ProxyFactory
 
     /**
      * Performs a deep copy of all the proxy support code and a shallow copy of
-     * the internal bean state.
+     * the internal bean state. Also performs a shallow copy of any property
+     * delegates, to keep synthetic properties consistent with the source. This
+     * means the new bean will share the exact same {@link PropertyDelegate}
+     * instances as the source, but those delegates should be stateless so
+     * should not be a problem.
      * 
      * @param source
      *            Bean to copy, must be a Navel bean.
@@ -378,7 +390,8 @@ public class ProxyFactory
     }
 
     /**
-     * Generic version that helps ensure type safety.
+     * Generic version that helps ensure type safety; the same adviso applie as
+     * the non-generic method.
      * 
      * @see #unmodifiableObject(Object)
      * @param source
@@ -414,12 +427,21 @@ public class ProxyFactory
     }
 
     /**
-     * Performs a deep copy of all the proxy support code, a deep copy of the
-     * internal bean state, and marks the internal bean state as immutable which
-     * only protects the internal PropertyValues. Any attempts to change the
-     * value portion of the return object will throw an unchecked exception. All
-     * kinds of delegates may be attached and detached as this affects the
-     * behavior of the instance but not its state as such.
+     * Creates a new instance, that cannot be changed, which is a copy of all
+     * the proxy support code, a deep copy of the internal bean state, and a
+     * shallow copy of any property delegates, to keep synthetic properties
+     * consistent with the source. This means the new bean will share the exact
+     * same {@link PropertyDelegate} instances as the source, but those
+     * delegates should be stateless so should not be a problem. The immutable
+     * quality protects the internal {@link PropertyValues} which includes its
+     * collection of {@link PropertyDelegate} instnaces. Any attempts to change
+     * the value portion of the return object will throw an unchecked exception.
+     * Any attempt to alter the {@link PropertyDelegate} mapping will also cause
+     * an unchecked exception to be thrown as doing so would introduce an
+     * inconsistent view of the internal state.
+     * 
+     * {@link InterfaceDelegate} instances may be attached and detached as this
+     * affects the behavior of the instance but not its state as such.
      * 
      * @param source
      *            Bean to copy, must be a Navel bean.
