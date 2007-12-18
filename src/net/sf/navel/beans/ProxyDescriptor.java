@@ -83,7 +83,7 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
      */
     transient Map<String, PropertyDescriptor> propertyDescriptors;
 
-    private ProxyDescriptor(Class<?>[] proxiedClasses)
+    ProxyDescriptor(Class<?>[] proxiedClasses)
     {
         Set<Class<?>> tempClasses = new HashSet<Class<?>>(proxiedClasses.length);
         Set<BeanInfo> tempInfo = new HashSet<BeanInfo>(proxiedClasses.length);

@@ -109,15 +109,12 @@ class ProxyCreator
      *            not null.
      * @param allTypes
      *            All of the interfaces the proxy will implement.
-     * @param initialDelegates
-     *            Delegates to map in initially.
      * @return A proxy that extends all of the specified types and has the
      *         specified initial property values.
      */
     static Object create(JavaBeanHandler handler,
             Map<String, Object> constructorArguments,
-            Map<String, Object> initialValues, Class<?>[] allTypes,
-            InterfaceDelegate[] initialDelegates)
+            Map<String, Object> initialValues, Class<?>[] allTypes)
     {
         if (allTypes.length <= 0)
         {
@@ -132,7 +129,7 @@ class ProxyCreator
         {
             return SINGLETON.instantiate(Thread.currentThread()
                     .getContextClassLoader(), handler, allTypes,
-                    constructorArguments, initialValues, initialDelegates);
+                    constructorArguments, initialValues);
         }
         catch (IllegalArgumentException e)
         {
@@ -149,8 +146,7 @@ class ProxyCreator
             try
             {
                 return SINGLETON.instantiate(allTypes[0].getClassLoader(),
-                        handler, allTypes, constructorArguments, initialValues,
-                        initialDelegates);
+                        handler, allTypes, constructorArguments, initialValues);
             }
             catch (IllegalArgumentException again)
             {
@@ -166,7 +162,7 @@ class ProxyCreator
 
                 return SINGLETON.instantiate(
                         ClassLoader.getSystemClassLoader(), handler, allTypes,
-                        constructorArguments, initialValues, initialDelegates);
+                        constructorArguments, initialValues);
             }
         }
         finally
@@ -214,8 +210,7 @@ class ProxyCreator
      */
     private Object instantiate(ClassLoader loader, JavaBeanHandler handler,
             Class<?>[] allTypes, Map<String, Object> constructorArguments,
-            Map<String, Object> initialValues,
-            InterfaceDelegate[] initialDelegates)
+            Map<String, Object> initialValues)
     {
         Class<?>[] amendedTypes = null;
 
@@ -241,7 +236,7 @@ class ProxyCreator
         }
 
         JavaBeanHandler newHandler = null == handler ? new JavaBeanHandler(
-                initialValues, amendedTypes, initialDelegates) : handler;
+                initialValues, amendedTypes) : handler;
 
         Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
 

@@ -68,15 +68,11 @@ class InterfaceDelegateMapping implements Serializable
      *            Wraps all the non-Serializable introspection data into an
      *            instance that will manually re-build itself on
      *            de-serialziation.
-     * @param delegates
-     *            Optional set of delegates to support each of the bean
-     *            interfaces.
      * @param values
      *            Necessary to set onto each delegate so it can safely
      *            manipulate the internal state of the JavaBeanHandler.
      */
-    InterfaceDelegateMapping(ProxyDescriptor proxyDescriptor,
-            InterfaceDelegate[] delegates, PropertyValues values)
+    InterfaceDelegateMapping(ProxyDescriptor proxyDescriptor, PropertyValues values)
     {
         this.values = values;
         this.proxyDescriptor = proxyDescriptor;
@@ -86,32 +82,6 @@ class InterfaceDelegateMapping implements Serializable
             // initialize to null since this is just setting up the fixed key
             // set
             delegations.put(delegatingInterface, null);
-        }
-
-        if (delegates == null)
-        {
-            return;
-        }
-
-        for (InterfaceDelegate delegate : delegates)
-        {
-            attach(delegate);
-        }
-    }
-
-    InterfaceDelegateMapping(PropertyValues values,
-            InterfaceDelegateMapping source)
-    {
-        this.values = values;
-        this.proxyDescriptor = source.proxyDescriptor;
-
-        // the contract of this member is that after init it will *always* have
-        // an entry for each delegating interface, while it may not be safe to
-        // copy the interface delegates, this contract must be preserved for
-        // isAttached to work correctly
-        for (Class<?> interfaceType : source.delegations.keySet())
-        {
-            delegations.put(interfaceType, null);
         }
     }
 

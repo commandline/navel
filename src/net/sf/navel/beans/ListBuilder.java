@@ -328,7 +328,7 @@ class ListBuilder
         {
             if (elementType.isInterface())
             {
-                return ProxyFactory.create(rawValues, new Class<?>[] { elementType }, new InterfaceDelegate[0]);
+                return ProxyFactory.create(rawValues, new Class<?>[] { elementType });
             }
             else
             {
