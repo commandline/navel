@@ -30,19 +30,7 @@
 package net.sf.navel.beans;
 
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 /**
  * This is the starting point for working with Navel. It encapsulates the
@@ -54,19 +42,6 @@ import org.apache.log4j.Logger;
  */
 public class ProxyFactory
 {
-
-    private static final Logger LOGGER = LogManager
-            .getLogger(ProxyFactory.class);
-
-    static final ProxyFactory SINGLETON = new ProxyFactory();
-
-    private static final int MAX_NESTING_DEPTH = 10;
-
-    private final Map<Class<?>, ConstructionDelegate> constructionDelegates = new HashMap<Class<?>, ConstructionDelegate>();
-
-    private ConstructionDelegate defaultConstructor = DefaultConstructor.CONSTRUCTOR;
-
-    private static ThreadLocal<Integer> nestingDepth = new ThreadLocal<Integer>();
 
     private ProxyFactory()
     {
@@ -98,7 +73,7 @@ public class ProxyFactory
                             .getName()));
         }
 
-        SINGLETON.constructionDelegates.put(forType, delegate);
+        ProxyCreator.register(forType, delegate);
     }
 
     /**
@@ -119,7 +94,7 @@ public class ProxyFactory
                     "Cannot register a null delegate for the default constructor.");
         }
 
-        SINGLETON.defaultConstructor = delegate;
+        ProxyCreator.registerDefault(delegate);
     }
 
     /**
@@ -127,7 +102,7 @@ public class ProxyFactory
      * any beans instantiated during the course of evaluating dot notations.
      * 
      * @param resolver
-     *            Implementation that should handling the derived maps for a new
+     *            Implementation that should handle the derived maps for a new
      *            or existing bean to pass property validation.
      */
     public static void registerResolver(NestedResolver resolver)
@@ -150,12 +125,7 @@ public class ProxyFactory
      */
     public static ConstructionDelegate unregister(Class<?> forType)
     {
-        if (!SINGLETON.constructionDelegates.containsKey(forType))
-        {
-            return null;
-        }
-
-        return SINGLETON.constructionDelegates.remove(forType);
+        return ProxyCreator.unregister(forType);
     }
 
     /**
@@ -271,7 +241,7 @@ public class ProxyFactory
     public static Object create(Map<String, Object> initialValues,
             Class<?>[] allTypes, InterfaceDelegate[] initialDelegates)
     {
-        return ProxyFactory.create(null, null, initialValues, allTypes,
+        return ProxyCreator.create(null, null, initialValues, allTypes,
                 initialDelegates);
     }
 
@@ -300,8 +270,57 @@ public class ProxyFactory
             Map<String, Object> initialValues, Class<?>[] allTypes,
             InterfaceDelegate[] initialDelegates)
     {
-        return ProxyFactory.create(null, constructorArguments, initialValues,
+        return ProxyCreator.create(null, constructorArguments, initialValues,
                 allTypes, initialDelegates);
+    }
+
+    /**
+     * Overload that assumes shallow copy.
+     * 
+     * @param <T>
+     *            Desired interface, must be one the source proxy supports.
+     * @param primaryType
+     *            For pegging the generic parameter.
+     * @param source
+     *            Source to copy, performs a shallow copy.
+     * @param subTypes
+     *            Subset of types out of all supported by the original.
+     * @return A copy of the original whose data is the subset supported by the
+     *         new primary type and subTypes.
+     */
+    public static <T> T viewAs(Class<T> primaryType, Object source,
+            Class<?>... subTypes)
+    {
+        return ProxyFactory.viewAs(primaryType, false, subTypes);
+    }
+
+    /**
+     * Generates a view, as a copy, of the source that is a safe subset of the
+     * properties on the original.
+     * 
+     * @param <T>
+     *            Desired interface, must be one the source proxy supports.
+     * @param primaryType
+     *            For pegging the generic parameter.
+     * @param source
+     *            Source to copy.
+     * @param deepCopy
+     *            Perform a deep copy if true, otherwise a shallow copy
+     * @param subTypes
+     *            Subset of types out of all supported by the original.
+     * @return A copy of the original whose data is the subset supported by the
+     *         new primary type and subTypes.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T viewAs(Class<T> primaryType, Object source,
+            boolean deepCopy, Class<?>... subTypes)
+    {
+        Class<?>[] allTypes = new Class<?>[subTypes.length + 1];
+
+        allTypes[0] = primaryType;
+        System.arraycopy(subTypes, 0, allTypes, 1, subTypes.length);
+
+        return (T) ProxyCopier.subset(source, deepCopy, subTypes);
     }
 
     /**
@@ -350,13 +369,8 @@ public class ProxyFactory
             return null;
         }
 
-        JavaBeanHandler sourceHandler = getHandler(source);
-
-        if (null == sourceHandler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot copy anything other than a Navel bean!");
-        }
+        JavaBeanHandler sourceHandler = ProxyFactory.getRequiredHandler(source,
+                "Cannot copy anything other than a Navel bean!");
 
         if (!sourceHandler.proxiesFor(primaryType))
         {
@@ -386,7 +400,7 @@ public class ProxyFactory
      */
     public static Object copy(Object source, boolean deep)
     {
-        return SINGLETON.copyObject(source, deep, false);
+        return ProxyCopier.copy(source, deep, false);
     }
 
     /**
@@ -406,13 +420,8 @@ public class ProxyFactory
             return null;
         }
 
-        JavaBeanHandler sourceHandler = getHandler(source);
-
-        if (null == sourceHandler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot copy anything other than a Navel bean!");
-        }
+        JavaBeanHandler sourceHandler = getRequiredHandler(source,
+                "Cannot copy anything other than a Navel bean!");
 
         if (!sourceHandler.proxiesFor(primaryType))
         {
@@ -449,7 +458,7 @@ public class ProxyFactory
      */
     public static Object unmodifiableObject(Object source)
     {
-        return SINGLETON.copyObject(source, true, true);
+        return ProxyCopier.copy(source, true, true);
     }
 
     /**
@@ -485,13 +494,8 @@ public class ProxyFactory
      */
     public static boolean isAttached(Object bean, String propertyName)
     {
-        JavaBeanHandler handler = getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot check a delegate on anything other than a Navel bean!");
-        }
+        JavaBeanHandler handler = getRequiredHandler(bean,
+                "Cannot check a delegate on anything other than a Navel bean!");
 
         return handler.propertyValues.isAttached(propertyName);
     }
@@ -506,13 +510,8 @@ public class ProxyFactory
      */
     public static void attach(Object bean, InterfaceDelegate delegate)
     {
-        JavaBeanHandler handler = getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot attach a delegate to anything other than a Navel bean!");
-        }
+        JavaBeanHandler handler = getRequiredHandler(bean,
+                "Cannot attach a delegate to anything other than a Navel bean!");
 
         handler.delegateMapping.attach(delegate);
     }
@@ -547,13 +546,8 @@ public class ProxyFactory
     public static void attach(Object bean, String propertyName,
             PropertyDelegate<?> delegate)
     {
-        JavaBeanHandler handler = getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot attach a delegate to anything other than a Navel bean!");
-        }
+        JavaBeanHandler handler = getRequiredHandler(bean,
+                "Cannot attach a delegate to anything other than a Navel bean!");
 
         handler.propertyValues.attach(propertyName, delegate);
     }
@@ -572,13 +566,8 @@ public class ProxyFactory
      */
     public static boolean detach(Object bean, Class<?> delegatingInterface)
     {
-        JavaBeanHandler handler = getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot detach a delegate from anything other than a Navel bean!");
-        }
+        JavaBeanHandler handler = getRequiredHandler(bean,
+                "Cannot detach a delegate from anything other than a Navel bean!");
 
         return handler.delegateMapping.detach(delegatingInterface);
     }
@@ -597,13 +586,8 @@ public class ProxyFactory
      */
     public static boolean detach(Object bean, String propertyName)
     {
-        JavaBeanHandler handler = getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot detach a delegate from anything other than a Navel bean!");
-        }
+        JavaBeanHandler handler = getRequiredHandler(bean,
+                "Cannot detach a delegate from anything other than a Navel bean!");
 
         return handler.propertyValues.detach(propertyName);
     }
@@ -653,366 +637,24 @@ public class ProxyFactory
             throw new IllegalArgumentException("Bean argument cannot be null!");
         }
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
-        }
+        JavaBeanHandler handler = ProxyFactory
+                .getRequiredHandler(
+                        bean,
+                        "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
 
         return handler.propertyValues.getProxyDescriptor();
     }
 
-    /**
-     * Package private overload required to satisfy copy logic, allowing the
-     * copy code in JavaBeanHandler to provide its own handler copy.
-     * 
-     * @param handler
-     *            If null, should trigger creation of a new handler; otherwise
-     *            use the one provided.
-     * @param constructorArguments
-     *            Not required, may be null; just passed to constructor
-     *            delegates to provide an optional set of state for construction
-     *            but not to be directly added to internal storage. If not
-     *            supplied, the initial values argument will be passed to any
-     *            {@link ConstructionDelegate} instances registered for the
-     *            proxy's types, instead.
-     * @param initialValues
-     *            Initial property values the proxy will have, checked to see if
-     *            they are valid. May only be null if the handler argument is
-     *            not null.
-     * @param allTypes
-     *            All of the interfaces the proxy will implement.
-     * @param initialDelegates
-     *            Delegates to map in initially.
-     * @return A proxy that extends all of the specified types and has the
-     *         specified initial property values.
-     */
-    static Object create(JavaBeanHandler handler,
-            Map<String, Object> constructorArguments,
-            Map<String, Object> initialValues, Class<?>[] allTypes,
-            InterfaceDelegate[] initialDelegates)
-    {
-        if (allTypes.length <= 0)
-        {
-            throw new IllegalArgumentException(
-                    "Must supply at least interface for the proxy to implement!");
-        }
-
-        incrementNesting();
-
-        // in some environments, such as Ant, trying harder is required
-        try
-        {
-            return SINGLETON.instantiate(Thread.currentThread()
-                    .getContextClassLoader(), handler, allTypes,
-                    constructorArguments, initialValues, initialDelegates);
-        }
-        catch (IllegalArgumentException e)
-        {
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug(
-                        "Failed to instantiate using thread context's loader.",
-                        e);
-                LOGGER.debug(String.format(
-                        "Trying the loader for class, %1$s.", allTypes[0]
-                                .getName()));
-            }
-
-            try
-            {
-                return SINGLETON.instantiate(allTypes[0].getClassLoader(),
-                        handler, allTypes, constructorArguments, initialValues,
-                        initialDelegates);
-            }
-            catch (IllegalArgumentException again)
-            {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER
-                            .debug(String
-                                    .format(
-                                            "Failed to instantiate using loader for class, %1$s.",
-                                            allTypes[0].getName()));
-                    LOGGER.debug("Trying the system's loader.");
-                }
-
-                return SINGLETON.instantiate(
-                        ClassLoader.getSystemClassLoader(), handler, allTypes,
-                        constructorArguments, initialValues, initialDelegates);
-            }
-        }
-        finally
-        {
-            decrementNesting();
-        }
-    }
-
-    private static void incrementNesting()
-    {
-        if (null == nestingDepth.get())
-        {
-            nestingDepth.set(0);
-        }
-        else
-        {
-            nestingDepth.set(nestingDepth.get() + 1);
-        }
-
-        if (nestingDepth.get() > MAX_NESTING_DEPTH)
-        {
-            throw new IllegalStateException(
-                    String
-                            .format(
-                                    "Exceeded maximum nesting depth, %1$d, for delegate construction using registered ConstructorDelegat instnance.  Make sure to check the nestingDepth argument to ConstructorDelegate's methods.",
-                                    MAX_NESTING_DEPTH));
-        }
-    }
-
-    private static void decrementNesting()
-    {
-        if (nestingDepth.get() == 0)
-        {
-            nestingDepth.remove();
-        }
-        else
-        {
-            nestingDepth.set(nestingDepth.get() - 1);
-        }
-    }
-
-    /*
-     * This methid keeps the custom initialization hook logic close to the
-     * actual point of instantiation of the dynamic Proxy.
-     */
-    private Object instantiate(ClassLoader loader, JavaBeanHandler handler,
-            Class<?>[] allTypes, Map<String, Object> constructorArguments,
-            Map<String, Object> initialValues,
-            InterfaceDelegate[] initialDelegates)
-    {
-        Class<?>[] amendedTypes = null;
-
-        // if the caller supplied a handler, then it is a copy; the handler is a
-        // result of JavaBeanHandler's copy constructor
-        boolean copy = handler != null;
-
-        // only perform the pre-init for a new instance, NOT for a copy
-        if (!copy)
-        {
-            if (null == constructorArguments)
-            {
-                amendedTypes = doBeforeInit(initialValues, allTypes);
-            }
-            else
-            {
-                amendedTypes = doBeforeInit(constructorArguments, allTypes);
-            }
-        }
-        else
-        {
-            amendedTypes = allTypes;
-        }
-
-        JavaBeanHandler newHandler = null == handler ? new JavaBeanHandler(
-                initialValues, amendedTypes, initialDelegates) : handler;
-
-        Object bean = Proxy.newProxyInstance(loader, amendedTypes, newHandler);
-
-        // allow the post init code to know if this is a copy so it can
-        // condition value and behavior handling appropriately
-        doAfterInit(copy, bean, amendedTypes);
-
-        return bean;
-    }
-
-    private Object copyObject(Object source, boolean deep,
-            boolean immutableValues)
-    {
-        if (null == source)
-        {
-            return null;
-        }
-
-        JavaBeanHandler sourceHandler = ProxyFactory.getHandler(source);
-
-        if (null == sourceHandler)
-        {
-            throw new UnsupportedFeatureException(
-                    "Cannot copy anything other than a Navel bean!");
-        }
-
-        ProxyDescriptor sourceDescriptor = ProxyFactory
-                .getProxyDescriptor(source);
-
-        JavaBeanHandler newHandler = new JavaBeanHandler(sourceHandler, deep,
-                immutableValues);
-
-        Class<?>[] copyTypes = new ArrayList<Class<?>>(sourceDescriptor
-                .getProxiedInterfaces()).toArray(new Class<?>[sourceDescriptor
-                .getProxiedInterfaces().size()]);
-
-        return ProxyFactory.create(newHandler, null, null, copyTypes,
-                new InterfaceDelegate[0]);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<?>[] doBeforeInit(Map<String, Object> constructorArguments,
-            Class<?>[] allTypes)
-    {
-        Map<String, Object> fixedArgCopy = null == constructorArguments ? Collections.EMPTY_MAP
-                : constructorArguments;
-        fixedArgCopy = Collections.unmodifiableMap(fixedArgCopy);
-
-        Class<?> primaryType = allTypes[0];
-
-        List<Class<?>> combinedTypes = new LinkedList<Class<?>>(Arrays
-                .asList(allTypes));
-
-        // using a separate set makes the containment check cheaper
-        Set<Class<?>> uniqueTypes = new HashSet<Class<?>>(combinedTypes);
-
-        // run the registered default
-        Collection<Class<?>> additionalTypes = defaultConstructor
-                .additionalTypes(nestingDepth.get(), primaryType, primaryType,
-                        allTypes, fixedArgCopy);
-
-        // null is acceptable to indicate a no-op
-        if (null != additionalTypes)
-        {
-            addAdditionalTypes(additionalTypes, uniqueTypes, combinedTypes);
-        }
-
-        List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
-
-        flattenAllInterfaces(allWithParents, allTypes);
-
-        for (Class<?> singleType : allWithParents)
-        {
-            if (!constructionDelegates.containsKey(singleType))
-            {
-                continue;
-            }
-
-            ConstructionDelegate delegate = constructionDelegates
-                    .get(singleType);
-
-            if (null == delegate)
-            {
-                continue;
-            }
-
-            additionalTypes = delegate.additionalTypes(nestingDepth.get(),
-                    primaryType, singleType, allTypes, fixedArgCopy);
-
-            // null is acceptable to indicate a no-op
-            if (null == additionalTypes)
-            {
-                continue;
-            }
-
-            addAdditionalTypes(additionalTypes, uniqueTypes, combinedTypes);
-        }
-
-        return combinedTypes.toArray(new Class<?>[combinedTypes.size()]);
-    }
-
-    private void doAfterInit(boolean copy, Object bean, Class<?>[] allTypes)
-    {
-        if (!copy)
-        {
-            defaultConstructor
-                    .initValues(nestingDepth.get(), allTypes[0], bean);
-        }
-
-        defaultConstructor.initBehaviors(nestingDepth.get(), allTypes[0], bean);
-
-        List<Class<?>> allWithParents = new ArrayList<Class<?>>(allTypes.length);
-
-        flattenAllInterfaces(allWithParents, allTypes);
-
-        for (Class<?> singleType : allWithParents)
-        {
-            if (!constructionDelegates.containsKey(singleType))
-            {
-                continue;
-            }
-
-            ConstructionDelegate delegate = constructionDelegates
-                    .get(singleType);
-
-            if (null == delegate)
-            {
-                continue;
-            }
-
-            if (!copy)
-            {
-                delegate.initValues(nestingDepth.get(), singleType, bean);
-            }
-
-            delegate.initBehaviors(nestingDepth.get(), singleType, bean);
-        }
-    }
-
-    private void addAdditionalTypes(Collection<Class<?>> additionalTypes,
-            Set<Class<?>> uniqueTypes, List<Class<?>> combinedTypes)
+    static JavaBeanHandler getRequiredHandler(Object bean, String messageOnFail)
     {
 
-        // the size of the additional type collection is expected to be
-        // small, so not presently concerned about nesting loops
-        for (Class<?> additionalType : additionalTypes)
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
         {
-            if (null == additionalType)
-            {
-                throw new IllegalStateException(
-                        "Do not include any null types in the return Collection for ConstructorDelegate.additionalTypes().");
-            }
-
-            if (!additionalType.isInterface())
-            {
-                throw new IllegalStateException(
-                        String
-                                .format(
-                                        "The type, %1$s, is not an interface.  The additional types returned by ConstructorDelegate.additionalTypes() must all be interfaces.",
-                                        additionalType.getName()));
-            }
-
-            if (uniqueTypes.contains(additionalType))
-            {
-                continue;
-            }
-
-            // add the new interfaces to the end so as not to inadvertently
-            // clobber
-            // the special zeroth element, the primary type
-            combinedTypes.add(additionalType);
-
-            // guard against duplication of the newly added
-            uniqueTypes.add(additionalType);
+            throw new UnsupportedFeatureException(messageOnFail);
         }
-    }
 
-    /*
-     * build flat list of all interfaces by traversing and adding any interfaces
-     * elements in allTypes extend
-     */
-    private void flattenAllInterfaces(List<Class<?>> allTypesWithParents,
-            Class<?>[] allTypes)
-    {
-        for (Class<?> forType : allTypes)
-        {
-            Class<?>[] interfaces = forType.getInterfaces();
-
-            allTypesWithParents.add(forType);
-
-            if (null == interfaces)
-            {
-                continue;
-            }
-
-            flattenAllInterfaces(allTypesWithParents, interfaces);
-        }
+        return handler;
     }
 }
