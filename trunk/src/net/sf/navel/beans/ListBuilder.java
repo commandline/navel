@@ -328,7 +328,11 @@ class ListBuilder
         {
             if (elementType.isInterface())
             {
-                return ProxyFactory.create(rawValues, new Class<?>[] { elementType });
+                Object elementValue = ProxyFactory.create(rawValues, null, new Class<?>[] { elementType });
+                
+                PropertyValueResolver.resolveNested(elementValue, rawValues);
+
+                return elementValue;
             }
             else
             {

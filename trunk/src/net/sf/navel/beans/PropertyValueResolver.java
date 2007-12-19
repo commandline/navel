@@ -78,6 +78,11 @@ class PropertyValueResolver
     {
         SINGLETON.resolveAll(properties, values);
     }
+    
+    static void resolveNested(Object nestedBean, Map<String,Object> nestedValues)
+    {
+        SINGLETON.resolver.resolve(nestedBean, nestedValues);
+    }
 
     private void resolveAll(Map<String, PropertyDescriptor> properties,
             Map<String, Object> values)
@@ -257,7 +262,7 @@ class PropertyValueResolver
         }
         else
         {
-            resolver.resolve(nestedValue, values);
+            PropertyValueResolver.resolveNested(nestedValue, values);
         }
 
         return nestedValue;
