@@ -121,10 +121,12 @@ public class BeanManipulator
      *            JavaBean instance to populate.
      * @param values
      *            Values to populate into the bean.
+     * @returns The values that were actually applied to the target.
      */
-    public static void populate(Object bean, Map<String, Object> values)
+    public static Map<String, Object> populate(Object bean,
+            Map<String, Object> values)
     {
-        SINGLETON.populateBean(bean, values);
+        return SINGLETON.populateBean(bean, values);
     }
 
     /**
@@ -294,19 +296,26 @@ public class BeanManipulator
         return values;
     }
 
-    private void populateBean(Object bean, Map<String, Object> values)
+    private Map<String, Object> populateBean(Object bean,
+            Map<String, Object> source)
     {
-        for (Iterator<Entry<String, Object>> entryIter = values.entrySet()
-                .iterator(); entryIter.hasNext();)
+        Map<String, Object> affected = new HashMap<String, Object>();
+
+        for (Entry<String, Object> sourceEntry : source.entrySet())
         {
-            Entry<String, Object> value = entryIter.next();
+            String sourceName = sourceEntry.getKey();
 
-            String sourceName = value.getKey();
+            Object sourceValue = sourceEntry.getValue();
 
-            Object sourceValue = value.getValue();
+            boolean wrote = writeProperty(bean, sourceName, sourceValue);
 
-            writeProperty(bean, sourceName, sourceValue);
+            if (wrote)
+            {
+                affected.put(sourceName, sourceValue);
+            }
         }
+
+        return affected;
     }
 
     private Object getNestedBean(String propertyName, Map<String, Object> values)
@@ -349,7 +358,7 @@ public class BeanManipulator
         }
     }
 
-    private void writeProperty(Object bean, String propertyName,
+    private boolean writeProperty(Object bean, String propertyName,
             Object propertyValue)
     {
         String[] propertyTokens = propertyName.split("\\.");
@@ -358,13 +367,13 @@ public class BeanManipulator
         {
             LOGGER.debug("Empty property name.");
 
-            return;
+            return false;
         }
 
-        writeProperty(propertyTokens, 0, bean, propertyValue);
+        return writeProperty(propertyTokens, 0, bean, propertyValue);
     }
 
-    private void writeProperty(String[] propertyTokens, int tokenIndex,
+    private boolean writeProperty(String[] propertyTokens, int tokenIndex,
             Object bean, Object value)
     {
         String propertyName = propertyTokens[tokenIndex];
@@ -376,7 +385,7 @@ public class BeanManipulator
         {
             LOGGER.debug("No property for " + propertyName + ".");
 
-            return;
+            return false;
         }
 
         AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
@@ -384,7 +393,7 @@ public class BeanManipulator
 
         if (1 == propertyTokens.length - tokenIndex)
         {
-            manipulator.handleWrite(property, propertyName, bean, value);
+            return manipulator.handleWrite(property, propertyName, bean, value);
         }
         else
         {
@@ -395,11 +404,12 @@ public class BeanManipulator
             {
                 LOGGER.debug("Nested bean target was null, " + propertyName);
 
-                return;
+                return false;
             }
 
             // recurse on the nested property
-            writeProperty(propertyTokens, tokenIndex + 1, nestedBean, value);
+            return writeProperty(propertyTokens, tokenIndex + 1, nestedBean,
+                    value);
         }
     }
 
