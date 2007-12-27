@@ -150,7 +150,7 @@ public abstract class AbstractPropertyManipulator
      * @param value
      *            The value to write.
      */
-    public abstract void handleWrite(PropertyDescriptor property,
+    public abstract boolean handleWrite(PropertyDescriptor property,
             String propertyName, Object bean, Object value);
 
     /**
