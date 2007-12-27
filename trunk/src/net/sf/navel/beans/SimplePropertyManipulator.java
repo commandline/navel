@@ -45,7 +45,7 @@ import org.apache.log4j.Logger;
  */
 public class SimplePropertyManipulator extends AbstractPropertyManipulator
 {
-    
+
     private static final Logger LOGGER = Logger
             .getLogger(SimplePropertyManipulator.class);
 
@@ -61,10 +61,11 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      *            The bean to write to.
      * @param value
      *            The value to write.
+     * @returns Whether the target property was written.
      */
     @Override
-    public void handleWrite(PropertyDescriptor property, String propertyName,
-            Object bean, Object value)
+    public boolean handleWrite(PropertyDescriptor property,
+            String propertyName, Object bean, Object value)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -84,12 +85,12 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
                         + bean.getClass().getName());
             }
 
-            return;
+            return false;
         }
 
         Object convertedValue = convertPropertyValue(property, value);
 
-        invokeWriteMethod(writeMethod, bean, new Object[]
+        return invokeWriteMethod(writeMethod, bean, new Object[]
         { convertedValue });
     }
 
@@ -128,15 +129,16 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      *            Invocation target.
      * @param args
      *            Arguments.
+     * @returns Whether the target property was written.
      */
-    protected final void invokeWriteMethod(Method method, Object bean,
+    protected final boolean invokeWriteMethod(Method method, Object bean,
             Object[] args)
     {
         if (null == method)
         {
             LOGGER.debug("No write method available.");
 
-            return;
+            return false;
         }
 
         Class<?>[] argTypes = method.getParameterTypes();
@@ -146,7 +148,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
             LOGGER
                     .debug("PropertyManipulator only supports writing simple and indexed properties.");
 
-            return;
+            return false;
         }
 
         int valueIndex = args.length - 1;
@@ -168,7 +170,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
                                     .getName()) + ".");
                 }
 
-                return;
+                return false;
             }
         }
         else
@@ -182,26 +184,32 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
                                     + method.getName());
                     LOGGER.trace(propertyType.getName()
                             + ": "
-                            + ((null == value.getClass()) ? "null" : value.getClass()
-                                    .getName()) + ".");
+                            + ((null == value.getClass()) ? "null" : value
+                                    .getClass().getName()) + ".");
                 }
 
-                return;
+                return false;
             }
         }
 
         try
         {
             method.invoke(bean, args);
+            
+            return true;
         }
         catch (IllegalAccessException e)
         {
             LOGGER.warn("Illegal access invoking write method, "
                     + method.getName());
+            
+            return false;
         }
         catch (InvocationTargetException e)
         {
             LOGGER.warn("Bad invocation of write method, " + method.getName());
+            
+            return false;
         }
     }
 
