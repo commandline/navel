@@ -68,10 +68,11 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
      *            The bean to write to.
      * @param value
      *            The value to write.
+     * @returns Whether the propert was written.
      */
     @Override
-    public void handleWrite(PropertyDescriptor property, String propertyName,
-            Object bean, Object value)
+    public boolean handleWrite(PropertyDescriptor property,
+            String propertyName, Object bean, Object value)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -91,13 +92,13 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         if (MISSING_INDEX == index)
         {
-            return;
+            return false;
         }
 
         IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
 
         Method writeMethod = indexedProperty.getIndexedWriteMethod();
-        invokeWriteMethod(writeMethod, bean, new Object[]
+        return invokeWriteMethod(writeMethod, bean, new Object[]
         { Integer.valueOf(index), value });
     }
 
@@ -199,7 +200,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
         }
     }
 
-    static void putIndexed(Map<String, Object> values, String nameWithIndex,
+    static boolean putIndexed(Map<String, Object> values, String nameWithIndex,
             String propertyName, PropertyDescriptor propertyDescriptor,
             Object propertyValue)
     {
@@ -213,18 +214,20 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
                 .getPropertyType()))
         {
             PrimitiveSupport.setElement(array, arrayIndex, propertyValue);
+
+            return true;
         }
-        else
+
+        Object[] indexed = (Object[]) array;
+
+        if (null == array)
         {
-            Object[] indexed = (Object[]) array;
-
-            if (null == array)
-            {
-                return;
-            }
-
-            indexed[arrayIndex] = propertyValue;
+            return false;
         }
+
+        indexed[arrayIndex] = propertyValue;
+
+        return true;
     }
 
     static Object getIndexed(Map<String, Object> values, String nameWithIndex,
