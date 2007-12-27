@@ -155,7 +155,7 @@ class ProxyCopier
         
         if (subTypesSet.containsAll(sourceTypes))
         {
-            sourceHandler.propertyValues.copyValues(false);
+            subValues = sourceHandler.propertyValues.copyValues(false);
         }
         else
         {
