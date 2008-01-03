@@ -43,7 +43,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-public class SimplePropertyManipulator extends AbstractPropertyManipulator
+class SimplePropertyManipulator extends AbstractPropertyManipulator
 {
 
     private static final Logger LOGGER = Logger
@@ -64,7 +64,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      * @returns Whether the target property was written.
      */
     @Override
-    public boolean handleWrite(PropertyDescriptor property,
+    boolean handleWrite(PropertyDescriptor property,
             String propertyName, Object bean, Object value,
             boolean suppressExceptions)
     {
@@ -107,7 +107,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      * @return The value read from the bean argument.
      */
     @Override
-    public Object handleRead(PropertyDescriptor property, String propertyName,
+    Object handleRead(PropertyDescriptor property, String propertyName,
             Object bean, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
@@ -133,7 +133,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      *            Arguments.
      * @returns Whether the target property was written.
      */
-    protected final boolean invokeWriteMethod(Method method, Object bean,
+    final boolean invokeWriteMethod(Method method, Object bean,
             Object[] args, boolean suppressExceptions)
     {
         if (null == method)
@@ -232,9 +232,12 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      *            Arguments.
      * @return Property value.
      */
-    protected final Object invokeReadMethod(Method method, Object bean,
+    final Object invokeReadMethod(Method method, Object bean,
             Object[] args, boolean suppressExceptions)
     {
+        assert bean != null : "Invocation target cannot be null.";
+        assert args != null : "Arguments cannot be null.";
+        
         if (null == method)
         {
             LOGGER.debug("No read method available.");

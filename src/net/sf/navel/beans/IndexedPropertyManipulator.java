@@ -71,7 +71,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
      * @returns Whether the propert was written.
      */
     @Override
-    public boolean handleWrite(PropertyDescriptor property,
+    boolean handleWrite(PropertyDescriptor property,
             String propertyName, Object bean, Object value, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
@@ -117,7 +117,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
      * @return The value read from the bean argument.
      */
     @Override
-    public Object handleRead(PropertyDescriptor property, String propertyName,
+    Object handleRead(PropertyDescriptor property, String propertyName,
             Object bean, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
