@@ -56,7 +56,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-public abstract class AbstractPropertyManipulator
+abstract class AbstractPropertyManipulator
 {
     private static final Logger LOGGER = Logger
             .getLogger(AbstractPropertyManipulator.class);
@@ -82,7 +82,7 @@ public abstract class AbstractPropertyManipulator
      * @param manipulator
      *            A daughter of PropertyManipulator.
      */
-    public static void registerPropertyManipulator(Class<?> descriptorType,
+    static void registerPropertyManipulator(Class<?> descriptorType,
             AbstractPropertyManipulator manipulator)
     {
         if (!PropertyDescriptor.class.isAssignableFrom(descriptorType))
@@ -115,7 +115,7 @@ public abstract class AbstractPropertyManipulator
      * @return PropertyManipulator Instance suitable for working with the
      *         requested property type, may be null.
      */
-    public static AbstractPropertyManipulator getPropertyManipulator(
+    static AbstractPropertyManipulator getPropertyManipulator(
             Class<?> descriptorType)
     {
         AbstractPropertyManipulator manipulator = (AbstractPropertyManipulator) MANIPULATORS
@@ -150,7 +150,7 @@ public abstract class AbstractPropertyManipulator
      * @param value
      *            The value to write.
      */
-    public abstract boolean handleWrite(PropertyDescriptor property,
+    abstract boolean handleWrite(PropertyDescriptor property,
             String propertyName, Object bean, Object value, boolean suppressExceptions);
 
     /**
@@ -167,7 +167,7 @@ public abstract class AbstractPropertyManipulator
      *            The bean to write to.
      * @return The value read from the bean argument.
      */
-    public abstract Object handleRead(PropertyDescriptor property,
+    abstract Object handleRead(PropertyDescriptor property,
             String propertyName, Object bean, boolean suppressExceptions);
 
     /**
@@ -182,7 +182,7 @@ public abstract class AbstractPropertyManipulator
      *            Property name, may be some sort of expression as long as it
      *            starts with a valid property name.
      */
-    protected static final PropertyDescriptor findProperty(Class<?> beanClass,
+    static final PropertyDescriptor findProperty(Class<?> beanClass,
             String propertyName)
     {
         if (null == beanClass || null == propertyName)
@@ -222,7 +222,7 @@ public abstract class AbstractPropertyManipulator
      *            Original value to be converted, must be a String to be
      *            converted.
      */
-    protected final Object convertPropertyValue(PropertyDescriptor property,
+    final Object convertPropertyValue(PropertyDescriptor property,
             Object propertyValue)
     {
         if (!(propertyValue instanceof String))
@@ -261,7 +261,7 @@ public abstract class AbstractPropertyManipulator
      * @return An array of PropertyDescriptor instances, may be zero length;
      *         will never be null.
      */
-    public static final PropertyDescriptor[] getProperties(Class<?> beanClass)
+    static final PropertyDescriptor[] getProperties(Class<?> beanClass)
     {
         try
         {
