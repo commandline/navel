@@ -62,6 +62,10 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
 
     private static final long serialVersionUID = 8336801578532507921L;
 
+    private static final String DEFAULT_TO_STRING_TEMPLATE = "proxyDescriptor = {primary type = %1$s, additional interfaces = %2$s}";
+
+    private static String toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
+
     private final Class<?> primaryType;
 
     private final Set<Class<?>> proxiedInterfaces;
@@ -122,6 +126,31 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
         this.withDelegatableMethods = Collections
                 .unmodifiableSet(tempWithDelegatable);
         this.methods = Collections.unmodifiableSet(tempMethods);
+    }
+
+    /**
+     * Allows callers to specify their own template for use with
+     * {@link String#format(String, Object...)} which excepts two arguments.
+     * 
+     * <ol>
+     * <li>primary type</li>
+     * <li>additional types, a <code>Collection.toString()</code> call</li>
+     * </ol>
+     * 
+     * @param toStringTemplate
+     *            Custom format template.
+     */
+    public static void setToStringTemplate(String toStringTemplate)
+    {
+        ProxyDescriptor.toStringTemplate = toStringTemplate;
+    }
+
+    /**
+     * Restore the default format template for {@link #toString()}.
+     */
+    public static void resetToStringTemplate()
+    {
+        ProxyDescriptor.toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
     }
 
     /**
@@ -254,7 +283,7 @@ public class ProxyDescriptor implements Serializable, ObjectInputValidation
     {
         return String
                 .format(
-                        "proxyDescriptor = {primary type = %1$s, additional interfaces = %2$s}",
+                        toStringTemplate,
                         primaryType.getName(), printClasses(primaryType,
                                 proxiedInterfaces));
     }

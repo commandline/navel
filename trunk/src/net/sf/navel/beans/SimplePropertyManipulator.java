@@ -259,6 +259,8 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
         catch (InvocationTargetException e)
         {
             LOGGER.warn("Bad invocation of read method, " + method.getName());
+            
+            LogHelper.traceWarn(LOGGER, e);
 
             return null;
         }

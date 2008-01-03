@@ -62,6 +62,10 @@ public class PropertyValues implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(PropertyValues.class);
 
+    private static final String DEFAULT_TO_STRING_TEMPLATE = "propertyValues = %1$s";
+
+    private static String toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
+
     private final Map<String, PropertyDelegate<?>> propertyDelegates;
 
     private final Map<String, Object> values;
@@ -148,6 +152,30 @@ public class PropertyValues implements Serializable
                 .unmodifiableMap(source.propertyDelegates)
                 : new HashMap<String, PropertyDelegate<?>>(
                         source.propertyDelegates);
+    }
+
+    /**
+     * Allows callers to specify their own template for use with
+     * {@link String#format(String, Object...)} which excepts one argument.
+     * 
+     * <ol>
+     * <li><code>Map.toString()</code> result</li>
+     * </ol>
+     * 
+     * @param toStringTemplate
+     *            Custom format template.
+     */
+    public static void setToStringTemplate(String toStringTemplate)
+    {
+        PropertyValues.toStringTemplate = toStringTemplate;
+    }
+
+    /**
+     * Restore the default format template for {@link #toString()}.
+     */
+    public static void resetToStringTemplate()
+    {
+        PropertyValues.toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
     }
 
     public ProxyDescriptor getProxyDescriptor()
@@ -341,7 +369,7 @@ public class PropertyValues implements Serializable
             toPrint.remove(ignoreName);
         }
 
-        return String.format("propertyValues = %1$s", toPrint);
+        return String.format(toStringTemplate, toPrint);
     }
 
     boolean isAttached(String propertyName)

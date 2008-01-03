@@ -57,6 +57,10 @@ class ObjectProxy implements Serializable
     private static final Logger LOGGER = LogManager
             .getLogger(ObjectProxy.class);
 
+    private static final String DEFAULT_TO_STRING_TEMPLATE = "Navelbean: %1$s, values = %2$s";
+
+    private static String toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
+
     private final ProxyDescriptor proxyDescriptor;
 
     private final Set<String> filterToString;
@@ -86,6 +90,31 @@ class ObjectProxy implements Serializable
         this.filterToString = Collections
                 .unmodifiableSet(source.filterToString);
         this.proxyDescriptor = source.proxyDescriptor;
+    }
+
+    /**
+     * Allows callers to specify their own template for use with
+     * {@link String#format(String, Object...)} which excepts two arguments.
+     * 
+     * <ol>
+     * <li><code>ProxyDescriptor.toString()</code> result</li>
+     * <li><code>PropertyValues.toString()</code> result</li>
+     * </ol>
+     * 
+     * @param toStringTemplate
+     *            Custom format template.
+     */
+    public static void setToStringTemplate(String toStringTemplate)
+    {
+        ObjectProxy.toStringTemplate = toStringTemplate;
+    }
+
+    /**
+     * Restore the default format template for {@link #toString()}.
+     */
+    public static void resetToStringTemplate()
+    {
+        ObjectProxy.toStringTemplate = DEFAULT_TO_STRING_TEMPLATE;
     }
 
     Object proxy(final String message, final PropertyValues values,
@@ -118,8 +147,8 @@ class ObjectProxy implements Serializable
 
         if ("toString".equals(method.getName()) && argTypes.length == 0)
         {
-            return String.format("Navelbean: %1$s, values = %2$s",
-                    proxyDescriptor, values.filteredToString(filterToString));
+            return String.format(toStringTemplate, proxyDescriptor, values
+                    .filteredToString(filterToString));
         }
 
         try

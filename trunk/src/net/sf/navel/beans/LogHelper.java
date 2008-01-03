@@ -32,23 +32,46 @@ package net.sf.navel.beans;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
  * @author cmdln
- *
+ * 
  */
 class LogHelper
 {
 
+    private static final LogHelper SINGLETON = new LogHelper();
+
+    private LogHelper()
+    {
+        // enforce Singleton pattern
+    }
+
     static void traceError(Logger logger, Throwable cause)
     {
+        SINGLETON.logTrace(logger, cause, Level.ERROR);
+    }
+
+    static void traceWarn(Logger logger, Throwable cause)
+    {
+        SINGLETON.logTrace(logger, cause, Level.WARN);
+    }
+
+    static void traceDebug(Logger logger, Throwable cause)
+    {
+        SINGLETON.logTrace(logger, cause, Level.DEBUG);
+    }
+
+    private void logTrace(Logger logger, Throwable cause, Level level)
+    {
         StringWriter buffer = new StringWriter();
-        
+
         PrintWriter writer = new PrintWriter(buffer);
-        
+
         cause.printStackTrace(writer);
-        
-        logger.error(buffer.toString());
+
+        logger.log(level, buffer.toString());
     }
 }
