@@ -151,7 +151,7 @@ public abstract class AbstractPropertyManipulator
      *            The value to write.
      */
     public abstract boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value);
+            String propertyName, Object bean, Object value, boolean suppressExceptions);
 
     /**
      * Implementations of this method should know how to parse out any special
@@ -168,7 +168,7 @@ public abstract class AbstractPropertyManipulator
      * @return The value read from the bean argument.
      */
     public abstract Object handleRead(PropertyDescriptor property,
-            String propertyName, Object bean);
+            String propertyName, Object bean, boolean suppressExceptions);
 
     /**
      * Utility method to find a PropertyDescriptor by name or partial name.

@@ -65,7 +65,8 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      */
     @Override
     public boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value)
+            String propertyName, Object bean, Object value,
+            boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -91,7 +92,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
         Object convertedValue = convertPropertyValue(property, value);
 
         return invokeWriteMethod(writeMethod, bean, new Object[]
-        { convertedValue });
+        { convertedValue }, suppressExceptions);
     }
 
     /**
@@ -107,7 +108,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      */
     @Override
     public Object handleRead(PropertyDescriptor property, String propertyName,
-            Object bean)
+            Object bean, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -116,7 +117,8 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
 
         Method readMethod = property.getReadMethod();
 
-        return invokeReadMethod(readMethod, bean, new Object[0]);
+        return invokeReadMethod(readMethod, bean, new Object[0],
+                suppressExceptions);
     }
 
     /**
@@ -132,7 +134,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      * @returns Whether the target property was written.
      */
     protected final boolean invokeWriteMethod(Method method, Object bean,
-            Object[] args)
+            Object[] args, boolean suppressExceptions)
     {
         if (null == method)
         {
@@ -195,20 +197,25 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
         try
         {
             method.invoke(bean, args);
-            
+
             return true;
         }
         catch (IllegalAccessException e)
         {
-            LOGGER.warn("Illegal access invoking write method, "
-                    + method.getName());
-            
+            handleException(String.format(
+                    "Illegal access invoking write method, %1$s.",
+                    null == method ? "null" : method.getName()), e,
+                    suppressExceptions);
+
             return false;
         }
         catch (InvocationTargetException e)
         {
-            LOGGER.warn("Bad invocation of write method, " + method.getName());
-            
+            handleException(String.format(
+                    "Bad invocation of write method, %1$s.",
+                    null == method ? "null" : method.getName()), e,
+                    suppressExceptions);
+
             return false;
         }
     }
@@ -226,7 +233,7 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
      * @return Property value.
      */
     protected final Object invokeReadMethod(Method method, Object bean,
-            Object[] args)
+            Object[] args, boolean suppressExceptions)
     {
         if (null == method)
         {
@@ -251,18 +258,36 @@ public class SimplePropertyManipulator extends AbstractPropertyManipulator
         }
         catch (IllegalAccessException e)
         {
-            LOGGER.warn("Illegal access invoking read method, "
-                    + method.getName());
+            handleException(String.format(
+                    "Illegal access invoking read method, %1$s.",
+                    null == method ? "null" : method.getName()), e,
+                    suppressExceptions);
 
             return null;
         }
         catch (InvocationTargetException e)
         {
-            LOGGER.warn("Bad invocation of read method, " + method.getName());
-            
-            LogHelper.traceWarn(LOGGER, e);
+            handleException(String.format(
+                    "Bad invocation of read method, %1$s.",
+                    null == method ? "null" : method.getName()), e,
+                    suppressExceptions);
 
             return null;
+        }
+    }
+
+    private void handleException(String message, Throwable cause,
+            boolean suppressExceptions)
+    {
+        if (suppressExceptions)
+        {
+            LOGGER.warn(message);
+
+            LogHelper.traceWarn(LOGGER, cause);
+        }
+        else
+        {
+            throw new PropertyAccessException(message, cause);
         }
     }
 }

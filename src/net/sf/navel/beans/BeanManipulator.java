@@ -83,11 +83,31 @@ public class BeanManipulator
      * class methods
      *----------------------------------------*/
     /**
-     * Overload that assumes false for the resolve nested argument.
+     * Overload that assumes false for the resolve nested argument and true for suppressExceptions.
+     * 
+     * @param bean
+     *            JavaBean to extract from.
+     * @return Map of extracted values, never null but may be empty.
      */
     public static Map<String, Object> describe(Object bean)
     {
-        return SINGLETON.describeBean(bean, false);
+        return SINGLETON.describeBean(bean, false, true);
+    }
+    
+    /**
+     * Overload that assumes true for suppressExceptions.
+     * 
+     * @param bean
+     *            JavaBean to extract from.
+     * @param flattenNested
+     *            If any of the properties are themselves Navel beans, should we
+     *            flatten their properties into the key set of the containing
+     *            bean?
+     * @return Map of extracted values, never null but may be empty.
+     */
+    public static Map<String, Object> describe(Object bean, boolean flattenNested)
+    {
+        return SINGLETON.describeBean(bean, flattenNested, true);
     }
 
     /**
@@ -101,12 +121,31 @@ public class BeanManipulator
      *            If any of the properties are themselves Navel beans, should we
      *            flatten their properties into the key set of the containing
      *            bean?
+     * @param suppressExceptions
+     *            Should exceptions by re-thrown as
+     *            {@link PropertyAccessException} instances or logged only as
+     *            warnings?
      * @return Map of extracted values, never null but may be empty.
      */
     public static Map<String, Object> describe(Object bean,
-            boolean flattenNested)
+            boolean flattenNested, boolean suppressExceptions)
     {
-        return SINGLETON.describeBean(bean, flattenNested);
+        return SINGLETON.describeBean(bean, flattenNested, suppressExceptions);
+    }
+
+    /**
+     * Overload that suppresses exceptions.
+     * 
+     * @param bean
+     *            JavaBean instance to populate.
+     * @param values
+     *            Values to populate into the bean.
+     * @returns The values that were actually applied to the target.
+     */
+    public static Map<String, Object> populate(Object bean,
+            Map<String, Object> values)
+    {
+        return SINGLETON.populateBean(bean, values, true);
     }
 
     /**
@@ -121,12 +160,33 @@ public class BeanManipulator
      *            JavaBean instance to populate.
      * @param values
      *            Values to populate into the bean.
+     * @param suppressExceptions
+     *            Should exceptions by re-thrown as
+     *            {@link PropertyAccessException} instances or logged only as
+     *            warnings?
      * @returns The values that were actually applied to the target.
      */
     public static Map<String, Object> populate(Object bean,
-            Map<String, Object> values)
+            Map<String, Object> values, boolean suppressExceptions)
     {
-        return SINGLETON.populateBean(bean, values);
+        return SINGLETON.populateBean(bean, values, suppressExceptions);
+    }
+
+    /**
+     * Overload that suppresses exceptions.
+     * 
+     * @param propertyName
+     *            Property name, may use dot notation.
+     * @param values
+     *            Map of possible values, initially the immediate properties of
+     *            some bean, but with each recursive call, it will represent a
+     *            new layer of bean properties.
+     * @return Null or the resolved value.
+     */
+    public static Object resolveValue(final String propertyName,
+            final Map<String, Object> values)
+    {
+        return BeanManipulator.resolveValue(propertyName, values, true);
     }
 
     /**
@@ -139,10 +199,14 @@ public class BeanManipulator
      *            Map of possible values, initially the immediate properties of
      *            some bean, but with each recursive call, it will represent a
      *            new layer of bean properties.
+     * @param suppressExceptions
+     *            Should exceptions by re-thrown as
+     *            {@link PropertyAccessException} instances or logged only as
+     *            warnings?
      * @return Null or the resolved value.
      */
     public static Object resolveValue(final String propertyName,
-            final Map<String, Object> values)
+            final Map<String, Object> values, boolean suppressExceptions)
     {
         int dotIndex = propertyName.indexOf(".");
 
@@ -163,9 +227,9 @@ public class BeanManipulator
         String subName = propertyName.substring(dotIndex + 1, propertyName
                 .length());
         Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
-                false);
+                false, suppressExceptions);
 
-        return resolveValue(subName, subValues);
+        return resolveValue(subName, subValues, suppressExceptions);
     }
 
     /**
@@ -268,7 +332,8 @@ public class BeanManipulator
         }
     }
 
-    private Map<String, Object> describeBean(Object bean, boolean flattenNested)
+    private Map<String, Object> describeBean(Object bean,
+            boolean flattenNested, boolean suppressExceptions)
     {
         PropertyDescriptor[] properties = AbstractPropertyManipulator
                 .getProperties(bean.getClass());
@@ -285,7 +350,7 @@ public class BeanManipulator
 
         for (int i = 0; i < properties.length; i++)
         {
-            readProperty(properties[i], bean, values);
+            readProperty(properties[i], bean, values, suppressExceptions);
         }
 
         if (flattenNested)
@@ -297,7 +362,7 @@ public class BeanManipulator
     }
 
     private Map<String, Object> populateBean(Object bean,
-            Map<String, Object> source)
+            Map<String, Object> source, boolean suppressExceptions)
     {
         Map<String, Object> affected = new HashMap<String, Object>();
 
@@ -307,7 +372,8 @@ public class BeanManipulator
 
             Object sourceValue = sourceEntry.getValue();
 
-            boolean wrote = writeProperty(bean, sourceName, sourceValue);
+            boolean wrote = writeProperty(bean, sourceName, sourceValue,
+                    suppressExceptions);
 
             if (wrote)
             {
@@ -359,7 +425,7 @@ public class BeanManipulator
     }
 
     private boolean writeProperty(Object bean, String propertyName,
-            Object propertyValue)
+            Object propertyValue, boolean suppressExceptions)
     {
         String[] propertyTokens = propertyName.split("\\.");
 
@@ -370,11 +436,12 @@ public class BeanManipulator
             return false;
         }
 
-        return writeProperty(propertyTokens, 0, bean, propertyValue);
+        return writeProperty(propertyTokens, 0, bean, propertyValue,
+                suppressExceptions);
     }
 
     private boolean writeProperty(String[] propertyTokens, int tokenIndex,
-            Object bean, Object value)
+            Object bean, Object value, boolean suppressExceptions)
     {
         String propertyName = propertyTokens[tokenIndex];
 
@@ -393,12 +460,12 @@ public class BeanManipulator
 
         if (1 == propertyTokens.length - tokenIndex)
         {
-            return manipulator.handleWrite(property, propertyName, bean, value);
+            return manipulator.handleWrite(property, propertyName, bean, value, suppressExceptions);
         }
         else
         {
             Object nestedBean = manipulator.handleRead(property, propertyName,
-                    bean);
+                    bean, suppressExceptions);
 
             if (null == nestedBean)
             {
@@ -409,12 +476,12 @@ public class BeanManipulator
 
             // recurse on the nested property
             return writeProperty(propertyTokens, tokenIndex + 1, nestedBean,
-                    value);
+                    value, suppressExceptions);
         }
     }
 
     private void readProperty(PropertyDescriptor property, Object bean,
-            Map<String, Object> values)
+            Map<String, Object> values, boolean suppressExceptions)
     {
         // getClass, implemented in Object, always shows up as a property
         // with the generated BeanInfo, but should be ignored since it is
@@ -436,7 +503,7 @@ public class BeanManipulator
                 .getPropertyManipulator(PropertyDescriptor.class);
 
         Object value = manipulator.handleRead(property, property.getName(),
-                bean);
+                bean, suppressExceptions);
 
         if (null != value)
         {

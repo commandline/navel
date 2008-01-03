@@ -72,7 +72,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
      */
     @Override
     public boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value)
+            String propertyName, Object bean, Object value, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -99,7 +99,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         Method writeMethod = indexedProperty.getIndexedWriteMethod();
         return invokeWriteMethod(writeMethod, bean, new Object[]
-        { Integer.valueOf(index), value });
+        { Integer.valueOf(index), value }, suppressExceptions);
     }
 
     /**
@@ -118,7 +118,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
      */
     @Override
     public Object handleRead(PropertyDescriptor property, String propertyName,
-            Object bean)
+            Object bean, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -152,7 +152,7 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
 
         Method readMethod = indexedProperty.getIndexedReadMethod();
         return invokeReadMethod(readMethod, bean, new Object[]
-        { Integer.valueOf(index) });
+        { Integer.valueOf(index) }, suppressExceptions);
     }
 
     static int getIndex(String propertyName)
