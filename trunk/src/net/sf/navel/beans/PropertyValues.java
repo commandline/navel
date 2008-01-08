@@ -189,6 +189,11 @@ public class PropertyValues implements Serializable
      * not perform a deep copy, however, so be careful of de-referencing nested
      * values on elements of the copy.
      * 
+     * @param flatten
+     *            If true, the nested beans will be flattened, calculating new
+     *            keys in the flat return map that are valid dot-notation
+     *            expressions representing where the original values where in
+     *            the normalized storage graph.
      * @return A shallow copy of the internal values of this instance.
      */
     public Map<String, Object> copyValues(boolean flatten)
@@ -204,29 +209,29 @@ public class PropertyValues implements Serializable
     }
 
     /**
-     * Checks that the supplied property name is valid for the JavaBean's
-     * compile time property set, that the type matches or can be coerced, and
-     * adds the supplied value to internal storage.
+     * Checks that the supplied expression is valid for the JavaBean's compile
+     * time property set, that the type matches or can be coerced, and adds the
+     * supplied value to internal storage.
      * 
-     * @param propertyName
+     * @param dotExpression
      *            A property in the set of properties introspected when the
      *            associated Proxy and JavaBeanHandler were created by the
      *            ProxyFactory.
      * @param value
      *            Checked for type safety against the appropriate property.
      */
-    public void put(String propertyName, Object value)
+    public void put(String dotExpression, Object value)
     {
         checkImmutable();
 
         DotNotationExpression fullExpression = new DotNotationExpression(
-                propertyName);
+                dotExpression);
 
         putValue(fullExpression.getRoot(), value);
     }
 
     /**
-     * Forewards to the internal map, after resolving nested and list properties
+     * Forwards to the internal map, after resolving nested and list properties
      * and validating the new map. Will overwrite values at the same keys in the
      * internal storage.
      */
@@ -252,6 +257,20 @@ public class PropertyValues implements Serializable
         values.putAll(combined);
     }
 
+    /**
+     * Evaluates the supplied expression and returns the corresponding value, if
+     * there is one.
+     * 
+     * @param dotExpression
+     *            Property names chained with the dot (.) character, may also
+     *            use the bracket characters ([]) with an index value to
+     *            de-reference lists and arrays.
+     * @return Null if there is no corresponding value, otherwise the value
+     *         indicated by the expression.
+     * @throws InvalidExpressionException
+     *             If the dot expression doesn't parse with the given bean
+     *             interfaces.
+     */
     public Object get(String dotExpression)
     {
         DotNotationExpression fullExpression = new DotNotationExpression(
@@ -260,6 +279,20 @@ public class PropertyValues implements Serializable
         return getValue(this, fullExpression.getRoot());
     }
 
+    /**
+     * Figure out if the supplied expression refers to a valid entry in the
+     * underlying storage.
+     * 
+     * @param dotExpression
+     *            Property names chained with the dot (.) character, may also
+     *            use the bracket characters ([]) with an index value to
+     *            de-reference lists and arrays.
+     * @return True if an entry exists, even if its value is null, false if
+     *         there is no entry at all.
+     * @throws InvalidExpressionException
+     *             If the dot expression doesn't parse with the given bean
+     *             interfaces.
+     */
     public boolean containsKey(String dotExpression)
     {
         DotNotationExpression fullExpression = new DotNotationExpression(
@@ -268,6 +301,20 @@ public class PropertyValues implements Serializable
         return containsKey(fullExpression.getRoot());
     }
 
+    /**
+     * Evaluates the supplied expression and removes the corresponding value, if
+     * there is one.
+     * 
+     * @param dotExpression
+     *            Property names chained with the dot (.) character, may also
+     *            use the bracket characters ([]) with an index value to
+     *            de-reference lists and arrays.
+     * @return Null if nothing was removed, otherwise the value indicated by the
+     *         expression.
+     * @throws InvalidExpressionException
+     *             If the dot expression doesn't parse with the given bean
+     *             interfaces.
+     */
     public Object remove(String property)
     {
         checkImmutable();
@@ -275,6 +322,9 @@ public class PropertyValues implements Serializable
         return values.remove(property);
     }
 
+    /**
+     * Clears all of the internal storage entries.
+     */
     public void clear()
     {
         checkImmutable();
@@ -282,6 +332,10 @@ public class PropertyValues implements Serializable
         values.clear();
     }
 
+    /**
+     * @return Whether calls that would affect the state of this instance will
+     *         throw unchecked exceptions.
+     */
     public boolean isImmutable()
     {
         return immutable;
