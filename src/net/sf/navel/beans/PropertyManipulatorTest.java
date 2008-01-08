@@ -119,13 +119,13 @@ public class PropertyManipulatorTest
         Assert.assertTrue(
                 handler.propertyValues.isPropertyOf("nested.boolean"),
                 "Nested property should pass.");
-        
+
         nested.setNested(ProxyFactory.createAs(TypesBean.class));
 
         Assert.assertTrue(
                 handler.propertyValues.isPropertyOf("nested.boolean"),
                 "Nested property after empty set should pass.");
-        
+
         nested.getNested().setBoolean(true);
 
         Assert.assertTrue(
@@ -236,8 +236,8 @@ public class PropertyManipulatorTest
 
         Assert.assertEquals(PropertyManipulator.get(indexedBean, "types[0]"),
                 typesBean, "Should get types bean at index.");
-        Assert.assertEquals(PropertyManipulator.get(indexedBean,
-                "types[0].boolean"), false, "Should get uninitialized value.");
+        Assert.assertNull(PropertyManipulator.get(indexedBean,
+                "types[0].boolean"), "Should get null value.");
 
         typesBean.setBoolean(true);
 
@@ -284,8 +284,8 @@ public class PropertyManipulatorTest
         PropertyManipulator.clear(typesBean, "boolean");
         nested.setNested(typesBean);
 
-        Assert.assertEquals(PropertyManipulator.get(nested, "nested.boolean"),
-                false, "Nested boolean should have uninitialized value.");
+        Assert.assertNull(PropertyManipulator.get(nested, "nested.boolean"),
+                "Nested boolean should have uninitialized value.");
 
         nested.getNested().setBoolean(true);
 
@@ -325,37 +325,42 @@ public class PropertyManipulatorTest
                     "Should have fully populated bean still in the map.");
         }
     }
-    
+
     @Test
     public void testDeepNesting()
     {
         AncestorBean ancestor = ProxyFactory.createAs(AncestorBean.class);
-        
+
         ancestor.setName("foo bar baz");
-        
+
         ancestor.setChild(ProxyFactory.createAs(NestedBean.class));
-        
+
         ancestor.getChild().setBoolean(false);
         ancestor.getChild().setCharacter('z');
         ancestor.getChild().setInteger(99);
-        
+
         ancestor.getChild().setNested(ProxyFactory.createAs(TypesBean.class));
-        
+
         ancestor.getChild().getNested().setBoolean(true);
         ancestor.getChild().getNested().setCharacter('q');
         ancestor.getChild().getNested().setInteger(100);
-        
-        Map<String, Object> values = PropertyManipulator.copyAll(ancestor, true);
-        
-        Assert.assertEquals(values.size(), 7, "Should have fully flattened out.");
+
+        Map<String, Object> values = PropertyManipulator
+                .copyAll(ancestor, true);
+
+        Assert.assertEquals(values.size(), 7,
+                "Should have fully flattened out.");
         Assert.assertEquals(values.get("name"), "foo bar baz");
         Assert.assertEquals(values.get("child.boolean"), Boolean.FALSE);
-        Assert.assertEquals(values.get("child.character"), Character.valueOf('z'));
+        Assert.assertEquals(values.get("child.character"), Character
+                .valueOf('z'));
         Assert.assertEquals(values.get("child.integer"), Integer.valueOf(99));
         Assert.assertEquals(values.get("child.nested.boolean"), Boolean.TRUE);
-        Assert.assertEquals(values.get("child.nested.character"), Character.valueOf('q'));
-        Assert.assertEquals(values.get("child.nested.integer"), Integer.valueOf(100));
-}
+        Assert.assertEquals(values.get("child.nested.character"), Character
+                .valueOf('q'));
+        Assert.assertEquals(values.get("child.nested.integer"), Integer
+                .valueOf(100));
+    }
 
     @DataProvider(name = "copyAll")
     public Object[][] createData()

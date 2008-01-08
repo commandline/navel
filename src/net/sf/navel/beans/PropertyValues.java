@@ -36,6 +36,7 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -259,7 +260,10 @@ public class PropertyValues implements Serializable
 
     public Object get(String propertyName)
     {
-        return values.get(propertyName);
+        DotNotationExpression fullExpression = new DotNotationExpression(
+                propertyName);
+
+        return getInternal(this, fullExpression.getRoot());
     }
 
     public boolean containsKey(String property)
@@ -286,33 +290,9 @@ public class PropertyValues implements Serializable
         return immutable;
     }
 
-    PropertyDelegate<?> getPropertyDelegate(String propertyName)
-    {
-        return propertyDelegates.get(propertyName);
-    }
-
-    boolean isPropertyOf(String propertyName)
-    {
-        return isPropertyOf(this, propertyName);
-    }
-
-    static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
-    {
-        Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
-
-        for (PropertyDescriptor propertyDescriptor : beanInfo
-                .getPropertyDescriptors())
-        {
-            byNames.put(propertyDescriptor.getName(), propertyDescriptor);
-        }
-
-        return byNames;
-    }
-
     /**
      * @see java.lang.Object#equals(java.lang.Object)
      */
-
     @Override
     public boolean equals(Object obj)
     {
@@ -356,6 +336,29 @@ public class PropertyValues implements Serializable
     public String toString()
     {
         return filteredToString(Collections.EMPTY_SET);
+    }
+
+    static final Map<String, PropertyDescriptor> mapProperties(BeanInfo beanInfo)
+    {
+        Map<String, PropertyDescriptor> byNames = new HashMap<String, PropertyDescriptor>();
+
+        for (PropertyDescriptor propertyDescriptor : beanInfo
+                .getPropertyDescriptors())
+        {
+            byNames.put(propertyDescriptor.getName(), propertyDescriptor);
+        }
+
+        return byNames;
+    }
+
+    PropertyDelegate<?> getPropertyDelegate(String propertyName)
+    {
+        return propertyDelegates.get(propertyName);
+    }
+
+    boolean isPropertyOf(String propertyName)
+    {
+        return isPropertyOf(this, propertyName);
     }
 
     String filteredToString(Set<String> filterToString)
@@ -407,6 +410,11 @@ public class PropertyValues implements Serializable
     Object proxyToObject(String message, Method method, Object[] args)
     {
         return objectProxy.proxy(message, this, method, args);
+    }
+
+    boolean valuesEqual(PropertyValues propertyValues)
+    {
+        return this.values.equals(propertyValues.values);
     }
 
     private void checkImmutable()
@@ -635,8 +643,124 @@ public class PropertyValues implements Serializable
         }
     }
 
-    boolean valuesEqual(PropertyValues propertyValues)
+    private Object getInternal(PropertyValues propertyValues,
+            PropertyExpression currentExpression)
     {
-        return this.values.equals(propertyValues.values);
+        Object interimValue = propertyValues.values.get(currentExpression
+                .getPropertyName());
+
+        if (null == interimValue)
+        {
+            if (currentExpression.isIndexed())
+            {
+                throw new InvalidExpressionException(
+                        String
+                                .format(
+                                        "The expression, %1$s, requires a bracket evluation for the sub-expression, %2$s, but the value for that property is null.",
+                                        currentExpression.getFullExpression()
+                                                .getExpression(),
+                                        currentExpression.getExpression()));
+            }
+
+            return null;
+        }
+
+        if (currentExpression.isLeaf())
+        {
+            ProxyDescriptor proxyDescriptor = propertyValues
+                    .getProxyDescriptor();
+
+            PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
+                    .get(currentExpression.getPropertyName());
+
+            if (currentExpression.isIndexed())
+            {
+                return getInternalWithBracket(currentExpression, interimValue);
+            }
+            else
+            {
+                return interimValue;
+            }
+        }
+
+        if (currentExpression.isIndexed())
+        {
+            interimValue = getInternalWithBracket(currentExpression,
+                    interimValue);
+        }
+
+        JavaBeanHandler interimHandler = ProxyFactory.getHandler(interimValue);
+
+        if (null == interimHandler)
+        {
+            throw new InvalidExpressionException(String.format(
+                    "Cannot de-reference a non-Navel bean property, %1$s.",
+                    currentExpression.expressionToRoot()));
+        }
+        else
+        {
+            return getInternal(interimHandler.propertyValues, currentExpression
+                    .getChild());
+        }
+    }
+
+    private Object getInternalWithBracket(PropertyExpression expression,
+            Object value)
+    {
+        int index = expression.getIndex();
+
+        if (expression.getIndex() == -1)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, requires a valid index for the bracket operator.",
+                                    expression.expressionToRoot()));
+        }
+
+        if (value instanceof List)
+        {
+            List<?> listValue = (List<?>) value;
+
+            if (index >= listValue.size())
+            {
+                throw new InvalidExpressionException(
+                        String
+                                .format(
+                                        "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the List of size, %3$d.",
+                                        expression.expressionToRoot(), index,
+                                        listValue.size()));
+            }
+
+            return listValue.get(index);
+        }
+
+        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
+        {
+            return PrimitiveSupport.getElement(values, index);
+        }
+
+        if (!value.getClass().isArray())
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, requires a value of either a List or array type for the bracket operator.",
+                                    expression.expressionToRoot()));
+        }
+
+        Object[] arrayValue = (Object[]) value;
+
+        if (index >= arrayValue.length)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the array of length, %3$d.",
+                                    expression.expressionToRoot(), index,
+                                    arrayValue.length));
+        }
+
+        return arrayValue[index];
     }
 }
