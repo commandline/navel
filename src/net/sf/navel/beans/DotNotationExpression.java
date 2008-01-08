@@ -78,13 +78,13 @@ class PropertyExpression
 {
 
     private final DotNotationExpression fullExpression;
-    
-    private final String localExpression; 
-    
+
+    private final String localExpression;
+
     private final String expressionToLeaf;
-    
+
     private String expressionToRoot;
-    
+
     private final PropertyExpression parent;
 
     private final PropertyExpression child;
@@ -93,15 +93,16 @@ class PropertyExpression
 
     private final Integer elementIndex;
 
-    PropertyExpression(DotNotationExpression fullExpression, PropertyExpression parent, String toEvaluate)
+    PropertyExpression(DotNotationExpression fullExpression,
+            PropertyExpression parent, String toEvaluate)
     {
         this.expressionToLeaf = toEvaluate;
         this.fullExpression = fullExpression;
-        
+
         int dotIndex = toEvaluate.indexOf('.');
 
-        this.localExpression = -1 == dotIndex ? toEvaluate
-                : toEvaluate.substring(0, dotIndex);
+        this.localExpression = -1 == dotIndex ? toEvaluate : toEvaluate
+                .substring(0, dotIndex);
 
         if (-1 == dotIndex)
         {
@@ -111,18 +112,17 @@ class PropertyExpression
         {
             String remainingExpression = toEvaluate.substring(dotIndex + 1);
 
-            child = new PropertyExpression(fullExpression, this, remainingExpression);
+            child = new PropertyExpression(fullExpression, this,
+                    remainingExpression);
         }
 
         this.parent = parent;
 
-        if (localExpression.endsWith("]")
-                && localExpression.indexOf('[') != -1)
+        if (localExpression.endsWith("]") && localExpression.indexOf('[') != -1)
         {
             this.propertyName = localExpression.substring(0, toEvaluate
                     .indexOf('['));
-            this.elementIndex = IndexedPropertyManipulator
-                    .getIndex(toEvaluate);
+            this.elementIndex = IndexedPropertyManipulator.getIndex(toEvaluate);
         }
         else
         {
@@ -130,12 +130,12 @@ class PropertyExpression
             this.elementIndex = null;
         }
     }
-    
+
     DotNotationExpression getFullExpression()
     {
         return fullExpression;
     }
-    
+
     String getExpression()
     {
         return localExpression;
@@ -187,21 +187,108 @@ class PropertyExpression
         {
             return expressionToRoot;
         }
-        
+
         StringBuilder buffer = new StringBuilder();
-        
+
         for (PropertyExpression current = this; current != null; current = current.parent)
         {
             if (buffer.length() != 0)
             {
                 buffer.insert(0, '.');
             }
-            
+
             buffer.insert(0, current.getExpression());
         }
-        
+
         this.expressionToRoot = buffer.toString();
-        
+
         return expressionToRoot;
+    }
+
+    void validateInstantiable(Class<?> propertyType)
+    {
+        if (null != propertyType && propertyType.isInterface())
+        {
+            return;
+        }
+
+        throw new InvalidPropertyValueException(
+                String
+                        .format(
+                                "Cannot create a nested bean of type, %1$s, for property, %2$s, to satisfy the expression, %3$s.",
+                                null == propertyType ? "null" : propertyType
+                                        .getName(), expressionToRoot(),
+                                getFullExpression().getExpression()));
+    }
+
+    void validateIndex()
+    {
+        if (getIndex() != -1)
+        {
+            return;
+        }
+
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The expression, %1$s, requires a valid index for the bracket operator.",
+                                expressionToRoot()));
+    }
+
+    void validateListBounds(int size)
+    {
+        if (getIndex() < size)
+        {
+            return;
+        }
+
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the List of size, %3$d.",
+                                expressionToRoot(), getIndex(), size));
+    }
+
+    void validateArray(Object value)
+    {
+        if (value.getClass().isArray())
+        {
+            return;
+        }
+
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The expression, %1$s, requires a value of either a List or array type for the bracket operator.",
+                                expressionToRoot()));
+    }
+
+    void validateArrayBounds(int length)
+    {
+        if (getIndex() < length)
+        {
+            return;
+        }
+
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the array of length, %3$d.",
+                                expressionToRoot(), getIndex(), length));
+    }
+
+    public void validateInterimForIndexed(Object interimValue)
+    {
+        if (null != interimValue || !isIndexed())
+        {
+            return;
+        }
+        
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The expression, %1$s, requires a bracket evaluation for the sub-expression, %2$s, but the value for that property is null.",
+                                getFullExpression().getExpression(),
+                                getExpression()));
     }
 }
