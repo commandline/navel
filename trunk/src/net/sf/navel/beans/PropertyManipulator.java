@@ -74,8 +74,10 @@ public class PropertyManipulator
             throw new UnsupportedFeatureException(
                     "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
         }
+        
+        PropertyValues propertyValues = handler.propertyValues;
 
-        if (!handler.propertyValues.isPropertyOf(propertyName))
+        if (!propertyValues.isPropertyOf(propertyName))
         {
             throw new IllegalArgumentException(
                     String
@@ -84,8 +86,7 @@ public class PropertyManipulator
                                     propertyName, handler));
         }
 
-        return BeanManipulator.resolveValue(propertyName,
-                handler.propertyValues.copyValues(false));
+        return propertyValues.get(propertyName);
     }
 
     /**
