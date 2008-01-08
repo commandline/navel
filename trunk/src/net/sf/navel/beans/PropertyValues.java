@@ -219,16 +219,10 @@ public class PropertyValues implements Serializable
     {
         checkImmutable();
 
-        String[] propertyTokens = propertyName.split("\\.");
+        DotNotationExpression fullExpression = new DotNotationExpression(
+                propertyName);
 
-        if (0 == propertyTokens.length)
-        {
-            LOGGER.warn("Empty property name.");
-
-            return;
-        }
-
-        putValue(this, propertyTokens, 0, value);
+        putValue(this, fullExpression.getRoot(), value);
     }
 
     /**
@@ -263,11 +257,14 @@ public class PropertyValues implements Serializable
         DotNotationExpression fullExpression = new DotNotationExpression(
                 propertyName);
 
-        return getInternal(this, fullExpression.getRoot());
+        return getValue(this, fullExpression.getRoot());
     }
 
     public boolean containsKey(String property)
     {
+        DotNotationExpression fullExpression = new DotNotationExpression(
+                property);
+
         return containsKey(this, property);
     }
 
@@ -428,20 +425,10 @@ public class PropertyValues implements Serializable
                 "This bean is immutable.  It was created with ProxyFactory.unmodifiableObject(), use ProxyFactory.copy() to create a copy safe to modify.");
     }
 
-    private void putValue(PropertyValues propertyValues,
-            String[] propertyTokens, int tokenIndex, Object propertyValue)
+    private boolean putValue(PropertyValues propertyValues,
+            PropertyExpression expression, Object propertyValue)
     {
-        String propertyName = propertyTokens[tokenIndex];
-        String originalName = propertyName;
-
-        boolean indexedProperty = false;
-
-        if (propertyName.endsWith("]") && propertyName.indexOf('[') != -1)
-        {
-            propertyName = propertyName.substring(0, propertyName.indexOf('['));
-
-            indexedProperty = true;
-        }
+        String propertyName = expression.getPropertyName();
 
         PropertyDescriptor propertyDescriptor = propertyValues.proxyDescriptor.propertyDescriptors
                 .get(propertyName);
@@ -451,17 +438,16 @@ public class PropertyValues implements Serializable
             throw new InvalidPropertyValueException(
                     String
                             .format(
-                                    "No property descriptor for property name, %1$s, on proxy, %2$s.",
+                                    "Cannot validate put, no property descriptor for property name, %1$s, on proxy, %2$s.",
                                     propertyName, proxyDescriptor));
         }
 
-        if (1 == propertyTokens.length - tokenIndex)
+        if (expression.isLeaf())
         {
-            if (indexedProperty)
+            if (expression.isIndexed())
             {
-                IndexedPropertyManipulator.putIndexed(propertyValues.values,
-                        originalName, propertyName, propertyDescriptor,
-                        propertyValue);
+                putValueWithBracket(propertyValues.get(propertyName),
+                        expression, propertyValue);
             }
             else
             {
@@ -471,37 +457,41 @@ public class PropertyValues implements Serializable
                 propertyValues.values.put(propertyName, propertyValue);
             }
 
-            return;
+            return true;
         }
 
         Class<?> propertyType = propertyDescriptor.getPropertyType();
 
-        Object nestedBean = null;
+        Object interimValue = propertyValues.values.get(propertyName);
 
-        if (indexedProperty)
+        if (expression.isIndexed())
         {
-            nestedBean = IndexedPropertyManipulator.getIndexed(
-                    propertyValues.values, originalName, propertyName,
-                    propertyDescriptor, true);
-        }
-        else
-        {
-            nestedBean = propertyValues.values.get(propertyName);
-        }
-
-        if (null == nestedBean)
-        {
-            nestedBean = ProxyFactory.create(propertyType);
-
-            if (null == nestedBean)
+            Object elementValue = getValueWithBracket(expression, interimValue);
+            
+            if (null == elementValue)
             {
-                return;
+                Class<?> elementType = getAppropriateBracketType(propertyDescriptor);
+                
+                assertInstantiable(expression, elementType);
+                
+                elementValue = ProxyFactory.create(elementType);
+                
+                putValueWithBracket(interimValue,
+                        expression, elementValue);
             }
+            
+            interimValue = elementValue;
         }
 
-        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(nestedBean);
+        if (null == interimValue)
+        {
+            assertInstantiable(expression, propertyType);
 
-        // IMPROVE consider using BeanManipulator to attempt population
+            interimValue = ProxyFactory.create(propertyType);
+        }
+
+        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(interimValue);
+
         if (null == nestedHandler)
         {
             LOGGER
@@ -509,12 +499,93 @@ public class PropertyValues implements Serializable
                             .format(
                                     "Nested property, %1$s, must currently be an interface to allow full de-reference.  Was of type, %2$s.",
                                     propertyName, propertyType.getName()));
-            return;
+            return false;
         }
 
         // recurse on the nested property
-        putValue(nestedHandler.propertyValues, propertyTokens, tokenIndex + 1,
+        return putValue(nestedHandler.propertyValues, expression.getChild(),
                 propertyValue);
+    }
+
+    private void assertInstantiable(PropertyExpression expression, Class<?> propertyType)
+    {
+        if (null == propertyType || !propertyType.isInterface())
+        {
+            throw new InvalidPropertyValueException(
+                    String
+                            .format(
+                                    "Cannot create a nested bean of type, %1$s, for property, %2$s, to satisfy the expression, %3%s.",
+                                    null == propertyType ? "null"
+                                            : propertyType.getName(),
+                                    expression.expressionToRoot(),
+                                    expression.getFullExpression()
+                                            .getExpression()));
+        }
+    }
+
+    private Class<?> getAppropriateBracketType(
+            PropertyDescriptor propertyDescriptor)
+    {
+        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
+        {
+            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
+
+            return indexedPropertyDescriptor.getIndexedPropertyType();
+        }
+
+        CollectionType collectionType = propertyDescriptor.getReadMethod()
+                .getAnnotation(CollectionType.class);
+
+        if (null == collectionType)
+        {
+            return null;
+        }
+
+        return collectionType.value();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void putValueWithBracket(Object value,
+            PropertyExpression expression, Object propertyValue)
+    {
+        if (null == value)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, requires either a valid List or a valid array for the bracket operator.",
+                                    expression.expressionToRoot()));
+        }
+
+        validateIndex(expression);
+
+        int index = expression.getIndex();
+
+        if (value instanceof List)
+        {
+            List<Object> listValue = (List<Object>) value;
+
+            validateListBounds(expression, listValue.size());
+
+            listValue.set(index, propertyValue);
+
+            return;
+        }
+
+        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
+        {
+            PrimitiveSupport.setElement(value, index, propertyValue);
+            
+            return;
+        }
+
+        validateArray(expression, value);
+
+        Object[] arrayValue = (Object[]) value;
+
+        validateArrayBounds(expression, arrayValue.length);
+
+        arrayValue[index] = propertyValue;
     }
 
     private boolean isPropertyOf(PropertyValues propertyValues,
@@ -643,7 +714,7 @@ public class PropertyValues implements Serializable
         }
     }
 
-    private Object getInternal(PropertyValues propertyValues,
+    private Object getValue(PropertyValues propertyValues,
             PropertyExpression currentExpression)
     {
         Object interimValue = propertyValues.values.get(currentExpression
@@ -667,15 +738,9 @@ public class PropertyValues implements Serializable
 
         if (currentExpression.isLeaf())
         {
-            ProxyDescriptor proxyDescriptor = propertyValues
-                    .getProxyDescriptor();
-
-            PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
-                    .get(currentExpression.getPropertyName());
-
             if (currentExpression.isIndexed())
             {
-                return getInternalWithBracket(currentExpression, interimValue);
+                return getValueWithBracket(currentExpression, interimValue);
             }
             else
             {
@@ -685,8 +750,7 @@ public class PropertyValues implements Serializable
 
         if (currentExpression.isIndexed())
         {
-            interimValue = getInternalWithBracket(currentExpression,
-                    interimValue);
+            interimValue = getValueWithBracket(currentExpression, interimValue);
         }
 
         JavaBeanHandler interimHandler = ProxyFactory.getHandler(interimValue);
@@ -699,38 +763,23 @@ public class PropertyValues implements Serializable
         }
         else
         {
-            return getInternal(interimHandler.propertyValues, currentExpression
+            return getValue(interimHandler.propertyValues, currentExpression
                     .getChild());
         }
     }
 
-    private Object getInternalWithBracket(PropertyExpression expression,
+    private Object getValueWithBracket(PropertyExpression expression,
             Object value)
     {
         int index = expression.getIndex();
 
-        if (expression.getIndex() == -1)
-        {
-            throw new InvalidExpressionException(
-                    String
-                            .format(
-                                    "The expression, %1$s, requires a valid index for the bracket operator.",
-                                    expression.expressionToRoot()));
-        }
+        validateIndex(expression);
 
         if (value instanceof List)
         {
             List<?> listValue = (List<?>) value;
 
-            if (index >= listValue.size())
-            {
-                throw new InvalidExpressionException(
-                        String
-                                .format(
-                                        "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the List of size, %3$d.",
-                                        expression.expressionToRoot(), index,
-                                        listValue.size()));
-            }
+            validateListBounds(expression, listValue.size());
 
             return listValue.get(index);
         }
@@ -740,6 +789,42 @@ public class PropertyValues implements Serializable
             return PrimitiveSupport.getElement(values, index);
         }
 
+        validateArray(expression, value);
+
+        Object[] arrayValue = (Object[]) value;
+
+        validateArrayBounds(expression, arrayValue.length);
+
+        return arrayValue[index];
+    }
+
+    private void validateIndex(PropertyExpression expression)
+    {
+        if (expression.getIndex() == -1)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, requires a valid index for the bracket operator.",
+                                    expression.expressionToRoot()));
+        }
+    }
+
+    private void validateListBounds(PropertyExpression expression, int size)
+    {
+        if (expression.getIndex() >= size)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the List of size, %3$d.",
+                                    expression.expressionToRoot(), expression
+                                            .getIndex(), size));
+        }
+    }
+
+    private void validateArray(PropertyExpression expression, Object value)
+    {
         if (!value.getClass().isArray())
         {
             throw new InvalidExpressionException(
@@ -748,19 +833,18 @@ public class PropertyValues implements Serializable
                                     "The expression, %1$s, requires a value of either a List or array type for the bracket operator.",
                                     expression.expressionToRoot()));
         }
+    }
 
-        Object[] arrayValue = (Object[]) value;
-
-        if (index >= arrayValue.length)
+    private void validateArrayBounds(PropertyExpression expression, int length)
+    {
+        if (expression.getIndex() >= length)
         {
             throw new InvalidExpressionException(
                     String
                             .format(
                                     "The expression, %1$s, uses an index, %2$d, for the bracket operator that would fall out of bounds for the array of length, %3$d.",
-                                    expression.expressionToRoot(), index,
-                                    arrayValue.length));
+                                    expression.expressionToRoot(), expression
+                                            .getIndex(), length));
         }
-
-        return arrayValue[index];
     }
 }
