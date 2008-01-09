@@ -151,7 +151,7 @@ class PropertyExpression
         {
             this.propertyName = localExpression.substring(0, toEvaluate
                     .indexOf('['));
-            this.elementIndex = IndexedPropertyManipulator.getIndex(toEvaluate);
+            this.elementIndex = ReflectionIndexedManipulator.getIndex(toEvaluate);
         }
         else
         {

@@ -48,11 +48,11 @@ import org.testng.annotations.Test;
  * @author thomas
  * 
  */
-public class ListBuilderTest
+public class InitialValuesListBuilderTest
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(ListBuilderTest.class);
+            .getLogger(InitialValuesListBuilderTest.class);
 
     /*
      * Test method for 'net.sf.navel.beans.ListBuilder.filter(Class<?>, Map<String,
@@ -79,7 +79,7 @@ public class ListBuilderTest
         Map<String, PropertyDescriptor> properties = PropertyValues
                 .mapProperties(beanInfo);
 
-        ListBuilder.filter(properties, filteredValues);
+        InitialValuesListBuilder.filter(properties, filteredValues);
 
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
                 .get("typesList");

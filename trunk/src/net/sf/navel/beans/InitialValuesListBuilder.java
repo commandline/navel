@@ -51,15 +51,15 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-class ListBuilder
+class InitialValuesListBuilder
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(ListBuilder.class);
+            .getLogger(InitialValuesListBuilder.class);
 
-    private static final ListBuilder SINGLETON = new ListBuilder();
+    private static final InitialValuesListBuilder SINGLETON = new InitialValuesListBuilder();
 
-    private ListBuilder()
+    private InitialValuesListBuilder()
     {
         // enforce Singleton pattern
     }
@@ -91,7 +91,7 @@ class ListBuilder
         // find the element types for any List properties, does so by
         // looking for methods with the same name as the List accessor but
         // that also accept an int or Integer argument
-        Map<String, Class<?>> elementTypes = ListPropertySupport
+        Map<String, Class<?>> elementTypes = InitialValuesListTypeSupport
                 .introspectListTypes(properties);
 
         Set<String> toExpand = new HashSet<String>();

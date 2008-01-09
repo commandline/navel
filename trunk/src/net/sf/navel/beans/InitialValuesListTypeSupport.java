@@ -37,17 +37,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Utility class to aid introspecting List typed properties.
+ * Utility class to aid introspecting List typed properties, used exclusively by
+ * {@link InitialValuesListBuilder}.
  * 
  * @author cmdln
  * 
  */
-class ListPropertySupport
+class InitialValuesListTypeSupport
 {
 
-    private static final ListPropertySupport SINGLETON = new ListPropertySupport();
+    private static final InitialValuesListTypeSupport SINGLETON = new InitialValuesListTypeSupport();
 
-    private ListPropertySupport()
+    private InitialValuesListTypeSupport()
     {
         // enforce Singleton pattern
     }

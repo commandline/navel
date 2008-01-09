@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * @author thomas
  * 
  */
-public class SimplePropertyManipulatorTest
+public class ReflectionSimpleManipulatorTest
 {
 
     @Test
