@@ -200,7 +200,7 @@ public class PropertyValues implements Serializable
 
         if (flatten)
         {
-            BeanManipulator.expandNestedBeans(copy);
+            PropertyValuesExpander.expand(copy);
         }
 
         return copy;
@@ -308,7 +308,7 @@ public class PropertyValues implements Serializable
     {
         checkImmutable();
 
-        // TODO enhance to evaluation do expression
+        // TODO enhance to evaluation dot expression
         return values.remove(property);
     }
 
@@ -457,17 +457,17 @@ public class PropertyValues implements Serializable
     {
         return this.values.equals(propertyValues.values);
     }
-    
+
     void putInternal(String property, Object value)
     {
         values.put(property, value);
     }
-    
+
     Object getInternal(String property)
     {
         return values.get(property);
     }
-    
+
     boolean containsKeyInternal(String property)
     {
         return values.containsKey(property);
