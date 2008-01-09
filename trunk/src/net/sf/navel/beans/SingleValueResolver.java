@@ -37,6 +37,10 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 /**
+ * This class supports all of the dynamic accesses and manipulations to
+ * {@link PropertyValues}, including evaluating and de-reference the provided
+ * dot-notation property path expressions.
+ * 
  * @author cmdln
  * 
  */
