@@ -47,11 +47,11 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class PropertyValueResolverTest
+public class InitialValuesResolverTest
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(PropertyValueResolverTest.class);
+            .getLogger(InitialValuesResolverTest.class);
 
     /**
      * @see junit.framework.TestCase#setUp()

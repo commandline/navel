@@ -113,7 +113,7 @@ public class ProxyFactory
                     "Cannot register a null NestedResolver.");
         }
 
-        PropertyValueResolver.register(resolver);
+        InitialValuesResolver.register(resolver);
     }
 
     /**
