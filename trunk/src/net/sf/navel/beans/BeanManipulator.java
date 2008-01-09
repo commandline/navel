@@ -30,6 +30,7 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
+import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -47,7 +48,8 @@ import org.apache.log4j.Logger;
  * 
  * Navel and JavaBeans are treated equally with no special handling of unset
  * properties or entries in the Map that do not match any available properties.
- * For more strict treatment of just Navel beans, use the PropertyManipulator.
+ * For more strict treatment of just Navel beans, use the
+ * {@link PropertyManipulator}.
  * 
  * @author cmdln
  */
@@ -80,7 +82,8 @@ public class BeanManipulator
      * class methods
      *----------------------------------------*/
     /**
-     * Overload that assumes false for the resolve nested argument and true for suppressExceptions.
+     * Overload that assumes false for the resolve nested argument and true for
+     * suppressExceptions.
      * 
      * @param bean
      *            JavaBean to extract from.
@@ -90,7 +93,7 @@ public class BeanManipulator
     {
         return SINGLETON.describeBean(bean, false, true);
     }
-    
+
     /**
      * Overload that assumes true for suppressExceptions.
      * 
@@ -102,7 +105,8 @@ public class BeanManipulator
      *            bean?
      * @return Map of extracted values, never null but may be empty.
      */
-    public static Map<String, Object> describe(Object bean, boolean flattenNested)
+    public static Map<String, Object> describe(Object bean,
+            boolean flattenNested)
     {
         return SINGLETON.describeBean(bean, flattenNested, true);
     }
@@ -233,9 +237,8 @@ public class BeanManipulator
      * Support method to help in dealing with introspection, reflection of
      * JavaBeans.
      * 
-     * @param beanType
-     *            Target bean type, be careful not to pass the <em>proxy</em>
-     *            type from a dynamic proxy backing a bean.
+     * @param bean
+     *            Target bean of any type.
      * @param propertyName
      *            Name of a property to check via introspection.
      * @return Whether the named property belongs to the bean class.
@@ -248,32 +251,54 @@ public class BeanManipulator
                     "Cannot check against a null reference!");
         }
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+        Class<?> beanType = bean.getClass();
 
-        if (null == handler)
-        {
-            Class<?> interfaceType = bean.getClass();
-
-            if (isPropertyOf(interfaceType, propertyName))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        return handler.propertyValues.isPropertyOf(propertyName);
+        return isPropertyOf(beanType, propertyName);
     }
 
-    public static boolean isPropertyOf(Class<?> interfaceType,
+    /**
+     * Support method to help in dealing with introspection, reflection of
+     * JavaBeans.
+     * 
+     * @param beanType
+     *            Target bean type, be careful not to pass the <em>proxy</em>
+     *            type from a dynamic proxy backing a bean.
+     * @param propertyName
+     *            Name of a property to check via introspection.
+     * @return Whether the named property belongs to the bean class.
+     */
+    public static boolean isPropertyOf(Class<?> beanType,
             String propertyName)
     {
-        int dotIndex = propertyName.indexOf('.');
+        return SINGLETON.isPropertyOfBean(beanType, new DotNotationExpression(propertyName).getRoot());
+    }
 
-        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
-                .substring(0, dotIndex);
+    static Class<?> getAppropriateBracketType(
+            PropertyDescriptor propertyDescriptor)
+    {
+        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
+        {
+            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
 
-        BeanInfo beanInfo = JavaBeanHandler.introspect(interfaceType);
+            return indexedPropertyDescriptor.getIndexedPropertyType();
+        }
+
+        CollectionType collectionType = propertyDescriptor.getReadMethod()
+                .getAnnotation(CollectionType.class);
+
+        if (null == collectionType)
+        {
+            return null;
+        }
+
+        return collectionType.value();
+    }
+    
+    private boolean isPropertyOfBean(Class<?> beanType, PropertyExpression expression)
+    {
+        String shallowProperty = expression.getExpression();
+
+        BeanInfo beanInfo = JavaBeanHandler.introspect(beanType);
 
         for (PropertyDescriptor propertyDescriptor : beanInfo
                 .getPropertyDescriptors())
@@ -286,14 +311,15 @@ public class BeanManipulator
             }
 
             // if this is a leafy property, we're done
-            if (-1 == dotIndex)
+            if (expression.isLeaf())
             {
                 return true;
             }
+            
+            Class<?> nestedType = expression.isIndexed() ? BeanManipulator.getAppropriateBracketType(propertyDescriptor) : propertyDescriptor.getPropertyType();
 
             // otherwise, recurse on the nested property
-            return isPropertyOf(propertyDescriptor.getPropertyType(),
-                    propertyName.substring(dotIndex + 1));
+            return isPropertyOfBean(nestedType, expression.getChild());
         }
 
         return false;
@@ -412,8 +438,8 @@ public class BeanManipulator
     {
         String propertyName = propertyTokens[tokenIndex];
 
-        PropertyDescriptor property = AbstractReflectionManipulator.findProperty(
-                bean.getClass(), propertyName);
+        PropertyDescriptor property = AbstractReflectionManipulator
+                .findProperty(bean.getClass(), propertyName);
 
         if (null == property)
         {
@@ -427,7 +453,8 @@ public class BeanManipulator
 
         if (1 == propertyTokens.length - tokenIndex)
         {
-            return manipulator.handleWrite(property, propertyName, bean, value, suppressExceptions);
+            return manipulator.handleWrite(property, propertyName, bean, value,
+                    suppressExceptions);
         }
         else
         {

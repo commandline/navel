@@ -125,14 +125,14 @@ public class BeanManipulatorTest
 
         populate(bean, values);
 
-        Assert.assertEquals(bean.getReadOnly(), 1, 
+        Assert.assertEquals(bean.getReadOnly(), 1,
                 "Bean read only should be set.");
         values = ProxyFactory.getHandler(bean).propertyValues.copyValues(false);
         LOGGER.debug(values);
         Assert.assertNotNull(values.get(PropertyNames.WO_PROP),
                 "Bean write only should be set.");
-        Assert.assertEquals(values.get(PropertyNames.WO_PROP), Integer.valueOf(2),
-                "Bean write only should be set correctly.");
+        Assert.assertEquals(values.get(PropertyNames.WO_PROP), Integer
+                .valueOf(2), "Bean write only should be set correctly.");
         Assert.assertEquals(3, bean.getReadWrite(),
                 "bean read/write should be set.");
     }
@@ -165,11 +165,11 @@ public class BeanManipulatorTest
         Assert.assertNotNull(values, "Extracted values should be set.");
         Assert.assertEquals(values.get("foo"), Byte.valueOf(fooSource),
                 "Check source foo.");
-        Assert.assertEquals(values.get("bar"),Short.valueOf(barSource), 
+        Assert.assertEquals(values.get("bar"), Short.valueOf(barSource),
                 "Check source bar.");
-        Assert.assertEquals(values.get("baz"),Integer.valueOf(bazSource), 
+        Assert.assertEquals(values.get("baz"), Integer.valueOf(bazSource),
                 "Check source baz.");
-        Assert.assertEquals(values.get("quux"),Float.valueOf(quuxSource), 
+        Assert.assertEquals(values.get("quux"), Float.valueOf(quuxSource),
                 "Check source quux.");
 
         TargetBean targetBean = new TargetBean();
@@ -231,7 +231,8 @@ public class BeanManipulatorTest
                 "Nested long should be set correctly.");
 
         LOGGER.debug(values);
-        LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues.copyValues(false));
+        LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues
+                .copyValues(false));
     }
 
     /**
@@ -361,12 +362,27 @@ public class BeanManipulatorTest
                 "boolean"), "Should correctly identify name as valid.");
         Assert.assertFalse(BeanManipulator.isPropertyOf(TypesBean.class,
                 "bolean"), "Should correctly identify name as invalid.");
+
         Assert
                 .assertTrue(BeanManipulator.isPropertyOf(NestedBean.class,
                         "nested.boolean"),
                         "Should correctly identify nested as valid.");
         Assert.assertFalse(BeanManipulator.isPropertyOf(NestedBean.class,
                 "nested.bolean"),
+                "Should correctly identify nested as invalid.");
+
+        Object bean = ProxyFactory.create(TypesBean.class);
+
+        Assert.assertTrue(BeanManipulator.isPropertyOf(bean, "boolean"),
+                "Should correctly identify name as valid.");
+        Assert.assertFalse(BeanManipulator.isPropertyOf(bean, "bolean"),
+                "Should correctly identify name as invalid.");
+
+        bean = ProxyFactory.create(NestedBean.class);
+
+        Assert.assertTrue(BeanManipulator.isPropertyOf(bean, "nested.boolean"),
+                "Should correctly identify nested as valid.");
+        Assert.assertFalse(BeanManipulator.isPropertyOf(bean, "nested.bolean"),
                 "Should correctly identify nested as invalid.");
     }
 }
