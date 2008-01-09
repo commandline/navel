@@ -49,21 +49,21 @@ import org.apache.log4j.Logger;
  * @author cmdln
  * 
  */
-class PropertyValueResolver
+class InitialValuesResolver
 {
 
     private static final Logger LOGGER = Logger
-            .getLogger(PropertyValueResolver.class);
+            .getLogger(InitialValuesResolver.class);
 
-    private static final PropertyValueResolver SINGLETON = new PropertyValueResolver();
-    
+    private static final InitialValuesResolver SINGLETON = new InitialValuesResolver();
+
     private NestedResolver resolver = new DefaultNestedResolver();
 
-    private PropertyValueResolver()
+    private InitialValuesResolver()
     {
         // enforce Singleton pattern
     }
-    
+
     static void register(NestedResolver resolver)
     {
         SINGLETON.resolver = resolver;
@@ -78,8 +78,9 @@ class PropertyValueResolver
     {
         SINGLETON.resolveAll(properties, values);
     }
-    
-    static void resolveNested(Object nestedBean, Map<String,Object> nestedValues)
+
+    static void resolveNested(Object nestedBean,
+            Map<String, Object> nestedValues)
     {
         SINGLETON.resolver.resolve(nestedBean, nestedValues);
     }
@@ -112,24 +113,30 @@ class PropertyValueResolver
         {
             Entry<String, Object> entry = entryIter.next();
 
-            String name = entry.getKey();
+            DotNotationExpression fullExpression = new DotNotationExpression(
+                    entry.getKey());
 
             if (LOGGER.isTraceEnabled())
             {
-                LOGGER.trace("Working on " + name + ".");
+                LOGGER.trace(String.format(
+                        "Working on property expression, %1$s.", fullExpression
+                                .getExpression()));
             }
 
-            if (name.indexOf('.') < 0)
+            if (fullExpression.getRoot().isLeaf())
             {
                 if (LOGGER.isTraceEnabled())
                 {
-                    LOGGER.trace("Flat property, " + name + ", continuing.");
+                    LOGGER.trace(String.format(
+                            "Flat property expression, %1$s, continuing.",
+                            fullExpression.getExpression()));
                 }
 
                 continue;
             }
 
-            resolveSingleNested(name, entry.getValue(), collapsed, toRemove);
+            resolveSingleNested(fullExpression, entry.getValue(), collapsed,
+                    toRemove);
         }
 
         // this should only remove nested names, like foo.bar
@@ -141,15 +148,14 @@ class PropertyValueResolver
     }
 
     @SuppressWarnings("unchecked")
-    private void resolveSingleNested(String name, Object value,
-            Map<String, Object> collapsed, Set<String> toRemove)
+    private void resolveSingleNested(DotNotationExpression fullExpression,
+            Object value, Map<String, Object> collapsed, Set<String> toRemove)
             throws InvalidPropertyValueException
     {
-        int dotIndex = name.indexOf('.');
+        String parentName = fullExpression.getRoot().getExpression();
 
-        String parentName = name.substring(0, dotIndex);
-
-        String nestedName = name.substring(dotIndex + 1);
+        String nestedName = fullExpression.getRoot().getChild()
+                .expressionToLeaf();
 
         Map<String, Object> nestedValues = null;
 
@@ -173,7 +179,7 @@ class PropertyValueResolver
                     value, nestedName, parentName));
         }
 
-        toRemove.add(name);
+        toRemove.add(fullExpression.getExpression());
     }
 
     @SuppressWarnings("unchecked")
@@ -262,7 +268,7 @@ class PropertyValueResolver
         }
         else
         {
-            PropertyValueResolver.resolveNested(nestedValue, values);
+            InitialValuesResolver.resolveNested(nestedValue, values);
         }
 
         return nestedValue;

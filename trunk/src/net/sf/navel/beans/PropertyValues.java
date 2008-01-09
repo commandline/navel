@@ -88,7 +88,7 @@ public class PropertyValues implements Serializable
         // this cleans up nested values, if it hits a Navel bean as a nested
         // property it will try to re-use or instantiate as appropriate,
         // including validating the nested bean
-        PropertyValueResolver.resolve(proxyDescriptor.propertyDescriptors,
+        InitialValuesResolver.resolve(proxyDescriptor.propertyDescriptors,
                 initialCopy);
 
         // only validates the direct properties of this bean, but the step above
@@ -244,7 +244,7 @@ public class PropertyValues implements Serializable
         Map<String, Object> combined = new HashMap<String, Object>(values);
         combined.putAll(newValues);
 
-        PropertyValueResolver.resolve(proxyDescriptor.propertyDescriptors,
+        InitialValuesResolver.resolve(proxyDescriptor.propertyDescriptors,
                 combined);
 
         // depends on resolution taking care of lists, not presently possible to

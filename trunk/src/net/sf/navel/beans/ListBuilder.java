@@ -330,7 +330,7 @@ class ListBuilder
             {
                 Object elementValue = ProxyFactory.create(rawValues, null, new Class<?>[] { elementType });
                 
-                PropertyValueResolver.resolveNested(elementValue, rawValues);
+                InitialValuesResolver.resolveNested(elementValue, rawValues);
 
                 return elementValue;
             }
