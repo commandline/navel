@@ -29,7 +29,17 @@
  */
 package net.sf.navel.beans;
 
+import java.util.List;
+
 /**
+ * Encapsulates the parse tree generated from a dot-notation expression. This is
+ * the chaining of coventional property names, per the JavaBeans spec, with dots
+ * (.). It also supports the use of the bracket operator ([]) with or without an
+ * enclosed index to represent expressions meant to de-reference elements in
+ * {@link List} or array properties. This code is useful to all of the access
+ * and manipulate logic that needs to consume an arbitrary expression and
+ * reflect over or traverse a bean graph.
+ * 
  * @author cmdln
  * 
  */
@@ -58,22 +68,41 @@ class DotNotationExpression
         this.depth = countingDepth;
     }
 
+    /**
+     * @return The original expression that was parsed to build this instance.
+     */
     String getExpression()
     {
         return expression;
     }
 
+    /**
+     * @return The root expression on the set of linked expressions that
+     *         describe how to traverse/evaluate the expression.
+     */
     PropertyExpression getRoot()
     {
         return rootExpression;
     }
 
+    /**
+     * @return The total number of de-references, exception for indexing, that
+     *         the expression represents.
+     */
     int getDepth()
     {
         return depth;
     }
 }
 
+/**
+ * Individual properties that make up the parse tree. All instances that compose
+ * and expression are linked together and maintain a reference to the total
+ * expression.
+ * 
+ * @author cmdln
+ * 
+ */
 class PropertyExpression
 {
 
@@ -131,56 +160,94 @@ class PropertyExpression
         }
     }
 
+    /**
+     * @return The total expression of which this instance is a part.
+     */
     DotNotationExpression getFullExpression()
     {
         return fullExpression;
     }
 
+    /**
+     * @return The part of the total expression this instance represents.
+     */
     String getExpression()
     {
         return localExpression;
     }
 
+    /**
+     * @return True if this is the root property in the total expression.
+     */
     boolean isRoot()
     {
         return null == parent;
     }
 
+    /**
+     * @return Null if {@link #isRoot()} returns true, otherwise, the parent
+     *         property that needs to be de-referenced to get to this instance.
+     */
     PropertyExpression getParent()
     {
         return parent;
     }
 
+    /**
+     * @return True if this is the leaf property in the total expression.
+     */
     boolean isLeaf()
     {
         return null == child;
     }
 
+    /**
+     * @return Null if {@link #isChild()} returns true, otherwise, the child
+     *         property that can be de-reference from this one.
+     */
     PropertyExpression getChild()
     {
         return child;
     }
 
+    /**
+     * @return JavaBean complaint property name, the different between this and
+     *         the result of {@link #getExpression()} is that the other method
+     *         preserves the optional bracket operator and this will strip it.
+     */
     String getPropertyName()
     {
         return propertyName;
     }
 
+    /**
+     * @return True if {@link #getExpression()} contains a bracket operator.
+     */
     boolean isIndexed()
     {
         return elementIndex != null;
     }
 
+    /**
+     * @return -1 if {@link #isIndexed()} returns false or the bracket operator
+     *         is empty, otherwise the number value in the bracket operator.
+     */
     int getIndex()
     {
         return null == elementIndex ? -1 : (int) elementIndex;
     }
 
+    /**
+     * @return The sub-expression to the leaf end, inclusive of this instance.
+     */
     String expressionToLeaf()
     {
         return expressionToLeaf;
     }
 
+    /**
+     * @return The sub-expression to the root end, inclusive of this instance.
+     */
     String expressionToRoot()
     {
         if (expressionToRoot != null)
@@ -205,22 +272,10 @@ class PropertyExpression
         return expressionToRoot;
     }
 
-    void validateInstantiable(Class<?> propertyType)
-    {
-        if (null != propertyType && propertyType.isInterface())
-        {
-            return;
-        }
-
-        throw new InvalidPropertyValueException(
-                String
-                        .format(
-                                "Cannot create a nested bean of type, %1$s, for property, %2$s, to satisfy the expression, %3$s.",
-                                null == propertyType ? "null" : propertyType
-                                        .getName(), expressionToRoot(),
-                                getFullExpression().getExpression()));
-    }
-
+    /**
+     * When performing an indexed access based on this expression, if the index
+     * value is invalid, throw an exception.
+     */
     void validateIndex()
     {
         if (getIndex() != -1)
@@ -235,6 +290,10 @@ class PropertyExpression
                                 expressionToRoot()));
     }
 
+    /**
+     * When performing an indexed access based on this expression, if the index
+     * value is invalid for the size, throw an exception.
+     */
     void validateListBounds(int size)
     {
         if (getIndex() < size)
@@ -249,6 +308,10 @@ class PropertyExpression
                                 expressionToRoot(), getIndex(), size));
     }
 
+    /**
+     * When performing an indexed access based on this expression, if the target
+     * value is not an array, throw an exception.
+     */
     void validateArray(Object value)
     {
         if (value.getClass().isArray())
@@ -263,6 +326,10 @@ class PropertyExpression
                                 expressionToRoot()));
     }
 
+    /**
+     * When performing an indexed access based on this expression, if the index
+     * value is invalid for the length, throw an exception.
+     */
     void validateArrayBounds(int length)
     {
         if (getIndex() < length)
@@ -277,13 +344,17 @@ class PropertyExpression
                                 expressionToRoot(), getIndex(), length));
     }
 
-    public void validateInterimForIndexed(Object interimValue)
+    /**
+     * When performing an indexed access based on this expression, if the target
+     * value is null and the expression is indexed, throw an exception.
+     */
+    void validateInterimForIndexed(Object interimValue)
     {
         if (null != interimValue || !isIndexed())
         {
             return;
         }
-        
+
         throw new InvalidExpressionException(
                 String
                         .format(
