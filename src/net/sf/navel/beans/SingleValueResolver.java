@@ -74,9 +74,10 @@ class SingleValueResolver
     }
 
     static boolean isPropertyOf(PropertyValues propertyValues,
-            String propertyName)
+            String propertyExpression)
     {
-        return SINGLETON.isPropertyOfValues(propertyValues, propertyName);
+        return SINGLETON.isPropertyOfValues(propertyValues.getProxyDescriptor(), 
+                new DotNotationExpression(propertyExpression).getRoot());
     }
 
     private boolean putValue(PropertyValues propertyValues,
@@ -162,27 +163,6 @@ class SingleValueResolver
                 propertyValue);
     }
 
-    private Class<?> getAppropriateBracketType(
-            PropertyDescriptor propertyDescriptor)
-    {
-        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
-        {
-            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
-
-            return indexedPropertyDescriptor.getIndexedPropertyType();
-        }
-
-        CollectionType collectionType = propertyDescriptor.getReadMethod()
-                .getAnnotation(CollectionType.class);
-
-        if (null == collectionType)
-        {
-            return null;
-        }
-
-        return collectionType.value();
-    }
-
     @SuppressWarnings("unchecked")
     private void putValueWithBracket(Object value,
             PropertyExpression expression, Object propertyValue)
@@ -225,119 +205,6 @@ class SingleValueResolver
         expression.validateArrayBounds(arrayValue.length);
 
         arrayValue[index] = propertyValue;
-    }
-
-    private boolean isPropertyOfValues(PropertyValues propertyValues,
-            final String propertyName)
-    {
-        ProxyDescriptor proxyDescriptor = propertyValues.getProxyDescriptor();
-
-        int dotIndex = propertyName.indexOf('.');
-
-        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
-                .substring(0, dotIndex);
-
-        boolean indexedProperty = false;
-
-        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
-        {
-            shallowProperty = propertyName.substring(0, propertyName
-                    .indexOf('['));
-
-            indexedProperty = true;
-        }
-
-        for (PropertyDescriptor propertyDescriptor : proxyDescriptor.propertyDescriptors
-                .values())
-        {
-            // keep going if this is not the property we are looking for or
-            // a parent property
-            if (!propertyDescriptor.getName().equals(shallowProperty))
-            {
-                continue;
-            }
-
-            // if this is a leafy property, we're done
-            if (-1 == dotIndex)
-            {
-                return true;
-            }
-
-            // otherwise, recurse on the nested property
-            if (indexedProperty)
-            {
-                if (!(propertyDescriptor instanceof IndexedPropertyDescriptor))
-                {
-                    return false;
-                }
-
-                IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
-
-                return BeanManipulator.isPropertyOf(indexedDescriptor
-                        .getIndexedPropertyType(), propertyName
-                        .substring(dotIndex + 1));
-            }
-
-            Object nestedValue = propertyValues.getInternal(shallowProperty);
-
-            JavaBeanHandler nestedHandler = ProxyFactory
-                    .getHandler(nestedValue);
-
-            if (null == nestedHandler)
-            {
-                return BeanManipulator.isPropertyOf(propertyDescriptor
-                        .getPropertyType(), propertyName
-                        .substring(dotIndex + 1));
-            }
-            else
-            {
-                return isPropertyOf(nestedHandler.propertyValues, propertyName
-                        .substring(dotIndex + 1));
-            }
-        }
-
-        return false;
-    }
-
-    private boolean valuesContainsKey(PropertyValues propertyValues,
-            PropertyExpression expression)
-    {
-        // if this is a leafy property, we're done
-        if (expression.isLeaf() && !expression.isIndexed())
-        {
-            return propertyValues.containsKeyInternal(expression
-                    .getPropertyName());
-        }
-
-        Object interimValue = propertyValues.getInternal(expression
-                .getPropertyName());
-
-        if (expression.isIndexed())
-        {
-            if (null == interimValue)
-            {
-                return false;
-            }
-
-            interimValue = getValueWithBracket(expression, interimValue);
-
-            if (expression.isLeaf())
-            {
-                return interimValue != null;
-            }
-        }
-
-        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(interimValue);
-
-        if (null == nestedHandler)
-        {
-            return false;
-        }
-        else
-        {
-            return valuesContainsKey(nestedHandler.propertyValues, expression
-                    .getChild());
-        }
     }
 
     private Object getValue(PropertyValues propertyValues,
@@ -408,5 +275,108 @@ class SingleValueResolver
         expression.validateArrayBounds(arrayValue.length);
 
         return arrayValue[index];
+    }
+    
+    private boolean isPropertyOfValues(ProxyDescriptor proxyDescriptor, PropertyExpression expression)
+    {
+        String shallowProperty = expression.getPropertyName();
+
+        boolean indexedProperty = expression.isIndexed();
+
+        for (PropertyDescriptor propertyDescriptor : proxyDescriptor.propertyDescriptors
+                .values())
+        {
+            // keep going if this is not the property we are looking for or
+            // a parent property
+            if (!propertyDescriptor.getName().equals(shallowProperty))
+            {
+                continue;
+            }
+
+            // if this is a leafy property, we're done
+            if (expression.isLeaf())
+            {
+                return true;
+            }
+            
+            Class<?> nextType = propertyDescriptor.getPropertyType();
+
+            // otherwise, dig out the more specific type for a list or array
+            if (indexedProperty)
+            {
+                nextType = getAppropriateBracketType(propertyDescriptor);
+                
+                if (null == nextType)
+                {
+                    return false;
+                }
+            }
+            
+            return isPropertyOfValues(new ProxyDescriptor(new Class<?>[] { nextType }), expression.getChild());
+        }
+
+        return false;
+    }
+
+    private boolean valuesContainsKey(PropertyValues propertyValues,
+            PropertyExpression expression)
+    {
+        // if this is a leafy property, we're done
+        if (expression.isLeaf() && !expression.isIndexed())
+        {
+            return propertyValues.containsKeyInternal(expression
+                    .getPropertyName());
+        }
+
+        Object interimValue = propertyValues.getInternal(expression
+                .getPropertyName());
+
+        if (expression.isIndexed())
+        {
+            if (null == interimValue)
+            {
+                return false;
+            }
+
+            interimValue = getValueWithBracket(expression, interimValue);
+
+            if (expression.isLeaf())
+            {
+                return interimValue != null;
+            }
+        }
+
+        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(interimValue);
+
+        if (null == nestedHandler)
+        {
+            return false;
+        }
+        else
+        {
+            return valuesContainsKey(nestedHandler.propertyValues, expression
+                    .getChild());
+        }
+    }
+
+    private Class<?> getAppropriateBracketType(
+            PropertyDescriptor propertyDescriptor)
+    {
+        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
+        {
+            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
+
+            return indexedPropertyDescriptor.getIndexedPropertyType();
+        }
+
+        CollectionType collectionType = propertyDescriptor.getReadMethod()
+                .getAnnotation(CollectionType.class);
+
+        if (null == collectionType)
+        {
+            return null;
+        }
+
+        return collectionType.value();
     }
 }
