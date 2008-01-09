@@ -30,13 +30,11 @@
 package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
-import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -224,10 +222,7 @@ public class PropertyValues implements Serializable
     {
         checkImmutable();
 
-        DotNotationExpression fullExpression = new DotNotationExpression(
-                dotExpression);
-
-        putValue(fullExpression.getRoot(), value);
+        SingleValueResolver.put(this, dotExpression, value);
     }
 
     /**
@@ -273,10 +268,7 @@ public class PropertyValues implements Serializable
      */
     public Object get(String dotExpression)
     {
-        DotNotationExpression fullExpression = new DotNotationExpression(
-                dotExpression);
-
-        return getValue(this, fullExpression.getRoot());
+        return SingleValueResolver.get(this, dotExpression);
     }
 
     /**
@@ -295,10 +287,7 @@ public class PropertyValues implements Serializable
      */
     public boolean containsKey(String dotExpression)
     {
-        DotNotationExpression fullExpression = new DotNotationExpression(
-                dotExpression);
-
-        return containsKey(fullExpression.getRoot());
+        return SingleValueResolver.containsKey(this, dotExpression);
     }
 
     /**
@@ -319,6 +308,7 @@ public class PropertyValues implements Serializable
     {
         checkImmutable();
 
+        // TODO enhance to evaluation do expression
         return values.remove(property);
     }
 
@@ -409,7 +399,7 @@ public class PropertyValues implements Serializable
 
     boolean isPropertyOf(String propertyName)
     {
-        return isPropertyOf(this, propertyName);
+        return SingleValueResolver.isPropertyOf(this, propertyName);
     }
 
     String filteredToString(Set<String> filterToString)
@@ -467,6 +457,21 @@ public class PropertyValues implements Serializable
     {
         return this.values.equals(propertyValues.values);
     }
+    
+    void putInternal(String property, Object value)
+    {
+        values.put(property, value);
+    }
+    
+    Object getInternal(String property)
+    {
+        return values.get(property);
+    }
+    
+    boolean containsKeyInternal(String property)
+    {
+        return values.containsKey(property);
+    }
 
     private void checkImmutable()
     {
@@ -477,328 +482,5 @@ public class PropertyValues implements Serializable
 
         throw new UnsupportedOperationException(
                 "This bean is immutable.  It was created with ProxyFactory.unmodifiableObject(), use ProxyFactory.copy() to create a copy safe to modify.");
-    }
-
-    private boolean putValue(PropertyExpression expression, Object propertyValue)
-    {
-        String propertyName = expression.getPropertyName();
-
-        PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
-                .get(propertyName);
-
-        if (null == propertyDescriptor)
-        {
-            throw new InvalidPropertyValueException(
-                    String
-                            .format(
-                                    "Cannot validate put, no property descriptor for property name, %1$s, on proxy, %2$s.",
-                                    propertyName, proxyDescriptor));
-        }
-
-        if (expression.isLeaf())
-        {
-            if (expression.isIndexed())
-            {
-                putValueWithBracket(get(propertyName), expression,
-                        propertyValue);
-            }
-            else
-            {
-                PropertyValidator.validate(proxyDescriptor, propertyName,
-                        propertyValue);
-
-                values.put(propertyName, propertyValue);
-            }
-
-            return true;
-        }
-
-        Class<?> propertyType = propertyDescriptor.getPropertyType();
-
-        Object interimValue = values.get(propertyName);
-
-        if (expression.isIndexed())
-        {
-            Object elementValue = getValueWithBracket(expression, interimValue);
-
-            if (null == elementValue)
-            {
-                Class<?> elementType = getAppropriateBracketType(propertyDescriptor);
-
-                expression.validateInstantiable(elementType);
-
-                elementValue = ProxyFactory.create(elementType);
-
-                putValueWithBracket(interimValue, expression, elementValue);
-            }
-
-            interimValue = elementValue;
-        }
-
-        if (null == interimValue)
-        {
-            expression.validateInstantiable(propertyType);
-
-            interimValue = ProxyFactory.create(propertyType);
-        }
-
-        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(interimValue);
-
-        if (null == nestedHandler)
-        {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "Nested property, %1$s, must currently be an interface to allow full de-reference.  Was of type, %2$s.",
-                                    propertyName, propertyType.getName()));
-            return false;
-        }
-
-        // recurse on the nested property
-        return nestedHandler.propertyValues.putValue(expression.getChild(),
-                propertyValue);
-    }
-
-    private Class<?> getAppropriateBracketType(
-            PropertyDescriptor propertyDescriptor)
-    {
-        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
-        {
-            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
-
-            return indexedPropertyDescriptor.getIndexedPropertyType();
-        }
-
-        CollectionType collectionType = propertyDescriptor.getReadMethod()
-                .getAnnotation(CollectionType.class);
-
-        if (null == collectionType)
-        {
-            return null;
-        }
-
-        return collectionType.value();
-    }
-
-    @SuppressWarnings("unchecked")
-    private void putValueWithBracket(Object value,
-            PropertyExpression expression, Object propertyValue)
-    {
-        if (null == value)
-        {
-            throw new InvalidExpressionException(
-                    String
-                            .format(
-                                    "The expression, %1$s, requires either a valid List or a valid array for the bracket operator.",
-                                    expression.expressionToRoot()));
-        }
-
-        expression.validateIndex();
-
-        int index = expression.getIndex();
-
-        if (value instanceof List)
-        {
-            List<Object> listValue = (List<Object>) value;
-
-            expression.validateListBounds(listValue.size());
-
-            listValue.set(index, propertyValue);
-
-            return;
-        }
-
-        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
-        {
-            PrimitiveSupport.setElement(value, index, propertyValue);
-
-            return;
-        }
-
-        expression.validateArray(value);
-
-        Object[] arrayValue = (Object[]) value;
-
-        expression.validateArrayBounds(arrayValue.length);
-
-        arrayValue[index] = propertyValue;
-    }
-
-    private boolean isPropertyOf(PropertyValues propertyValues,
-            final String propertyName)
-    {
-        int dotIndex = propertyName.indexOf('.');
-
-        String shallowProperty = -1 == dotIndex ? propertyName : propertyName
-                .substring(0, dotIndex);
-
-        boolean indexedProperty = false;
-
-        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
-        {
-            shallowProperty = propertyName.substring(0, propertyName
-                    .indexOf('['));
-
-            indexedProperty = true;
-        }
-
-        for (PropertyDescriptor propertyDescriptor : propertyValues.proxyDescriptor.propertyDescriptors
-                .values())
-        {
-            // keep going if this is not the property we are looking for or
-            // a parent property
-            if (!propertyDescriptor.getName().equals(shallowProperty))
-            {
-                continue;
-            }
-
-            // if this is a leafy property, we're done
-            if (-1 == dotIndex)
-            {
-                return true;
-            }
-
-            // otherwise, recurse on the nested property
-            if (indexedProperty)
-            {
-                if (!(propertyDescriptor instanceof IndexedPropertyDescriptor))
-                {
-                    return false;
-                }
-
-                IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
-
-                return BeanManipulator.isPropertyOf(indexedDescriptor
-                        .getIndexedPropertyType(), propertyName
-                        .substring(dotIndex + 1));
-            }
-
-            Object nestedValue = propertyValues.values.get(shallowProperty);
-
-            JavaBeanHandler nestedHandler = ProxyFactory
-                    .getHandler(nestedValue);
-
-            if (null == nestedHandler)
-            {
-                return BeanManipulator.isPropertyOf(propertyDescriptor
-                        .getPropertyType(), propertyName
-                        .substring(dotIndex + 1));
-            }
-            else
-            {
-                return isPropertyOf(nestedHandler.propertyValues, propertyName
-                        .substring(dotIndex + 1));
-            }
-        }
-
-        return false;
-    }
-
-    private boolean containsKey(PropertyExpression expression)
-    {
-        // if this is a leafy property, we're done
-        if (expression.isLeaf() && !expression.isIndexed())
-        {
-            return values.containsKey(expression.getPropertyName());
-        }
-
-        Object interimValue = values.get(expression.getPropertyName());
-
-        if (expression.isIndexed())
-        {
-            if (null == interimValue)
-            {
-                return false;
-            }
-
-            interimValue = getValueWithBracket(expression, interimValue);
-
-            if (expression.isLeaf())
-            {
-                return interimValue != null;
-            }
-        }
-
-        JavaBeanHandler nestedHandler = ProxyFactory.getHandler(interimValue);
-
-        if (null == nestedHandler)
-        {
-            return false;
-        }
-        else
-        {
-            return nestedHandler.propertyValues.containsKey(expression
-                    .getChild());
-        }
-    }
-
-    private Object getValue(PropertyValues propertyValues,
-            PropertyExpression currentExpression)
-    {
-        Object interimValue = propertyValues.values.get(currentExpression
-                .getPropertyName());
-
-        currentExpression.validateInterimForIndexed(interimValue);
-
-        if (currentExpression.isLeaf())
-        {
-            if (currentExpression.isIndexed())
-            {
-                return getValueWithBracket(currentExpression, interimValue);
-            }
-            else
-            {
-                return interimValue;
-            }
-        }
-
-        if (currentExpression.isIndexed())
-        {
-            interimValue = getValueWithBracket(currentExpression, interimValue);
-        }
-
-        JavaBeanHandler interimHandler = ProxyFactory.getHandler(interimValue);
-
-        if (null == interimHandler)
-        {
-            throw new InvalidExpressionException(String.format(
-                    "Cannot de-reference a non-Navel bean property, %1$s.",
-                    currentExpression.expressionToRoot()));
-        }
-        else
-        {
-            return getValue(interimHandler.propertyValues, currentExpression
-                    .getChild());
-        }
-    }
-
-    private Object getValueWithBracket(PropertyExpression expression,
-            Object value)
-    {
-        int index = expression.getIndex();
-
-        expression.validateIndex();
-
-        if (value instanceof List)
-        {
-            List<?> listValue = (List<?>) value;
-
-            expression.validateListBounds(listValue.size());
-
-            return listValue.get(index);
-        }
-
-        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
-        {
-            return PrimitiveSupport.getElement(values, index);
-        }
-
-        expression.validateArray(value);
-
-        Object[] arrayValue = (Object[]) value;
-
-        expression.validateArrayBounds(arrayValue.length);
-
-        return arrayValue[index];
     }
 }
