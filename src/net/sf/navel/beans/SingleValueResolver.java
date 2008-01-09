@@ -76,8 +76,9 @@ class SingleValueResolver
     static boolean isPropertyOf(PropertyValues propertyValues,
             String propertyExpression)
     {
-        return SINGLETON.isPropertyOfValues(propertyValues.getProxyDescriptor(), 
-                new DotNotationExpression(propertyExpression).getRoot());
+        return SINGLETON.isPropertyOfValues(
+                propertyValues.getProxyDescriptor(), new DotNotationExpression(
+                        propertyExpression).getRoot());
     }
 
     private boolean putValue(PropertyValues propertyValues,
@@ -129,7 +130,7 @@ class SingleValueResolver
             {
                 Class<?> elementType = getAppropriateBracketType(propertyDescriptor);
 
-                expression.validateInstantiable(elementType);
+                validateInstantiable(expression, elementType);
 
                 elementValue = ProxyFactory.create(elementType);
 
@@ -141,7 +142,7 @@ class SingleValueResolver
 
         if (null == interimValue)
         {
-            expression.validateInstantiable(propertyType);
+            validateInstantiable(expression, propertyType);
 
             interimValue = ProxyFactory.create(propertyType);
         }
@@ -276,8 +277,9 @@ class SingleValueResolver
 
         return arrayValue[index];
     }
-    
-    private boolean isPropertyOfValues(ProxyDescriptor proxyDescriptor, PropertyExpression expression)
+
+    private boolean isPropertyOfValues(ProxyDescriptor proxyDescriptor,
+            PropertyExpression expression)
     {
         String shallowProperty = expression.getPropertyName();
 
@@ -298,21 +300,22 @@ class SingleValueResolver
             {
                 return true;
             }
-            
+
             Class<?> nextType = propertyDescriptor.getPropertyType();
 
             // otherwise, dig out the more specific type for a list or array
             if (indexedProperty)
             {
                 nextType = getAppropriateBracketType(propertyDescriptor);
-                
+
                 if (null == nextType)
                 {
                     return false;
                 }
             }
-            
-            return isPropertyOfValues(new ProxyDescriptor(new Class<?>[] { nextType }), expression.getChild());
+
+            return isPropertyOfValues(new ProxyDescriptor(new Class<?>[]
+            { nextType }), expression.getChild());
         }
 
         return false;
@@ -378,5 +381,23 @@ class SingleValueResolver
         }
 
         return collectionType.value();
+    }
+
+    void validateInstantiable(PropertyExpression expression,
+            Class<?> propertyType)
+    {
+        if (null != propertyType && propertyType.isInterface())
+        {
+            return;
+        }
+
+        throw new InvalidPropertyValueException(
+                String
+                        .format(
+                                "Cannot create a nested bean of type, %1$s, for property, %2$s, to satisfy the expression, %3$s.",
+                                null == propertyType ? "null" : propertyType
+                                        .getName(), expression
+                                        .expressionToRoot(), expression
+                                        .getFullExpression().getExpression()));
     }
 }
