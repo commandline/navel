@@ -29,7 +29,6 @@
  */
 package net.sf.navel.beans;
 
-import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.util.List;
 
@@ -132,7 +131,7 @@ class SingleValueResolver
 
             if (null == elementValue)
             {
-                Class<?> elementType = getAppropriateBracketType(propertyDescriptor);
+                Class<?> elementType = BeanManipulator.getAppropriateBracketType(propertyDescriptor);
 
                 validateInstantiable(expression, elementType);
 
@@ -310,7 +309,7 @@ class SingleValueResolver
             // otherwise, dig out the more specific type for a list or array
             if (indexedProperty)
             {
-                nextType = getAppropriateBracketType(propertyDescriptor);
+                nextType = BeanManipulator.getAppropriateBracketType(propertyDescriptor);
 
                 if (null == nextType)
                 {
@@ -366,28 +365,7 @@ class SingleValueResolver
         }
     }
 
-    private Class<?> getAppropriateBracketType(
-            PropertyDescriptor propertyDescriptor)
-    {
-        if (propertyDescriptor instanceof IndexedPropertyDescriptor)
-        {
-            IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
-
-            return indexedPropertyDescriptor.getIndexedPropertyType();
-        }
-
-        CollectionType collectionType = propertyDescriptor.getReadMethod()
-                .getAnnotation(CollectionType.class);
-
-        if (null == collectionType)
-        {
-            return null;
-        }
-
-        return collectionType.value();
-    }
-
-    void validateInstantiable(PropertyExpression expression,
+    private void validateInstantiable(PropertyExpression expression,
             Class<?> propertyType)
     {
         if (null != propertyType && propertyType.isInterface())

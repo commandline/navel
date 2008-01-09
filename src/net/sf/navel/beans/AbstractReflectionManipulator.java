@@ -43,16 +43,13 @@ import org.apache.log4j.Logger;
 
 /**
  * This abstract class is a base for working with properties of different types
- * through the BeanManipulator and PropertyManipulator utility classes. These
- * manipulators allow dynamic programming of both JavaBeans and Navel beans. For
- * plain, old JavaBeans this is accomplished through Reflection. For Navel
- * beans, it takes advantage of the fact that all the member data is stored in a
- * simple, Map-based storage class.
+ * through the BeanManipulator utility class via pure reflaction. These
+ * manipulators allow dynamic programming of concrete JavaBeans.
  * 
- * If you supply a custom implementation of PropertyDescriptor, you need to
- * implement a daughter of this class that knows how to work with the custom
- * property type. You also register your daughters of this class through a
- * static method, to make them available to the framework to use automatically.
+ * For working with Navel beans dynamically, see {@link PropertyManipulator}.
+ * 
+ * @see BeanManipulator
+ * @see PropertyManipulator
  * 
  * @author cmdln
  */
@@ -151,7 +148,8 @@ abstract class AbstractReflectionManipulator
      *            The value to write.
      */
     abstract boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value, boolean suppressExceptions);
+            String propertyName, Object bean, Object value,
+            boolean suppressExceptions);
 
     /**
      * Implementations of this method should know how to parse out any special
