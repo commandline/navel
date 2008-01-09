@@ -56,20 +56,20 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-abstract class AbstractPropertyManipulator
+abstract class AbstractReflectionManipulator
 {
     private static final Logger LOGGER = Logger
-            .getLogger(AbstractPropertyManipulator.class);
+            .getLogger(AbstractReflectionManipulator.class);
 
-    private static final Map<Class<?>, AbstractPropertyManipulator> MANIPULATORS = new HashMap<Class<?>, AbstractPropertyManipulator>(
+    private static final Map<Class<?>, AbstractReflectionManipulator> MANIPULATORS = new HashMap<Class<?>, AbstractReflectionManipulator>(
             2);
 
-    private static final AbstractPropertyManipulator DEFAULT_MANIPULATOR = new SimplePropertyManipulator();
+    private static final AbstractReflectionManipulator DEFAULT_MANIPULATOR = new ReflectionSimpleManipulator();
 
     static
     {
         registerPropertyManipulator(IndexedPropertyDescriptor.class,
-                new IndexedPropertyManipulator());
+                new ReflectionIndexedManipulator());
     }
 
     /**
@@ -83,7 +83,7 @@ abstract class AbstractPropertyManipulator
      *            A daughter of PropertyManipulator.
      */
     static void registerPropertyManipulator(Class<?> descriptorType,
-            AbstractPropertyManipulator manipulator)
+            AbstractReflectionManipulator manipulator)
     {
         if (!PropertyDescriptor.class.isAssignableFrom(descriptorType))
         {
@@ -115,10 +115,10 @@ abstract class AbstractPropertyManipulator
      * @return PropertyManipulator Instance suitable for working with the
      *         requested property type, may be null.
      */
-    static AbstractPropertyManipulator getPropertyManipulator(
+    static AbstractReflectionManipulator getPropertyManipulator(
             Class<?> descriptorType)
     {
-        AbstractPropertyManipulator manipulator = (AbstractPropertyManipulator) MANIPULATORS
+        AbstractReflectionManipulator manipulator = (AbstractReflectionManipulator) MANIPULATORS
                 .get(descriptorType);
 
         if (manipulator == null)

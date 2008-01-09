@@ -43,11 +43,11 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-class SimplePropertyManipulator extends AbstractPropertyManipulator
+class ReflectionSimpleManipulator extends AbstractReflectionManipulator
 {
 
     private static final Logger LOGGER = Logger
-            .getLogger(SimplePropertyManipulator.class);
+            .getLogger(ReflectionSimpleManipulator.class);
 
     /**
      * This write method is coerces the value, if appropriate, then uses simple

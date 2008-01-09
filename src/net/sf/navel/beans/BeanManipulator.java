@@ -302,7 +302,7 @@ public class BeanManipulator
     private Map<String, Object> describeBean(Object bean,
             boolean flattenNested, boolean suppressExceptions)
     {
-        PropertyDescriptor[] properties = AbstractPropertyManipulator
+        PropertyDescriptor[] properties = AbstractReflectionManipulator
                 .getProperties(bean.getClass());
 
         if (0 == properties.length)
@@ -377,7 +377,7 @@ public class BeanManipulator
             return null;
         }
 
-        int arrayIndex = IndexedPropertyManipulator.getIndex(propertyName);
+        int arrayIndex = ReflectionIndexedManipulator.getIndex(propertyName);
 
         if (PrimitiveSupport.isPrimitiveArray(array.getClass()))
         {
@@ -412,7 +412,7 @@ public class BeanManipulator
     {
         String propertyName = propertyTokens[tokenIndex];
 
-        PropertyDescriptor property = AbstractPropertyManipulator.findProperty(
+        PropertyDescriptor property = AbstractReflectionManipulator.findProperty(
                 bean.getClass(), propertyName);
 
         if (null == property)
@@ -422,7 +422,7 @@ public class BeanManipulator
             return false;
         }
 
-        AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
+        AbstractReflectionManipulator manipulator = AbstractReflectionManipulator
                 .getPropertyManipulator(property.getClass());
 
         if (1 == propertyTokens.length - tokenIndex)
@@ -466,7 +466,7 @@ public class BeanManipulator
         }
 
         // just want to get at some shared code, rather than duplicating it
-        AbstractPropertyManipulator manipulator = AbstractPropertyManipulator
+        AbstractReflectionManipulator manipulator = AbstractReflectionManipulator
                 .getPropertyManipulator(PropertyDescriptor.class);
 
         Object value = manipulator.handleRead(property, property.getName(),

@@ -41,11 +41,11 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-class IndexedPropertyManipulator extends SimplePropertyManipulator
+class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
 {
 
     private static final Logger LOGGER = Logger
-            .getLogger(IndexedPropertyManipulator.class);
+            .getLogger(ReflectionIndexedManipulator.class);
 
     private static final String OPEN_BRACKET = "[";
 
