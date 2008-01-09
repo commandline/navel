@@ -34,10 +34,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
@@ -302,36 +299,6 @@ public class BeanManipulator
         return false;
     }
 
-    static void expandNestedBeans(Map<String, Object> values)
-    {
-        // to allow modification of the original map
-        Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
-                values.entrySet());
-
-        for (Iterator<Entry<String, Object>> entryIter = entries.iterator(); entryIter
-                .hasNext();)
-        {
-            Entry<String, Object> entry = entryIter.next();
-
-            JavaBeanHandler handler = ProxyFactory.getHandler(entry.getValue());
-
-            if (null == handler)
-            {
-                continue;
-            }
-
-            // depth first recursion, will resolved all descendants in the
-            // original map, first
-            Map<String, Object> nestedValues = handler.propertyValues
-                    .copyValues(true);
-
-            // re-write the keys for the immediate properties in the map, the
-            // previous line will have taken care of the more deeply nested
-            // properties
-            SINGLETON.expandNestedBean(values, entry.getKey(), nestedValues);
-        }
-    }
-
     private Map<String, Object> describeBean(Object bean,
             boolean flattenNested, boolean suppressExceptions)
     {
@@ -355,7 +322,7 @@ public class BeanManipulator
 
         if (flattenNested)
         {
-            expandNestedBeans(values);
+            PropertyValuesExpander.expand(values);
         }
 
         return values;
@@ -509,19 +476,5 @@ public class BeanManipulator
         {
             values.put(property.getName(), value);
         }
-    }
-
-    private void expandNestedBean(Map<String, Object> values, String key,
-            Map<String, Object> nested)
-    {
-        for (Iterator<Entry<String, Object>> entryIter = nested.entrySet()
-                .iterator(); entryIter.hasNext();)
-        {
-            Entry<String, Object> entry = entryIter.next();
-
-            values.put(key + "." + entry.getKey(), entry.getValue());
-        }
-
-        values.remove(key);
     }
 }
