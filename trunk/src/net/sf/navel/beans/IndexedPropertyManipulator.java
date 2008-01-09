@@ -32,7 +32,6 @@ package net.sf.navel.beans;
 import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -197,74 +196,6 @@ class IndexedPropertyManipulator extends SimplePropertyManipulator
                                     indexString, propertyName));
 
             return -1;
-        }
-    }
-
-    static boolean putIndexed(Map<String, Object> values, String nameWithIndex,
-            String propertyName, PropertyDescriptor propertyDescriptor,
-            Object propertyValue)
-    {
-        Object array = values.get(propertyName);
-
-        // use the argument since the local will have had the index
-        // operator and value stripped
-        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
-
-        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
-                .getPropertyType()))
-        {
-            PrimitiveSupport.setElement(array, arrayIndex, propertyValue);
-
-            return true;
-        }
-
-        Object[] indexed = (Object[]) array;
-
-        if (null == array)
-        {
-            return false;
-        }
-
-        indexed[arrayIndex] = propertyValue;
-
-        return true;
-    }
-
-    static Object getIndexed(Map<String, Object> values, String nameWithIndex,
-            String propertyName, PropertyDescriptor propertyDescriptor,
-            boolean lazyCreate)
-    {
-        Object array = values.get(propertyName);
-
-        // use the argument since the local will have had the index
-        // operator and value stripped
-        int arrayIndex = IndexedPropertyManipulator.getIndex(nameWithIndex);
-
-        if (PrimitiveSupport.isPrimitiveArray(propertyDescriptor
-                .getPropertyType()))
-        {
-            return PrimitiveSupport.getElement(array, arrayIndex);
-        }
-        else
-        {
-            Object[] indexed = (Object[]) array;
-
-            if (null == array)
-            {
-                return null;
-            }
-
-            Object nestedValue = indexed[arrayIndex];
-
-            if (null == nestedValue && lazyCreate)
-            {
-                nestedValue = ProxyFactory.create(propertyDescriptor
-                        .getPropertyType().getComponentType());
-
-                indexed[arrayIndex] = nestedValue;
-            }
-
-            return nestedValue;
         }
     }
 }
