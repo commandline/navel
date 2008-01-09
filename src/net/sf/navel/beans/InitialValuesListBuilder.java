@@ -65,13 +65,17 @@ class InitialValuesListBuilder
     }
 
     /**
-     * Finds all of the properties assignable to the List interface and
-     * deconstructs any keys in the original value map that use the bracket
+     * Finds all of the immediate properties assignable to the List interface
+     * and deconstructs any keys in the original value map that use the bracket
      * operator, expanding the List property into a correctly populated list.
      * This method relies on there being two accessors for the List property,
      * one with no arguments that returns the List itself and another that
      * accepts an int or Integer argument and returns the type of the elements
      * within the List.
+     * 
+     * List operators more deeply nested than the immediate properties of the
+     * bean under construction are handled indirectly when instantiating the
+     * nested elements.
      */
     static void filter(Map<String, PropertyDescriptor> properties,
             Map<String, Object> values)
@@ -105,38 +109,37 @@ class InitialValuesListBuilder
 
             Object value = entry.getValue();
 
-            String originalExpression = entry.getKey();
+            DotNotationExpression originalExpression = new DotNotationExpression(
+                    entry.getKey());
 
             if (!(value instanceof List))
             {
-                copy.remove(originalExpression);
+                copy.remove(originalExpression.getExpression());
             }
 
-            if (originalExpression.indexOf('[') == -1
-                    && originalExpression.indexOf("]") == -1)
+            if (!originalExpression.getRoot().isIndexed())
             {
                 continue;
             }
 
-            ListElementDescriptor elementDescriptor = ListElementDescriptor
-                    .describe(originalExpression);
-            
-            toRemove.add(originalExpression);
+            toRemove.add(originalExpression.getExpression());
+
+            String parentProperty = originalExpression.getRoot()
+                    .getPropertyName();
 
             // there is no further property munging required,
-            if (!elementDescriptor.hasNestedProperty())
+            if (originalExpression.getRoot().isLeaf())
             {
-                handleWholeNested(copy, elementDescriptor, elementTypes
-                        .get(elementDescriptor.getParentProperty()), value);
+                handleWholeNested(copy, originalExpression.getRoot(),
+                        elementTypes.get(parentProperty), value);
 
                 continue;
             }
 
             // add the value to a submap keyed on the nested property token
-            handlePartialNested(copy, originalExpression, elementDescriptor,
-                    value);
+            handlePartialNested(copy, originalExpression.getRoot(), value);
 
-            toExpand.add(elementDescriptor.getParentProperty());
+            toExpand.add(parentProperty);
         }
 
         if (toRemove.isEmpty())
@@ -218,10 +221,12 @@ class InitialValuesListBuilder
      */
     @SuppressWarnings("unchecked")
     private void handleWholeNested(Map<String, Object> copy,
-            final ListElementDescriptor elementDescriptor,
+            final PropertyExpression propertyExpression,
             final Class<?> valueType, final Object value)
     {
-        List<Object> nestedList = initializeList(copy, elementDescriptor.getParentProperty());
+        String parentProperty = propertyExpression.getPropertyName();
+
+        List<Object> nestedList = initializeList(copy, parentProperty);
 
         Object element = value;
 
@@ -233,14 +238,14 @@ class InitialValuesListBuilder
                         String
                                 .format(
                                         "No type found for elements of List type property, %1$s.  Make sure the property name is correctly spelled in the raw values Map and add the CollectionType annotation if necessary.",
-                                        elementDescriptor.getParentProperty()));
+                                        parentProperty));
             }
 
             element = instantiate(valueType, (Map<String, Object>) value);
         }
 
         // add if the index is empty or unknown
-        if (!elementDescriptor.hasIndex())
+        if (propertyExpression.getIndex() == -1)
         {
             nestedList.add(element);
 
@@ -248,9 +253,9 @@ class InitialValuesListBuilder
         }
 
         // set if the index is not empty
-        pad(nestedList, elementDescriptor.getIndex());
+        pad(nestedList, propertyExpression.getIndex());
 
-        nestedList.set(elementDescriptor.getIndex(), element);
+        nestedList.set(propertyExpression.getIndex(), element);
     }
 
     /**
@@ -259,35 +264,33 @@ class InitialValuesListBuilder
      * later wrapped with an appropriate Navel handler.
      */
     @SuppressWarnings("unchecked")
-    private void handlePartialNested(Map<String, Object> copy, String flatKey,
-            ListElementDescriptor elementDescriptor, Object value)
+    private void handlePartialNested(Map<String, Object> copy, PropertyExpression expression, Object value)
     {
-        if (!elementDescriptor.hasIndex())
+        if (!expression.hasIndex())
         {
             throw new IllegalArgumentException(
                     String
                             .format(
                                     "For a fully flattened entry, %1$s, an index value must be provided in the brackets ([]) or the related entries cannot be assembled correctly into appropriate elements of the list property!",
-                                    elementDescriptor.getParentProperty()));
+                                    expression.getExpression()));
         }
 
-        List<Object> nestedList = initializeList(copy, elementDescriptor
-                .getParentProperty());
+        List<Object> nestedList = initializeList(copy, expression.getPropertyName());
 
-        pad(nestedList, elementDescriptor.getIndex());
+        pad(nestedList, expression.getIndex());
 
         Map<String, Object> subMap = (Map<String, Object>) nestedList
-                .get(elementDescriptor.getIndex());
+                .get(expression.getIndex());
 
         if (null == subMap)
         {
             subMap = new HashMap<String, Object>();
 
-            nestedList.set(elementDescriptor.getIndex(), subMap);
+            nestedList.set(expression.getIndex(), subMap);
         }
 
         // put the value on the submap with the nested property
-        subMap.put(elementDescriptor.getNestedProperty(), value);
+        subMap.put(expression.getChild().expressionToLeaf(), value);
     }
 
     @SuppressWarnings("unchecked")
@@ -328,8 +331,10 @@ class InitialValuesListBuilder
         {
             if (elementType.isInterface())
             {
-                Object elementValue = ProxyFactory.create(rawValues, null, new Class<?>[] { elementType });
-                
+                Object elementValue = ProxyFactory.create(rawValues, null,
+                        new Class<?>[]
+                        { elementType });
+
                 InitialValuesResolver.resolveNested(elementValue, rawValues);
 
                 return elementValue;

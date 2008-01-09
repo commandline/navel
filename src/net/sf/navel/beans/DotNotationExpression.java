@@ -120,6 +120,8 @@ class PropertyExpression
 
     private final String propertyName;
 
+    private final boolean isIndexed;
+
     private final Integer elementIndex;
 
     PropertyExpression(DotNotationExpression fullExpression,
@@ -151,11 +153,14 @@ class PropertyExpression
         {
             this.propertyName = localExpression.substring(0, toEvaluate
                     .indexOf('['));
-            this.elementIndex = ReflectionIndexedManipulator.getIndex(toEvaluate);
+            int parsedIndex = ReflectionIndexedManipulator.getIndex(toEvaluate);
+            this.isIndexed = true;
+            this.elementIndex = -1 == parsedIndex ? null : parsedIndex;
         }
         else
         {
             this.propertyName = localExpression;
+            this.isIndexed = false;
             this.elementIndex = null;
         }
     }
@@ -225,12 +230,22 @@ class PropertyExpression
      */
     boolean isIndexed()
     {
-        return elementIndex != null;
+        return isIndexed;
     }
 
     /**
-     * @return -1 if {@link #isIndexed()} returns false or the bracket operator
-     *         is empty, otherwise the number value in the bracket operator.
+     * @return True if the expression is indexed and has a parseable index
+     *         value.
+     */
+    public boolean hasIndex()
+    {
+        return null != elementIndex;
+    }
+
+    /**
+     * @return -1 if {@link #isIndexed()} or {@link #hasIndex()} returns false
+     *         or the bracket operator is empty, otherwise the number value in
+     *         the bracket operator.
      */
     int getIndex()
     {
