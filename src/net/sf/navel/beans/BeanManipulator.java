@@ -82,19 +82,6 @@ public class BeanManipulator
      * class methods
      *----------------------------------------*/
     /**
-     * Overload that assumes false for the resolve nested argument and true for
-     * suppressExceptions.
-     * 
-     * @param bean
-     *            JavaBean to extract from.
-     * @return Map of extracted values, never null but may be empty.
-     */
-    public static Map<String, Object> describe(Object bean)
-    {
-        return SINGLETON.describeBean(bean, false, true);
-    }
-
-    /**
      * Overload that assumes true for suppressExceptions.
      * 
      * @param bean
@@ -105,10 +92,9 @@ public class BeanManipulator
      *            bean?
      * @return Map of extracted values, never null but may be empty.
      */
-    public static Map<String, Object> describe(Object bean,
-            boolean flattenNested)
+    public static Map<String, Object> describe(Object bean)
     {
-        return SINGLETON.describeBean(bean, flattenNested, true);
+        return BeanManipulator.describe(bean, true);
     }
 
     /**
@@ -118,10 +104,6 @@ public class BeanManipulator
      * 
      * @param bean
      *            JavaBean to extract from.
-     * @param flattenNested
-     *            If any of the properties are themselves Navel beans, should we
-     *            flatten their properties into the key set of the containing
-     *            bean?
      * @param suppressExceptions
      *            Should exceptions by re-thrown as
      *            {@link PropertyAccessException} instances or logged only as
@@ -129,9 +111,9 @@ public class BeanManipulator
      * @return Map of extracted values, never null but may be empty.
      */
     public static Map<String, Object> describe(Object bean,
-            boolean flattenNested, boolean suppressExceptions)
+            boolean suppressExceptions)
     {
-        return SINGLETON.describeBean(bean, flattenNested, suppressExceptions);
+        return SINGLETON.describeBean(bean, suppressExceptions);
     }
 
     /**
@@ -239,7 +221,7 @@ public class BeanManipulator
         }
 
         Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
-                false, suppressExceptions);
+                suppressExceptions);
 
         return resolveSingleValue(propertyExpression.getChild(), subValues,
                 suppressExceptions);
@@ -340,8 +322,9 @@ public class BeanManipulator
         return false;
     }
 
+    // TODO add deep description
     private Map<String, Object> describeBean(Object bean,
-            boolean flattenNested, boolean suppressExceptions)
+            boolean suppressExceptions)
     {
         PropertyDescriptor[] properties = AbstractReflectionManipulator
                 .getProperties(bean.getClass());
@@ -359,11 +342,6 @@ public class BeanManipulator
         for (int i = 0; i < properties.length; i++)
         {
             readProperty(properties[i], bean, values, suppressExceptions);
-        }
-
-        if (flattenNested)
-        {
-            PropertyValuesExpander.expand(values);
         }
 
         return values;
