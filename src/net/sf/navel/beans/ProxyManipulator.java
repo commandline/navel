@@ -41,6 +41,8 @@ import java.util.Map;
 public class ProxyManipulator
 {
 
+    private static final ProxyManipulator SINGLETON = new ProxyManipulator();
+
     private ProxyManipulator()
     {
         // enforce Singleton pattern
@@ -51,7 +53,8 @@ public class ProxyManipulator
      * useful for translation between Navel beans and other kinds of objects or
      * declarative interrogation of the state of the bean.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Object to query, must be a Navel bean.
@@ -62,19 +65,10 @@ public class ProxyManipulator
      */
     public static Object get(Object bean, String propertyName)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
-        }
-        
         PropertyValues propertyValues = handler.propertyValues;
 
         if (!propertyValues.isPropertyOf(propertyName))
@@ -92,7 +86,8 @@ public class ProxyManipulator
     /**
      * Overload that assumes false for flattening of the internal values.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @return
      */
@@ -105,7 +100,8 @@ public class ProxyManipulator
      * Allows a copy of the bean's internal state to be retrieve by an arbitrary
      * caller.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Must be navel bean.
@@ -114,18 +110,9 @@ public class ProxyManipulator
      */
     public static Map<String, Object> copyAll(Object bean, boolean flatten)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
         return handler.propertyValues.copyValues(flatten);
     }
@@ -137,7 +124,8 @@ public class ProxyManipulator
      * logic as the ProxyFactory to initialize uninitialized nested properties
      * of those are interfaces so can be properly proxied.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Target whose property, simply or nested, to set.
@@ -150,18 +138,9 @@ public class ProxyManipulator
     public static void put(Object bean, String propertyName,
             Object propertyValue)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
         // this will resolve, and validate the property value
         handler.propertyValues.put(propertyName, propertyValue);
@@ -174,7 +153,8 @@ public class ProxyManipulator
      * the supplied Map to ensure it is consistent with the JavaBean's
      * interfaces.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Target bean to apply the Map argument, must be a Navel bean.
@@ -186,18 +166,9 @@ public class ProxyManipulator
      */
     public static void putAll(Object bean, Map<String, Object> values)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException(
-                    "The bean argument must be a Navel bean, use the BeanManipulator to apply a Map to a plain, old JavaBean.");
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
         // this will copy, resolve, and validate the Map contents
         handler.propertyValues.putAll(values);
@@ -207,7 +178,8 @@ public class ProxyManipulator
      * Check to see if the specified property has an entry, even one with a null
      * value, in the storage map.
      * 
-     * <em>WARNING:</em> This will bypass any attached {@link PropertyDelegate} instances!
+     * <em>WARNING:</em> This will bypass any attached
+     * {@link PropertyDelegate} instances!
      * 
      * @param bean
      *            Object to check, must be a Navel bean.
@@ -217,26 +189,11 @@ public class ProxyManipulator
      */
     public static boolean isSet(Object bean, String propertyName)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException("Bean must be a Navel bean!");
-        }
-
-        if (!handler.propertyValues.isPropertyOf(propertyName))
-        {
-            throw new IllegalArgumentException(
-                    String
-                            .format(
-                                    "The property, %1$s, is not a valid one for this proxy, %2$s.",
-                                    propertyName, handler));
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
+        
+        SINGLETON.assertPropertyOf(handler, propertyName);
 
         return handler.propertyValues.containsKey(propertyName);
     }
@@ -253,26 +210,11 @@ public class ProxyManipulator
      */
     public static boolean clear(Object bean, String propertyName)
     {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException("Bean argument cannot be null!");
-        }
+        SINGLETON.assertValidBean(bean);
 
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
-
-        if (null == handler)
-        {
-            throw new UnsupportedFeatureException("Bean must be a Navel bean!");
-        }
-
-        if (!handler.propertyValues.isPropertyOf(propertyName))
-        {
-            throw new IllegalArgumentException(
-                    String
-                            .format(
-                                    "The property, %1$s, is not a valid one for this proxy, %2$s.",
-                                    propertyName, handler));
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
+        
+        SINGLETON.assertPropertyOf(handler, propertyName);
 
         if (!handler.propertyValues.containsKey(propertyName))
         {
@@ -292,14 +234,20 @@ public class ProxyManipulator
      */
     public static void clear(Object bean)
     {
-        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+        SINGLETON.assertValidBean(bean);
 
-        if (null == handler)
-        {
-            throw new IllegalArgumentException("Bean must be a Navel bean!");
-        }
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
         handler.propertyValues.clear();
+    }
+
+    public static Map<String, Object> resolveDelegatedProperties(Object bean)
+    {
+        SINGLETON.assertValidBean(bean);
+
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
+
+        return handler.propertyValues.resolveDelegateProperties();
     }
 
     /**
@@ -325,5 +273,41 @@ public class ProxyManipulator
 
         return oneHandler.propertyValues
                 .valuesEqual(anotherHandler.propertyValues);
+    }
+
+    private JavaBeanHandler getRequiredHandler(Object bean)
+    {
+        JavaBeanHandler handler = ProxyFactory.getHandler(bean);
+
+        if (null == handler)
+        {
+            throw new IllegalArgumentException("Bean must be a Navel bean!");
+        }
+
+        return handler;
+    }
+
+    private void assertValidBean(Object bean)
+    {
+        if (null != bean)
+        {
+            return;
+        }
+
+        throw new IllegalArgumentException("Bean argument cannot be null!");
+    }
+
+    private void assertPropertyOf(JavaBeanHandler handler, String propertyName)
+    {
+        if (handler.propertyValues.isPropertyOf(propertyName))
+        {
+            return;
+        }
+
+        throw new InvalidExpressionException(
+                String
+                        .format(
+                                "The property expression, %1$s, is not a valid one for this proxy, %2$s.",
+                                propertyName, handler));
     }
 }
