@@ -38,10 +38,10 @@ import java.util.Map;
  * @author cmdln
  * 
  */
-public class PropertyManipulator
+public class ProxyManipulator
 {
 
-    private PropertyManipulator()
+    private ProxyManipulator()
     {
         // enforce Singleton pattern
     }
