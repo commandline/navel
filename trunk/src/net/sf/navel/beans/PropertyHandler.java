@@ -84,7 +84,10 @@ class PropertyHandler implements Serializable
             return true;
         }
 
-        if (methodName.startsWith(BEING))
+        // alternate naming convention only applies to boolean properties
+        if (methodName.startsWith(BEING)
+                && (Boolean.class.equals(method.getReturnType()) || boolean.class
+                        .equals(method.getReturnType())))
         {
             return true;
         }
@@ -133,7 +136,7 @@ class PropertyHandler implements Serializable
         }
         else if (methodName.startsWith(BEING))
         {
-            return handleBeing(methodName);
+            return handleBeing(method.getReturnType(), methodName);
         }
         else
         {
@@ -322,8 +325,12 @@ class PropertyHandler implements Serializable
         return indexed[index];
     }
 
-    private Object handleBeing(String methodName)
+    private Object handleBeing(Class<?> returnType, String methodName)
     {
+        // should not get here with anything other than a boolean property
+        assert Boolean.class.equals(returnType)
+                || boolean.class.equals(returnType) : "To execute alternate boolean getter, return type must be Boolean or boolean.";
+
         String propertyName = getPropertyName(methodName, BEING);
 
         if (propertyValues.isAttached(propertyName))
@@ -334,7 +341,7 @@ class PropertyHandler implements Serializable
             return delegate.get(propertyValues, propertyName);
         }
 
-        return handleNull(Boolean.class, propertyValues.get(propertyName));
+        return handleNull(returnType, propertyValues.get(propertyName));
     }
 
     private String getPropertyName(String methodName, String prefix)
