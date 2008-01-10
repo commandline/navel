@@ -209,14 +209,27 @@ public class BeanManipulator
     public static Object resolveValue(final String propertyName,
             final Map<String, Object> values, boolean suppressExceptions)
     {
-        int dotIndex = propertyName.indexOf(".");
+        return SINGLETON.resolveSingleValue(new DotNotationExpression(
+                propertyName).getRoot(), values, suppressExceptions);
+    }
 
-        if (dotIndex == -1)
+    private Object resolveSingleValue(
+            final PropertyExpression propertyExpression,
+            final Map<String, Object> values, boolean suppressExceptions)
+    {
+        if (propertyExpression.isIndexed())
         {
-            return SINGLETON.getNestedBean(propertyName, values);
+            throw new UnsupportedOperationException(
+                    "BeanManipulator does not currently support de-referencing List or array properties.");
         }
 
-        String shallowProperty = propertyName.substring(0, dotIndex);
+        if (propertyExpression.isLeaf())
+        {
+            return SINGLETON.getNestedBean(
+                    propertyExpression.getPropertyName(), values);
+        }
+
+        String shallowProperty = propertyExpression.getExpression();
 
         Object nestedBean = SINGLETON.getNestedBean(shallowProperty, values);
 
@@ -225,12 +238,11 @@ public class BeanManipulator
             return null;
         }
 
-        String subName = propertyName.substring(dotIndex + 1, propertyName
-                .length());
         Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
                 false, suppressExceptions);
 
-        return resolveValue(subName, subValues, suppressExceptions);
+        return resolveSingleValue(propertyExpression.getChild(), subValues,
+                suppressExceptions);
     }
 
     /**
