@@ -192,7 +192,7 @@ public class ProxyManipulator
         SINGLETON.assertValidBean(bean);
 
         JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
-        
+
         SINGLETON.assertPropertyOf(handler, propertyName);
 
         return handler.propertyValues.containsKey(propertyName);
@@ -213,7 +213,7 @@ public class ProxyManipulator
         SINGLETON.assertValidBean(bean);
 
         JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
-        
+
         SINGLETON.assertPropertyOf(handler, propertyName);
 
         if (!handler.propertyValues.containsKey(propertyName))
@@ -241,6 +241,17 @@ public class ProxyManipulator
         handler.propertyValues.clear();
     }
 
+    /**
+     * Utility to resolve the values for delegates properties since
+     * {@link #copyAll(Object)} ignores any attached {@link PropertyDelegate}
+     * instances. This methid does not currently resolve nested beans.
+     * 
+     * @param bean
+     *            Proxy to resolve.
+     * @return A {@link Map} containing the results of calling
+     *         {@link PropertyDelegate#get(PropertyValues, String)} for all the
+     *         registered instances, empty if no delegates are registered.
+     */
     public static Map<String, Object> resolveDelegatedProperties(Object bean)
     {
         SINGLETON.assertValidBean(bean);
