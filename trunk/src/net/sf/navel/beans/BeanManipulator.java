@@ -267,10 +267,10 @@ public class BeanManipulator
      *            Name of a property to check via introspection.
      * @return Whether the named property belongs to the bean class.
      */
-    public static boolean isPropertyOf(Class<?> beanType,
-            String propertyName)
+    public static boolean isPropertyOf(Class<?> beanType, String propertyName)
     {
-        return SINGLETON.isPropertyOfBean(beanType, new DotNotationExpression(propertyName).getRoot());
+        return SINGLETON.isPropertyOfBean(beanType, new DotNotationExpression(
+                propertyName).getRoot());
     }
 
     static Class<?> getAppropriateBracketType(
@@ -293,8 +293,9 @@ public class BeanManipulator
 
         return collectionType.value();
     }
-    
-    private boolean isPropertyOfBean(Class<?> beanType, PropertyExpression expression)
+
+    private boolean isPropertyOfBean(Class<?> beanType,
+            PropertyExpression expression)
     {
         String shallowProperty = expression.getExpression();
 
@@ -315,8 +316,10 @@ public class BeanManipulator
             {
                 return true;
             }
-            
-            Class<?> nestedType = expression.isIndexed() ? BeanManipulator.getAppropriateBracketType(propertyDescriptor) : propertyDescriptor.getPropertyType();
+
+            Class<?> nestedType = expression.isIndexed() ? BeanManipulator
+                    .getAppropriateBracketType(propertyDescriptor)
+                    : propertyDescriptor.getPropertyType();
 
             // otherwise, recurse on the nested property
             return isPropertyOfBean(nestedType, expression.getChild());
@@ -403,7 +406,16 @@ public class BeanManipulator
             return null;
         }
 
-        int arrayIndex = ReflectionIndexedManipulator.getIndex(propertyName);
+        Integer arrayIndex = DotNotationExpression.getIndex(propertyName);
+
+        if (null == arrayIndex)
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The index value in the expression, %1$s, was missing or invalid.",
+                                    propertyName));
+        }
 
         if (PrimitiveSupport.isPrimitiveArray(array.getClass()))
         {

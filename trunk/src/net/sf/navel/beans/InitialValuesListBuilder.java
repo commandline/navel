@@ -245,7 +245,7 @@ class InitialValuesListBuilder
         }
 
         // add if the index is empty or unknown
-        if (propertyExpression.getIndex() == -1)
+        if (!propertyExpression.hasIndex())
         {
             nestedList.add(element);
 

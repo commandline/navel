@@ -31,6 +31,9 @@ package net.sf.navel.beans;
 
 import java.util.List;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /**
  * Encapsulates the parse tree generated from a dot-notation expression. This is
  * the chaining of coventional property names, per the JavaBeans spec, with dots
@@ -45,6 +48,13 @@ import java.util.List;
  */
 class DotNotationExpression
 {
+
+    private static final Logger LOGGER = LogManager
+            .getLogger(DotNotationExpression.class);
+
+    private static final String OPEN_BRACKET = "[";
+
+    private static final String CLOSE_BRACKET = "]";
 
     private final String expression;
 
@@ -92,6 +102,61 @@ class DotNotationExpression
     int getDepth()
     {
         return depth;
+    }
+
+    /**
+     * Extract the index value, if present, from an expression if it has a
+     * bracket operator.
+     * 
+     * @param propertyExpression
+     *            Expression to parse.
+     * @return Null if there is no bracket operator, the operator is empty, or
+     *         the contained value is not numeric.
+     */
+    static Integer getIndex(String propertyExpression)
+    {
+        int braceStart = propertyExpression.indexOf(OPEN_BRACKET);
+        int braceEnd = propertyExpression.indexOf(CLOSE_BRACKET);
+
+        if ((-1 == braceStart) || (-1 == braceEnd) || (braceEnd <= braceStart))
+        {
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "One or both braces missing or invalid positioning for property expression, %1$s.",
+                                    propertyExpression));
+
+            return null;
+        }
+
+        String indexString = propertyExpression.substring(braceStart + 1,
+                braceEnd);
+
+        try
+        {
+            Integer index = Integer.valueOf(indexString);
+
+            // compare the parsed to the original in case there are any
+            // trailing characters on the original
+            if (index.toString().equals(indexString))
+            {
+                return index.intValue();
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch (NumberFormatException e)
+        {
+            LOGGER
+                    .warn(String
+                            .format(
+                                    "%1$s cannot be parsed as an int for property expression, $2%s.",
+                                    indexString, propertyExpression));
+
+            return null;
+        }
     }
 }
 
@@ -153,9 +218,8 @@ class PropertyExpression
         {
             this.propertyName = localExpression.substring(0, toEvaluate
                     .indexOf('['));
-            int parsedIndex = ReflectionIndexedManipulator.getIndex(toEvaluate);
             this.isIndexed = true;
-            this.elementIndex = -1 == parsedIndex ? null : parsedIndex;
+            this.elementIndex = DotNotationExpression.getIndex(toEvaluate);
         }
         else
         {
@@ -237,7 +301,7 @@ class PropertyExpression
      * @return True if the expression is indexed and has a parseable index
      *         value.
      */
-    public boolean hasIndex()
+    boolean hasIndex()
     {
         return null != elementIndex;
     }
@@ -249,7 +313,12 @@ class PropertyExpression
      */
     int getIndex()
     {
-        return null == elementIndex ? -1 : (int) elementIndex;
+        if (null == elementIndex)
+        {
+            throw new IllegalStateException("Index is unset or invalid.");
+        }
+
+        return (int) elementIndex;
     }
 
     /**

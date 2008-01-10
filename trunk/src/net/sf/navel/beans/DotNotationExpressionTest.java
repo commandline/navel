@@ -137,7 +137,7 @@ public class DotNotationExpressionTest
                 "Bar's parent should be the root of the dot expression.");
         Assert.assertTrue(propertyExpression.isIndexed(),
                 "Bar should be indexed.");
-        Assert.assertEquals(propertyExpression.getIndex(), -1,
+        Assert.assertFalse(propertyExpression.hasIndex(),
                 "Bar should not have a valid index value.");
 
         propertyExpression = propertyExpression.getChild();
