@@ -132,6 +132,20 @@ class DotNotationExpression
         String indexString = propertyExpression.substring(braceStart + 1,
                 braceEnd);
 
+        if (indexString.trim().length() == 0)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Index value was not specified in property expression, %1$s.",
+                                        propertyExpression));
+            }
+
+            return null;
+        }
+
         try
         {
             Integer index = Integer.valueOf(indexString);
@@ -152,7 +166,7 @@ class DotNotationExpression
             LOGGER
                     .warn(String
                             .format(
-                                    "%1$s cannot be parsed as an int for property expression, $2%s.",
+                                    "%1$s cannot be parsed as an int for property expression, %2$s.",
                                     indexString, propertyExpression));
 
             return null;
