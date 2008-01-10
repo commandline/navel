@@ -200,7 +200,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.put(result, "integer", 1);
+            ProxyManipulator.put(result, "integer", 1);
         }
         catch (Exception e)
         {
@@ -212,7 +212,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.put(result, "foo", 1);
+            ProxyManipulator.put(result, "foo", 1);
 
             Assert
                     .fail("Should have been able to use features that rely on introspection.");
@@ -382,7 +382,7 @@ public class ProxyFactoryTest
         TypesBean unmodifiable = ProxyFactory.unmodifiableObjectAs(
                 TypesBean.class, source);
 
-        Assert.assertTrue(PropertyManipulator.isSet(unmodifiable, "boolean"));
+        Assert.assertTrue(ProxyManipulator.isSet(unmodifiable, "boolean"));
         Assert.assertEquals(unmodifiable.getBoolean(), true);
 
         try
@@ -402,7 +402,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.put(unmodifiable, "boolean", false);
+            ProxyManipulator.put(unmodifiable, "boolean", false);
 
             Assert.fail("Should not be able to write dynamically.");
         }
@@ -420,7 +420,7 @@ public class ProxyFactoryTest
             Map<String, Object> values = new HashMap<String, Object>(1);
             values.put("boolean", false);
 
-            PropertyManipulator.putAll(unmodifiable, values);
+            ProxyManipulator.putAll(unmodifiable, values);
 
             Assert.fail("Should not be able to write all dynamically.");
         }
@@ -435,7 +435,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.clear(unmodifiable, "boolean");
+            ProxyManipulator.clear(unmodifiable, "boolean");
 
             Assert.fail("Should not be able to clear dynamically.");
         }
@@ -450,7 +450,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.clear(unmodifiable);
+            ProxyManipulator.clear(unmodifiable);
 
             Assert.fail("Should not be able to clear all dynamically.");
         }
@@ -474,7 +474,7 @@ public class ProxyFactoryTest
         NestedBean unmodifiable = ProxyFactory.unmodifiableObjectAs(
                 NestedBean.class, source);
 
-        Assert.assertTrue(PropertyManipulator.isSet(unmodifiable.getNested(),
+        Assert.assertTrue(ProxyManipulator.isSet(unmodifiable.getNested(),
                 "boolean"));
         Assert.assertEquals(unmodifiable.getNested().getBoolean(), true);
 
@@ -510,7 +510,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.put(unmodifiable.getNested(), "boolean", false);
+            ProxyManipulator.put(unmodifiable.getNested(), "boolean", false);
 
             Assert.fail("Should not be able to write dynamically.");
         }
@@ -528,7 +528,7 @@ public class ProxyFactoryTest
             Map<String, Object> values = new HashMap<String, Object>(1);
             values.put("boolean", false);
 
-            PropertyManipulator.putAll(unmodifiable.getNested(), values);
+            ProxyManipulator.putAll(unmodifiable.getNested(), values);
 
             Assert.fail("Should not be able to write all dynamically.");
         }
@@ -543,7 +543,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.clear(unmodifiable.getNested(), "boolean");
+            ProxyManipulator.clear(unmodifiable.getNested(), "boolean");
 
             Assert.fail("Should not be able to clear dynamically.");
         }
@@ -558,7 +558,7 @@ public class ProxyFactoryTest
 
         try
         {
-            PropertyManipulator.clear(unmodifiable.getNested());
+            ProxyManipulator.clear(unmodifiable.getNested());
 
             Assert.fail("Should not be able to clear all dynamically.");
         }

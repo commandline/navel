@@ -46,10 +46,10 @@ import org.apache.log4j.Logger;
  * through the BeanManipulator utility class via pure reflaction. These
  * manipulators allow dynamic programming of concrete JavaBeans.
  * 
- * For working with Navel beans dynamically, see {@link PropertyManipulator}.
+ * For working with Navel beans dynamically, see {@link ProxyManipulator}.
  * 
  * @see BeanManipulator
- * @see PropertyManipulator
+ * @see ProxyManipulator
  * 
  * @author cmdln
  */

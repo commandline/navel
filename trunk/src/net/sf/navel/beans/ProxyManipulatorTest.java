@@ -49,11 +49,11 @@ import org.testng.annotations.Test;
  * @author cmdln
  * 
  */
-public class PropertyManipulatorTest
+public class ProxyManipulatorTest
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(PropertyManipulatorTest.class);
+            .getLogger(ProxyManipulatorTest.class);
 
     @Test
     public void testIndexedProperty()
@@ -68,12 +68,12 @@ public class PropertyManipulatorTest
 
         indexedBean.setTypes(0, typesBean);
 
-        PropertyManipulator.put(indexedBean, "array[0]", "foo");
-        PropertyManipulator.put(indexedBean, "array[1]", "bar");
-        PropertyManipulator.put(indexedBean, "floats[0]", new Float(32.0));
-        PropertyManipulator.put(indexedBean, "floats[1]", new Float(64.0));
-        PropertyManipulator.put(indexedBean, "types[0].boolean", Boolean.TRUE);
-        PropertyManipulator.put(indexedBean, "types[1].boolean", Boolean.FALSE);
+        ProxyManipulator.put(indexedBean, "array[0]", "foo");
+        ProxyManipulator.put(indexedBean, "array[1]", "bar");
+        ProxyManipulator.put(indexedBean, "floats[0]", new Float(32.0));
+        ProxyManipulator.put(indexedBean, "floats[1]", new Float(64.0));
+        ProxyManipulator.put(indexedBean, "types[0].boolean", Boolean.TRUE);
+        ProxyManipulator.put(indexedBean, "types[1].boolean", Boolean.FALSE);
 
         Assert.assertEquals(indexedBean.getArray(0), "foo",
                 "First String element should be set correctly.");
@@ -141,21 +141,21 @@ public class PropertyManipulatorTest
     {
         IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
 
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types"),
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean, "types"),
                 "Types array should not yet be set.");
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types[0]"),
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean, "types[0]"),
                 "First type element should not yet be set.");
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean,
                 "types[0].boolean"),
                 "Nested property of first type element should not yet be set.");
 
         indexedBean.setTypes(new TypesBean[1]);
 
-        Assert.assertTrue(PropertyManipulator.isSet(indexedBean, "types"),
+        Assert.assertTrue(ProxyManipulator.isSet(indexedBean, "types"),
                 "Types array should now be set.");
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean, "types[0]"),
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean, "types[0]"),
                 "First type element should not yet be set.");
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean,
                 "types[0].boolean"),
                 "Nested property of first type element should not yet be set.");
 
@@ -163,15 +163,15 @@ public class PropertyManipulatorTest
 
         indexedBean.setTypes(0, typesBean);
 
-        Assert.assertTrue(PropertyManipulator.isSet(indexedBean, "types[0]"),
+        Assert.assertTrue(ProxyManipulator.isSet(indexedBean, "types[0]"),
                 "First type element should now be set.");
-        Assert.assertFalse(PropertyManipulator.isSet(indexedBean,
+        Assert.assertFalse(ProxyManipulator.isSet(indexedBean,
                 "types[0].boolean"),
                 "Nested property of first type element should not yet be set.");
 
         try
         {
-            PropertyManipulator.isSet(indexedBean, "foo");
+            ProxyManipulator.isSet(indexedBean, "foo");
 
             Assert.fail("Should not be able to reference bad property, foo.");
         }
@@ -182,7 +182,7 @@ public class PropertyManipulatorTest
 
         try
         {
-            PropertyManipulator.isSet(indexedBean, "foo[0]");
+            ProxyManipulator.isSet(indexedBean, "foo[0]");
 
             Assert
                     .fail("Should not be able to reference bad property, foo[0].");
@@ -194,7 +194,7 @@ public class PropertyManipulatorTest
 
         try
         {
-            PropertyManipulator.isSet(indexedBean, "foo[0].bar");
+            ProxyManipulator.isSet(indexedBean, "foo[0].bar");
 
             Assert
                     .fail("Should not be able to reference bad property, foo[0].bar.");
@@ -206,13 +206,13 @@ public class PropertyManipulatorTest
 
         NestedBean nested = ProxyFactory.createAs(NestedBean.class);
 
-        Assert.assertFalse(PropertyManipulator.isSet(nested, "nested.boolean"),
+        Assert.assertFalse(ProxyManipulator.isSet(nested, "nested.boolean"),
                 "Nested property should not yet be set.");
 
         nested.setNested(ProxyFactory.createAs(TypesBean.class));
         nested.getNested().setBoolean(true);
 
-        Assert.assertTrue(PropertyManipulator.isSet(nested, "nested.boolean"),
+        Assert.assertTrue(ProxyManipulator.isSet(nested, "nested.boolean"),
                 "Nested property should now be set.");
     }
 
@@ -221,12 +221,12 @@ public class PropertyManipulatorTest
     {
         IndexedBean indexedBean = ProxyFactory.createAs(IndexedBean.class);
 
-        Assert.assertNull(PropertyManipulator.get(indexedBean, "types"),
+        Assert.assertNull(ProxyManipulator.get(indexedBean, "types"),
                 "Types should come back as null.");
 
         indexedBean.setTypes(new TypesBean[1]);
 
-        Assert.assertTrue(Arrays.deepEquals((TypesBean[]) PropertyManipulator
+        Assert.assertTrue(Arrays.deepEquals((TypesBean[]) ProxyManipulator
                 .get(indexedBean, "types"), new TypesBean[1]),
                 "Should get empty array.");
 
@@ -234,19 +234,19 @@ public class PropertyManipulatorTest
 
         indexedBean.setTypes(0, typesBean);
 
-        Assert.assertEquals(PropertyManipulator.get(indexedBean, "types[0]"),
+        Assert.assertEquals(ProxyManipulator.get(indexedBean, "types[0]"),
                 typesBean, "Should get types bean at index.");
-        Assert.assertNull(PropertyManipulator.get(indexedBean,
+        Assert.assertNull(ProxyManipulator.get(indexedBean,
                 "types[0].boolean"), "Should get null value.");
 
         typesBean.setBoolean(true);
 
-        Assert.assertEquals(PropertyManipulator.get(indexedBean,
+        Assert.assertEquals(ProxyManipulator.get(indexedBean,
                 "types[0].boolean"), true, "Should get set value.");
 
         try
         {
-            PropertyManipulator.get(indexedBean, "foo");
+            ProxyManipulator.get(indexedBean, "foo");
 
             Assert.fail("Should not be able to reference bad property, foo.");
         }
@@ -257,7 +257,7 @@ public class PropertyManipulatorTest
 
         try
         {
-            PropertyManipulator.get(indexedBean, "foo[0]");
+            ProxyManipulator.get(indexedBean, "foo[0]");
 
             Assert
                     .fail("Should not be able to reference bad property, foo[0].");
@@ -269,7 +269,7 @@ public class PropertyManipulatorTest
 
         try
         {
-            PropertyManipulator.get(indexedBean, "foo[0].bar");
+            ProxyManipulator.get(indexedBean, "foo[0].bar");
 
             Assert
                     .fail("Should not be able to reference bad property, foo[0].bar.");
@@ -281,15 +281,15 @@ public class PropertyManipulatorTest
 
         NestedBean nested = ProxyFactory.createAs(NestedBean.class);
 
-        PropertyManipulator.clear(typesBean, "boolean");
+        ProxyManipulator.clear(typesBean, "boolean");
         nested.setNested(typesBean);
 
-        Assert.assertNull(PropertyManipulator.get(nested, "nested.boolean"),
+        Assert.assertNull(ProxyManipulator.get(nested, "nested.boolean"),
                 "Nested boolean should have uninitialized value.");
 
         nested.getNested().setBoolean(true);
 
-        Assert.assertEquals(PropertyManipulator.get(nested, "nested.boolean"),
+        Assert.assertEquals(ProxyManipulator.get(nested, "nested.boolean"),
                 true, "Nested boolean should have set value.");
     }
 
@@ -303,7 +303,7 @@ public class PropertyManipulatorTest
         bean.getNested().setCharacter('q');
         bean.getNested().setInteger(100);
 
-        Map<String, Object> values = PropertyManipulator.copyAll(bean, flatten);
+        Map<String, Object> values = ProxyManipulator.copyAll(bean, flatten);
 
         Assert.assertEquals(values.size(), expectedSize, String.format(
                 "Should have had correct size of values Map for flatten, %s.",
@@ -345,7 +345,7 @@ public class PropertyManipulatorTest
         ancestor.getChild().getNested().setCharacter('q');
         ancestor.getChild().getNested().setInteger(100);
 
-        Map<String, Object> values = PropertyManipulator
+        Map<String, Object> values = ProxyManipulator
                 .copyAll(ancestor, true);
 
         Assert.assertEquals(values.size(), 7,

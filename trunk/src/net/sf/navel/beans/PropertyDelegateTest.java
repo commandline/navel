@@ -156,7 +156,7 @@ public class PropertyDelegateTest
         Assert.assertEquals(copyBean.getCharacter(), 'b',
                 "Live value should be permanently changed.");
 
-        Assert.assertEquals(PropertyManipulator.copyAll(copyBean).size(), 2,
+        Assert.assertEquals(ProxyManipulator.copyAll(copyBean).size(), 2,
                 "Should have two entries.");
     }
 

@@ -91,8 +91,8 @@ public class PropertyValidatorTest
         Assert.assertEquals(bean.getChildID(), 2L,
                 "Declared properties should work.");
 
-        PropertyManipulator.put(bean, "parentID", 3L);
-        PropertyManipulator.put(bean, "childID", 4L);
+        ProxyManipulator.put(bean, "parentID", 3L);
+        ProxyManipulator.put(bean, "childID", 4L);
 
         Assert.assertEquals(bean.getParentID(), 3L,
                 "Inherited properties should work.");
@@ -125,7 +125,7 @@ public class PropertyValidatorTest
         
         Assert.assertEquals(asMap.size(), 2, "Should return correct view.");
         
-        PropertyManipulator.clear(bean);
+        ProxyManipulator.clear(bean);
         
         asMap = bean.getMapProperty();
         
@@ -150,7 +150,7 @@ public class PropertyValidatorTest
         Assert.assertEquals(bean.getNested().getInteger(), 1,
                 "Nested properties should work.");
 
-        PropertyManipulator.put(bean, "nested.integer", 3);
+        ProxyManipulator.put(bean, "nested.integer", 3);
 
         Assert.assertEquals(bean.getNested().getInteger(), 3,
                 "Putting nested properties should work.");
@@ -178,7 +178,7 @@ public class PropertyValidatorTest
 
         try
         {
-            PropertyManipulator.put(bean, "foo", 1L);
+            ProxyManipulator.put(bean, "foo", 1L);
             Assert
                     .fail("Should not be able to use the PropertyManipulator to set a bad property name, should be consistent with construction check.");
         }
@@ -210,7 +210,7 @@ public class PropertyValidatorTest
 
         try
         {
-            PropertyManipulator.put(bean, "boolean", 1L);
+            ProxyManipulator.put(bean, "boolean", 1L);
             Assert
                     .fail("Should not be able to use the PropertyManipulator to set a bad property value!");
         }
@@ -242,7 +242,7 @@ public class PropertyValidatorTest
 
         try
         {
-            PropertyManipulator.put(bean, "nested", 1L);
+            ProxyManipulator.put(bean, "nested", 1L);
             Assert
                     .fail("Should not be able to use the PropertyManipulator to set a bad nested property name!");
         }

@@ -47,7 +47,7 @@ public class DefaultNestedResolver implements NestedResolver
      */
     public void resolve(Object bean, Map<String, Object> initialValues)
     {
-        PropertyManipulator.putAll(bean, initialValues);
+        ProxyManipulator.putAll(bean, initialValues);
     }
 
 }

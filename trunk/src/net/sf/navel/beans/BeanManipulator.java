@@ -49,7 +49,7 @@ import org.apache.log4j.Logger;
  * Navel and JavaBeans are treated equally with no special handling of unset
  * properties or entries in the Map that do not match any available properties.
  * For more strict treatment of just Navel beans, use the
- * {@link PropertyManipulator}.
+ * {@link ProxyManipulator}.
  * 
  * @author cmdln
  */
