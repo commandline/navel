@@ -473,6 +473,28 @@ public class PropertyValues implements Serializable
         return values.containsKey(property);
     }
 
+    Map<String, Object> resolveDelegateProperties()
+    {
+        Map<String, Object> resolved = new HashMap<String, Object>();
+        
+        if (propertyDelegates.isEmpty())
+        {
+            return resolved;
+        }
+        
+        for (Entry<String, PropertyDelegate<?>> delegateEntry : propertyDelegates.entrySet())
+        {
+            String propertyName = delegateEntry.getKey();
+            PropertyDelegate<?> propertyDelegate = delegateEntry.getValue();
+            
+            Object delegatedValue = propertyDelegate.get(this, propertyName);
+            
+            resolved.put(propertyName, delegatedValue);
+        }
+        
+        return resolved;
+    }
+
     private void checkImmutable()
     {
         if (!immutable)
