@@ -29,8 +29,6 @@
  */
 package net.sf.navel.beans;
 
-import static net.sf.navel.beans.BeanManipulator.describe;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,18 +113,18 @@ public class InitialValuesResolverTest
         bean.getNested().setLong(42L);
         bean.getNested().setShort((short) 4);
 
-        Map<String, Object> values = describe(bean, true);
+        Map<String, Object> values = ProxyManipulator.copyAll(bean, true);
 
         LOGGER.debug(values);
 
-        Assert.assertEquals(10, values.size(),
+        Assert.assertEquals(values.size(), 4,
                 "Should have correct number of properties.");
 
-        values = describe(bean);
+        values = ProxyManipulator.copyAll(bean);
 
         LOGGER.debug(values);
 
-        Assert.assertEquals(9, values.size(),
+        Assert.assertEquals(3, values.size(),
                 "Should have correct number of properties.");
     }
 }
