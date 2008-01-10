@@ -47,12 +47,6 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
     private static final Logger LOGGER = Logger
             .getLogger(ReflectionIndexedManipulator.class);
 
-    private static final String OPEN_BRACKET = "[";
-
-    private static final String CLOSE_BRACKET = "]";
-
-    private static final int MISSING_INDEX = -1;
-
     /**
      * This implementation knows how to access the indexed write property on
      * IndexedPropertyDescriptor. Since the factory method on
@@ -87,9 +81,9 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                                     propertyName, bean));
         }
 
-        int index = getIndex(propertyName);
+        Integer index = DotNotationExpression.getIndex(propertyName);
 
-        if (MISSING_INDEX == index)
+        if (null == index)
         {
             return false;
         }
@@ -133,9 +127,9 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                                     propertyName, bean));
         }
 
-        int index = getIndex(propertyName);
+        Integer index = DotNotationExpression.getIndex(propertyName);
 
-        if (MISSING_INDEX == index)
+        if (null == index)
         {
             if (LOGGER.isDebugEnabled())
             {
@@ -152,50 +146,5 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
         Method readMethod = indexedProperty.getIndexedReadMethod();
         return invokeReadMethod(readMethod, bean, new Object[]
         { Integer.valueOf(index) }, suppressExceptions);
-    }
-
-    static int getIndex(String propertyName)
-    {
-        int braceStart = propertyName.indexOf(OPEN_BRACKET);
-        int braceEnd = propertyName.indexOf(CLOSE_BRACKET);
-
-        if ((-1 == braceStart) || (-1 == braceEnd) || (braceEnd <= braceStart))
-        {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "One or both braces missing or invalid positioning for read of property, %1$s.",
-                                    propertyName));
-
-            return -1;
-        }
-
-        String indexString = propertyName.substring(braceStart + 1, braceEnd);
-
-        try
-        {
-            Integer index = Integer.valueOf(indexString);
-
-            // compare the parsed to the original in case there are any
-            // trailing characters on the original
-            if (index.toString().equals(indexString))
-            {
-                return index.intValue();
-            }
-            else
-            {
-                return -1;
-            }
-        }
-        catch (NumberFormatException e)
-        {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "%1$s cannot be parsed as an int for read on property, $2%s.",
-                                    indexString, propertyName));
-
-            return -1;
-        }
     }
 }
