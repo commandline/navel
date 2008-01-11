@@ -131,7 +131,8 @@ class SingleValueResolver
 
             if (null == elementValue)
             {
-                Class<?> elementType = BeanManipulator.getAppropriateBracketType(propertyDescriptor);
+                Class<?> elementType = BeanManipulator
+                        .getAppropriateBracketType(propertyDescriptor);
 
                 validateInstantiable(expression, elementType);
 
@@ -231,6 +232,22 @@ class SingleValueResolver
             }
         }
 
+        if (null == interimValue)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Encountered a null value at expression, %1$s, while trying to evaluate full expression, %2$s.",
+                                        currentExpression.expressionToRoot(),
+                                        currentExpression.getFullExpression()
+                                                .getExpression()));
+            }
+
+            return null;
+        }
+
         if (currentExpression.isIndexed())
         {
             interimValue = getValueWithBracket(currentExpression, interimValue);
@@ -254,6 +271,20 @@ class SingleValueResolver
     private Object getValueWithBracket(PropertyExpression expression,
             Object value)
     {
+        if (null == value)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "Tried to de-reference a null List or array property with expression, %1$s.",
+                                        expression.expressionToRoot()));
+            }
+
+            return null;
+        }
+
         int index = expression.getIndex();
 
         expression.validateIndex();
@@ -309,7 +340,8 @@ class SingleValueResolver
             // otherwise, dig out the more specific type for a list or array
             if (indexedProperty)
             {
-                nextType = BeanManipulator.getAppropriateBracketType(propertyDescriptor);
+                nextType = BeanManipulator
+                        .getAppropriateBracketType(propertyDescriptor);
 
                 if (null == nextType)
                 {

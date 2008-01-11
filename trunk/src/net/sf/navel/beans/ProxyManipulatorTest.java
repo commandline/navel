@@ -282,13 +282,18 @@ public class ProxyManipulatorTest
         }
 
         NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+        
+        ProxyManipulator.clear(nested, "nested");
+        
+        Assert.assertNull(nested.getNested(), "Nested bean should not be set.");
+        Assert.assertNull(ProxyManipulator.get(nested, "nested.boolean"),
+                "De-referencing null should return null.");
 
         ProxyManipulator.clear(typesBean, "boolean");
         nested.setNested(typesBean);
 
         Assert.assertNull(ProxyManipulator.get(nested, "nested.boolean"),
                 "Nested boolean should have uninitialized value.");
-
         nested.getNested().setBoolean(true);
 
         Assert.assertEquals(ProxyManipulator.get(nested, "nested.boolean"),
