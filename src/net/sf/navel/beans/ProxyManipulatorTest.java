@@ -370,7 +370,7 @@ public class ProxyManipulatorTest
     }
     
     @Test
-    public void testResolvedDelegates()
+    public void testResolveAll()
     {
         TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
                 StringBean.class);
@@ -396,7 +396,7 @@ public class ProxyManipulatorTest
     }
     
     @Test
-    public void testResolvedNested()
+    public void testResolveAllNested()
     {
         NestedBean nested = ProxyFactory.createAs(NestedBean.class);
         
@@ -430,6 +430,94 @@ public class ProxyManipulatorTest
         
         Assert.assertTrue(values.isEmpty(), "Delegate values should be empty on shallow resolve.");
         Assert.assertFalse(values.containsKey("nested.string"), "Nested property delegate should not be present.");
+    }
+    
+    @Test
+    public void testResolve()
+    {
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                StringBean.class);
+
+        ProxyFactory.attach(typesBean, "string",
+                new CharacterAsStringDelegate());
+
+        Assert.assertTrue(
+                ProxyFactory.isAttached(typesBean, "string"),
+                "Should spot the property delegate.");
+
+        typesBean.setCharacter('a');
+        
+        Map<String,Object> values = ProxyManipulator.copyAll(typesBean);
+        
+        Assert.assertEquals(values.size(), 1, "Internal storage should only have one entry.");
+        Assert.assertEquals(values.get("character"), (Character) 'a', "Internal storage should be correct.");
+        
+        Object value = ProxyManipulator.resolve(typesBean, "string");
+        
+        Assert.assertNotNull(value, "Delegate value should be valid.");
+        Assert.assertEquals(value, "a", "Delegated value should be correct.");
+    }
+    
+    @Test
+    public void testResolveNested()
+    {
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+        
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                StringBean.class);
+        
+        nested.setNested(typesBean);
+
+        ProxyFactory.attach(typesBean, "string",
+                new CharacterAsStringDelegate());
+
+        Assert.assertTrue(
+                ProxyFactory.isAttached(typesBean, "string"),
+                "Should spot the property delegate.");
+
+        typesBean.setCharacter('a');
+        
+        Map<String,Object> values = ProxyManipulator.copyAll(nested, true);
+        
+        Assert.assertEquals(values.size(), 1, "Internal storage should only have one entry.");
+        Assert.assertTrue(values.containsKey("nested.character"), "Nested property value should have been prefixed.");
+        Assert.assertEquals(values.get("nested.character"), (Character) 'a', "Internal storage should be correct.");
+        
+        Object value = ProxyManipulator.resolve(nested, "nested.string");
+        
+        Assert.assertNotNull(value, "Delegate values should be valid.");
+        Assert.assertEquals(value, "a", "Delegated value should be correct.");
+        
+        value = ProxyManipulator.resolve(nested, "string");
+        
+        Assert.assertNull(value, "Delegate value should be invalid on shallow resolve.");
+    }
+    
+    @Test
+    public void testClearNested()
+    {
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+        
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                StringBean.class);
+        
+        nested.setNested(typesBean);
+
+        typesBean.setCharacter('a');
+        
+        Map<String,Object> values = ProxyManipulator.copyAll(nested, true);
+        
+        Assert.assertEquals(values.size(), 1, "Internal storage should only have one entry.");
+        Assert.assertTrue(values.containsKey("nested.character"), "Nested property value should have been prefixed.");
+        Assert.assertEquals(values.get("nested.character"), (Character) 'a', "Internal storage should be correct.");
+        
+        boolean removed = ProxyManipulator.clear(nested, "nested.character");
+        
+        Assert.assertTrue(removed, "Should have indicated a successful remove.");
+        
+        removed= ProxyManipulator.clear(nested, "character");
+        
+        Assert.assertFalse(removed, "Should not have indicated a successful remove.");
     }
 
 

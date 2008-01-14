@@ -221,7 +221,7 @@ public class ProxyManipulator
 
         if (!handler.propertyValues.containsKey(propertyName))
         {
-            return true;
+            return false;
         }
 
         Object value = handler.propertyValues.remove(propertyName);
@@ -242,6 +242,15 @@ public class ProxyManipulator
         JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
         handler.propertyValues.clear();
+    }
+    
+    public static Object resolve(Object bean, String propertyExpression)
+    {
+        SINGLETON.assertValidBean(bean);
+
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
+
+        return handler.propertyValues.resolve(propertyExpression);
     }
 
     /**
