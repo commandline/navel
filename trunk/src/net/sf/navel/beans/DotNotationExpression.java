@@ -60,6 +60,8 @@ class DotNotationExpression
 
     private final PropertyExpression rootExpression;
 
+    private final PropertyExpression leafExpression;
+
     private final int depth;
 
     DotNotationExpression(String expression)
@@ -69,12 +71,20 @@ class DotNotationExpression
 
         int countingDepth = 1;
 
+        PropertyExpression leafCandidate = null;
+
         for (PropertyExpression currentProperty = rootExpression; !currentProperty
                 .isLeaf(); currentProperty = currentProperty.getChild())
         {
+            leafCandidate = currentProperty;
+
             countingDepth++;
         }
 
+        // the loop above will not execute for the last step, the leaf node, so
+        // need to step one further if the candidate is set
+        this.leafExpression = null == leafCandidate ? null : leafCandidate
+                .getChild();
         this.depth = countingDepth;
     }
 
@@ -93,6 +103,15 @@ class DotNotationExpression
     PropertyExpression getRoot()
     {
         return rootExpression;
+    }
+
+    /**
+     * @return The leaf expression on the set of linked expressions that
+     *         describe how to traverse/evaluate the expression.
+     */
+    PropertyExpression getLeaf()
+    {
+        return leafExpression;
     }
 
     /**
