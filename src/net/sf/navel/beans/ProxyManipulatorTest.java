@@ -425,6 +425,11 @@ public class ProxyManipulatorTest
         Assert.assertEquals(values.size(), 1, "Delegate values should only have one entry.");
         Assert.assertTrue(values.containsKey("nested.string"), "Nested property delegate should have been prefixed.");
         Assert.assertEquals(values.get("nested.string"), "a", "Delegated values should be correct.");
+        
+        values = ProxyManipulator.resolveAll(nested, false);
+        
+        Assert.assertTrue(values.isEmpty(), "Delegate values should be empty on shallow resolve.");
+        Assert.assertFalse(values.containsKey("nested.string"), "Nested property delegate should not be present.");
     }
 
 
