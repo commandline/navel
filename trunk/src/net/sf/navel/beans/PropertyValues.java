@@ -456,10 +456,48 @@ public class PropertyValues implements Serializable
         return String.format(toStringTemplate, toPrint);
     }
 
-    boolean isAttached(String propertyName)
+    boolean isAttached(String dotExpression)
     {
-        return propertyDelegates.containsKey(propertyName)
-                && propertyDelegates.get(propertyName) != null;
+        PropertyExpression leafProperty = new DotNotationExpression(
+                dotExpression).getLeaf();
+
+        // if the expression has no nested properties, look in this instance
+        if (leafProperty.isRoot())
+        {
+            return propertyDelegates.containsKey(dotExpression)
+                    && propertyDelegates.get(dotExpression) != null;
+        }
+
+        // otherwise, de-reference the parent to the leaf property in the
+        // expression
+        String parentExpression = leafProperty.getParent().expressionToRoot();
+
+        Object parentValue = getInternal(parentExpression);
+
+        if (null == parentValue)
+        {
+            return false;
+        }
+
+        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+
+        if (null == parentHandler)
+        {
+            return false;
+        }
+
+        String leafPropertyName = leafProperty.getPropertyName();
+
+        Map<String, PropertyDelegate<?>> parentPropertyDelegates = parentHandler.propertyValues.propertyDelegates;
+
+        if (null == parentPropertyDelegates)
+        {
+            return false;
+        }
+
+        // then resolve the leaf property against its immediate parent
+        return parentPropertyDelegates.containsKey(leafPropertyName)
+                && parentPropertyDelegates.get(leafPropertyName) != null;
     }
 
     void attach(String propertyName, PropertyDelegate<?> delegate)
@@ -511,15 +549,15 @@ public class PropertyValues implements Serializable
     Object resolveInternal(String propertyName)
     {
         PropertyDelegate<?> delegate = propertyDelegates.get(propertyName);
-        
+
         if (null == delegate)
         {
             return null;
         }
-        
+
         return delegate.get(this, propertyName);
     }
-    
+
     Object removeInternal(String propertyName)
     {
         return values.remove(propertyName);
