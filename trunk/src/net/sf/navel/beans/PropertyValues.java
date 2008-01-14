@@ -534,9 +534,41 @@ public class PropertyValues implements Serializable
         parentDelegates.put(leafProperty.getPropertyName(), delegate);
     }
 
-    boolean detach(String propertyName)
+    boolean detach(String dotExpression)
     {
-        return propertyDelegates.remove(propertyName) != null;
+        checkImmutable();
+
+        PropertyExpression leafProperty = new DotNotationExpression(
+                dotExpression).getLeaf();
+
+        // if the expression has no nested properties, look in this instance
+        if (leafProperty.isRoot())
+        {
+
+            PropertyDelegate<?> delegate = propertyDelegates
+                    .remove(leafProperty.getPropertyName());
+
+            return delegate != null;
+        }
+
+        JavaBeanHandler parentHandler = SingleValueResolver.getParentOf(this,
+                leafProperty);
+
+        if (null == parentHandler)
+        {
+            LOGGER.warn(String.format(
+                    "Target of attachment, %1$s, is invalid.", leafProperty
+                            .getParent().expressionToRoot()));
+
+            return false;
+        }
+
+        Map<String, PropertyDelegate<?>> parentDelegates = parentHandler.propertyValues.propertyDelegates;
+
+        PropertyDelegate<?> delegate = parentDelegates.remove(leafProperty
+                .getPropertyName());
+
+        return delegate != null;
     }
 
     Object proxyToObject(String message, Method method, Object[] args)
@@ -632,7 +664,7 @@ public class PropertyValues implements Serializable
             String propertyName, ProxyDescriptor proxyDescriptor)
     {
 
-        if (propertyDelegates.get(propertyName) != null)
+        if (propertyDelegates.get(propertyName) == null)
         {
             return;
         }
