@@ -94,6 +94,28 @@ class SingleValueResolver
                 propertyValues.getProxyDescriptor(), new DotNotationExpression(
                         propertyExpression).getRoot());
     }
+    
+    static JavaBeanHandler getParentOf(PropertyValues propertyValues, PropertyExpression propertyExpression)
+    {
+        // otherwise, de-reference the parent to the leaf property in the expression
+        String parentExpression = propertyExpression.getParent().expressionToRoot();
+        
+        Object parentValue = propertyValues.getInternal(parentExpression);
+        
+        if (null == parentValue)
+        {
+            return null;
+        }
+
+        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        
+        if (null == parentHandler)
+        {
+            return null;
+        }
+        
+        return parentHandler;
+    }
 
     private boolean putValue(PropertyValues propertyValues,
             PropertyExpression expression, Object propertyValue)
@@ -333,18 +355,8 @@ class SingleValueResolver
         {
             return propertyValues.resolveInternal(leafProperty.getPropertyName());
         }
-        
-        // otherwise, de-reference the parent to the leaf property in the expression
-        String parentExpression = leafProperty.getParent().expressionToRoot();
-        
-        Object parentValue = propertyValues.getInternal(parentExpression);
-        
-        if (null == parentValue)
-        {
-            return null;
-        }
 
-        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        JavaBeanHandler parentHandler = SingleValueResolver.getParentOf(propertyValues, leafProperty);
         
         if (null == parentHandler)
         {
@@ -365,18 +377,8 @@ class SingleValueResolver
         {
             return propertyValues.removeInternal(leafProperty.getPropertyName());
         }
-        
-        // otherwise, de-reference the parent to the leaf property in the expression
-        String parentExpression = leafProperty.getParent().expressionToRoot();
-        
-        Object parentValue = propertyValues.getInternal(parentExpression);
-        
-        if (null == parentValue)
-        {
-            return null;
-        }
 
-        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        JavaBeanHandler parentHandler = SingleValueResolver.getParentOf(propertyValues, leafProperty);
         
         if (null == parentHandler)
         {
