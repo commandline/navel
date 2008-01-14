@@ -155,4 +155,13 @@ public class DotNotationExpressionTest
         Assert.assertEquals(propertyExpression.getIndex(), 1,
                 "Baz should have a valid index value.");
     }
+    
+    @Test
+    public void testGetLeaf()
+    {
+        DotNotationExpression dotExpression = new DotNotationExpression("foo.bar.baz");
+        
+        Assert.assertNotNull(dotExpression.getLeaf(), "Leaf should be valid.");
+        Assert.assertEquals(dotExpression.getLeaf().getPropertyName(), "baz");
+    }
 }
