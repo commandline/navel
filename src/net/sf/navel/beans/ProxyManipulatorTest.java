@@ -471,6 +471,13 @@ public class ProxyManipulatorTest
         ProxyFactory.attach(typesBean, "string",
                 new CharacterAsStringDelegate());
 
+        Assert.assertTrue(
+                ProxyFactory.isAttached(typesBean, "string"),
+                "Should spot the property delegate.");
+        Assert.assertTrue(
+                ProxyFactory.isAttached(nested, "nested.string"),
+                "Should spot the property delegate, using dot notation.");
+
         // also ensure using a dot-notation expression will work
         ProxyFactory.attach(nested, "nested.string",
                 new CharacterAsStringDelegate());
