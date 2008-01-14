@@ -169,5 +169,15 @@ public class DotNotationExpressionTest
         Assert.assertEquals(dotExpression.getLeaf().expressionToRoot(),
                 "foo.bar.baz",
                 "Expression to root should match the original expression.");
+
+        dotExpression = new DotNotationExpression("foo");
+
+        Assert.assertNotNull(dotExpression.getLeaf(),
+                "Single property Leaf should be valid.");
+        Assert.assertTrue(dotExpression.getLeaf().isRoot(),
+                "Leaf should also be correctly flagged as root expression.");
+        Assert.assertEquals(dotExpression.getLeaf().getPropertyName(),
+                dotExpression.getRoot().getPropertyName(),
+                "Leaf and root should be equal.");
     }
 }

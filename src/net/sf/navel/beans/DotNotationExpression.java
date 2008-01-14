@@ -81,10 +81,21 @@ class DotNotationExpression
             countingDepth++;
         }
 
-        // the loop above will not execute for the last step, the leaf node, so
-        // need to step one further if the candidate is set
-        this.leafExpression = null == leafCandidate ? null : leafCandidate
-                .getChild();
+        // if the depth is one, the loop never executed but the assumption that
+        // the root and leaf are the same is valid
+        if (1 == countingDepth)
+        {
+            this.leafExpression = rootExpression;
+        }
+        else
+        {
+            // the loop above will not execute for the last step, the leaf node,
+            // so
+            // need to step one further if the candidate is set
+            this.leafExpression = null == leafCandidate ? null : leafCandidate
+                    .getChild();
+        }
+
         this.depth = countingDepth;
     }
 
