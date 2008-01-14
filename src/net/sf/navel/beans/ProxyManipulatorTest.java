@@ -389,10 +389,42 @@ public class ProxyManipulatorTest
         Assert.assertEquals(values.size(), 1, "Internal storage should only have one entry.");
         Assert.assertEquals(values.get("character"), (Character) 'a', "Internal storage should be correct.");
         
-        values = ProxyManipulator.resolveDelegatedProperties(typesBean);
+        values = ProxyManipulator.resolveAll(typesBean);
         
         Assert.assertEquals(values.size(), 1, "Delegate values should only have one entry.");
         Assert.assertEquals(values.get("string"), "a", "Delegated values should be correct.");
+    }
+    
+    @Test
+    public void testResolvedNested()
+    {
+        NestedBean nested = ProxyFactory.createAs(NestedBean.class);
+        
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
+                StringBean.class);
+        
+        nested.setNested(typesBean);
+
+        ProxyFactory.attach(typesBean, "string",
+                new CharacterAsStringDelegate());
+
+        Assert.assertTrue(
+                ProxyFactory.isAttached(typesBean, "string"),
+                "Should spot the property delegate.");
+
+        typesBean.setCharacter('a');
+        
+        Map<String,Object> values = ProxyManipulator.copyAll(nested, true);
+        
+        Assert.assertEquals(values.size(), 1, "Internal storage should only have one entry.");
+        Assert.assertTrue(values.containsKey("nested.character"), "Nested property value should have been prefixed.");
+        Assert.assertEquals(values.get("nested.character"), (Character) 'a', "Internal storage should be correct.");
+        
+        values = ProxyManipulator.resolveAll(nested, true);
+        
+        Assert.assertEquals(values.size(), 1, "Delegate values should only have one entry.");
+        Assert.assertTrue(values.containsKey("nested.string"), "Nested property delegate should have been prefixed.");
+        Assert.assertEquals(values.get("nested.string"), "a", "Delegated values should be correct.");
     }
 
 

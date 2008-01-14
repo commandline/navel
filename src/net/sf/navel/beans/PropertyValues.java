@@ -200,10 +200,46 @@ public class PropertyValues implements Serializable
 
         if (flatten)
         {
-            PropertyValuesExpander.expand(copy);
+            PropertyValuesExpander.expand(findNestedProxies(), copy);
         }
 
         return copy;
+    }
+
+    /**
+     * Interrogate the registered {@link PropertyDelegate} instances and invoke
+     * their {@link PropertyDelegate#get(PropertyValues, String)} method to
+     * generate a {@link Map} of synthetic values.
+     * 
+     * @param flatten
+     *            Whether the delegates on any nested proxies should also be
+     *            resolved and flattened into the output {@link Map}.
+     * @return A {@link Map} of just the returns of
+     *         {@link PropertyDelegate#get(PropertyValues, String)} keyed by the
+     *         properties to which the respective delegates are registered.
+     */
+    public Map<String, Object> resolveDelegates(boolean flatten)
+    {
+        Map<String, Object> resolved = new HashMap<String, Object>();
+
+        for (Entry<String, PropertyDelegate<?>> delegateEntry : propertyDelegates
+                .entrySet())
+        {
+            String propertyName = delegateEntry.getKey();
+
+            PropertyDelegate<?> propertyDelegate = delegateEntry.getValue();
+
+            Object delegatedValue = propertyDelegate.get(this, propertyName);
+
+            resolved.put(propertyName, delegatedValue);
+        }
+
+        if (flatten)
+        {
+            PropertyValuesExpander.resolve(findNestedProxies(), resolved);
+        }
+
+        return resolved;
     }
 
     /**
@@ -473,26 +509,30 @@ public class PropertyValues implements Serializable
         return values.containsKey(property);
     }
 
-    Map<String, Object> resolveDelegateProperties()
+    private Map<String, PropertyValues> findNestedProxies()
     {
-        Map<String, Object> resolved = new HashMap<String, Object>();
-        
-        if (propertyDelegates.isEmpty())
+        Map<String, PropertyValues> nestedProxies = new HashMap<String, PropertyValues>();
+
+        for (Entry<String, Object> entry : values.entrySet())
         {
-            return resolved;
+            Object value = entry.getValue();
+
+            if (null == value)
+            {
+                continue;
+            }
+
+            JavaBeanHandler handler = ProxyFactory.getHandler(value);
+
+            if (null == handler)
+            {
+                continue;
+            }
+
+            nestedProxies.put(entry.getKey(), handler.propertyValues);
         }
-        
-        for (Entry<String, PropertyDelegate<?>> delegateEntry : propertyDelegates.entrySet())
-        {
-            String propertyName = delegateEntry.getKey();
-            PropertyDelegate<?> propertyDelegate = delegateEntry.getValue();
-            
-            Object delegatedValue = propertyDelegate.get(this, propertyName);
-            
-            resolved.put(propertyName, delegatedValue);
-        }
-        
-        return resolved;
+
+        return nestedProxies;
     }
 
     private void checkImmutable()

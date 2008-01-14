@@ -30,10 +30,8 @@
 package net.sf.navel.beans;
 
 import java.lang.reflect.Proxy;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 /**
@@ -53,52 +51,77 @@ class PropertyValuesExpander
         // enforce Singleton pattern
     }
 
-    static void expand(Map<String, Object> values)
+    static void expand(Map<String, PropertyValues> nestedProxies,
+            Map<String, Object> values)
     {
-        SINGLETON.expandNestedBeans(values);
+        SINGLETON.expandNestedBeans(nestedProxies, values);
     }
 
-    private void expandNestedBeans(Map<String, Object> values)
+    static void resolve(Map<String, PropertyValues> nestedProxies,
+            Map<String, Object> values)
+    {
+        SINGLETON.resolveNestedBeans(nestedProxies, values);
+    }
+
+    private void expandNestedBeans(Map<String, PropertyValues> nestedProxies,
+            Map<String, Object> values)
     {
         // to allow modification of the original map
-        Set<Entry<String, Object>> entries = new HashSet<Entry<String, Object>>(
-                values.entrySet());
-
-        for (Iterator<Entry<String, Object>> entryIter = entries.iterator(); entryIter
-                .hasNext();)
+        for (Entry<String, PropertyValues> entry : nestedProxies.entrySet())
         {
-            Entry<String, Object> entry = entryIter.next();
+            PropertyValues nestedProxy = entry.getValue();
 
-            JavaBeanHandler handler = ProxyFactory.getHandler(entry.getValue());
-
-            if (null == handler)
+            if (null == nestedProxy)
             {
                 continue;
             }
 
             // depth first recursion, will resolved all descendants in the
             // original map, first
-            Map<String, Object> nestedValues = handler.propertyValues
-                    .copyValues(true);
+            Map<String, Object> nestedValues = nestedProxy.copyValues(true);
 
             // re-write the keys for the immediate properties in the map, the
             // previous line will have taken care of the more deeply nested
             // properties
-            expandNestedBean(values, entry.getKey(), nestedValues);
+            nestedValues = prefixKeys(entry.getKey(), nestedValues);
+
+            values.putAll(nestedValues);
+
+            values.remove(entry.getKey());
         }
     }
 
-    private void expandNestedBean(Map<String, Object> values, String key,
-            Map<String, Object> nested)
+    private void resolveNestedBeans(Map<String, PropertyValues> nestedProxies,
+            Map<String, Object> values)
     {
-        for (Iterator<Entry<String, Object>> entryIter = nested.entrySet()
-                .iterator(); entryIter.hasNext();)
+        for (Entry<String, PropertyValues> entry : nestedProxies.entrySet())
         {
-            Entry<String, Object> entry = entryIter.next();
+            PropertyValues nestedProxy = entry.getValue();
 
-            values.put(key + "." + entry.getKey(), entry.getValue());
+            if (null == nestedProxy)
+            {
+                continue;
+            }
+
+            Map<String, Object> nestedValues = nestedProxy.resolveDelegates(true);
+
+            nestedValues = prefixKeys(entry.getKey(), nestedValues);
+
+            values.putAll(nestedValues);
+        }
+    }
+
+    private Map<String, Object> prefixKeys(String prefix,
+            Map<String, Object> values)
+    {
+        Map<String, Object> prefixed = new HashMap<String, Object>();
+
+        for (Entry<String, Object> entry : values.entrySet())
+        {
+            prefixed.put(prefix.concat(".").concat(entry.getKey()), entry
+                    .getValue());
         }
 
-        values.remove(key);
+        return prefixed;
     }
 }
