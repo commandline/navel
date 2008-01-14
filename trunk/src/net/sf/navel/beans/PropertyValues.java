@@ -307,6 +307,11 @@ public class PropertyValues implements Serializable
         return SingleValueResolver.get(this, dotExpression);
     }
 
+    public Object resolve(String dotExpression)
+    {
+        return SingleValueResolver.resolve(this, dotExpression);
+    }
+
     /**
      * Figure out if the supplied expression refers to a valid entry in the
      * underlying storage.
@@ -340,12 +345,11 @@ public class PropertyValues implements Serializable
      *             If the dot expression doesn't parse with the given bean
      *             interfaces.
      */
-    public Object remove(String property)
+    public Object remove(String dotExpression)
     {
         checkImmutable();
 
-        // TODO enhance to evaluation dot expression
-        return values.remove(property);
+        return SingleValueResolver.remove(this, dotExpression);
     }
 
     /**
@@ -502,6 +506,23 @@ public class PropertyValues implements Serializable
     Object getInternal(String property)
     {
         return values.get(property);
+    }
+
+    Object resolveInternal(String propertyName)
+    {
+        PropertyDelegate<?> delegate = propertyDelegates.get(propertyName);
+        
+        if (null == delegate)
+        {
+            return null;
+        }
+        
+        return delegate.get(this, propertyName);
+    }
+    
+    Object removeInternal(String propertyName)
+    {
+        return values.remove(propertyName);
     }
 
     boolean containsKeyInternal(String property)

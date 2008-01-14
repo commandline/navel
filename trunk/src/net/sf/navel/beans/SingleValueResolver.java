@@ -69,6 +69,17 @@ class SingleValueResolver
                 propertyExpression).getRoot());
     }
 
+    static Object resolve(PropertyValues propertyValues,
+            String propertyExpression)
+    {
+        return SINGLETON.resolveValue(propertyValues, propertyExpression);
+    }
+
+    static Object remove(PropertyValues propertyValues, String propertyExpression)
+    {
+        return SINGLETON.removeValue(propertyValues, propertyExpression);
+    }
+
     static boolean containsKey(PropertyValues propertyValues,
             String propertyExpression)
     {
@@ -310,6 +321,70 @@ class SingleValueResolver
         expression.validateArrayBounds(arrayValue.length);
 
         return arrayValue[index];
+    }
+
+    private Object resolveValue(PropertyValues propertyValues,
+            String dotExpression)
+    {
+        PropertyExpression leafProperty = new DotNotationExpression(dotExpression).getLeaf();
+        
+        // if the expression has no nested properties, look in this instance
+        if (leafProperty.isRoot())
+        {
+            return propertyValues.resolveInternal(leafProperty.getPropertyName());
+        }
+        
+        // otherwise, de-reference the parent to the leaf property in the expression
+        String parentExpression = leafProperty.getParent().expressionToRoot();
+        
+        Object parentValue = propertyValues.getInternal(parentExpression);
+        
+        if (null == parentValue)
+        {
+            return null;
+        }
+
+        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        
+        if (null == parentHandler)
+        {
+            return null;
+        }
+        
+        // then resolve the leaf property against its immediate parent
+        return parentHandler.propertyValues.resolveInternal(leafProperty.getPropertyName());
+    }
+
+    private Object removeValue(PropertyValues propertyValues,
+            String dotExpression)
+    {
+        PropertyExpression leafProperty = new DotNotationExpression(dotExpression).getLeaf();
+        
+        // if the expression has no nested properties, look in this instance
+        if (leafProperty.isRoot())
+        {
+            return propertyValues.removeInternal(leafProperty.getPropertyName());
+        }
+        
+        // otherwise, de-reference the parent to the leaf property in the expression
+        String parentExpression = leafProperty.getParent().expressionToRoot();
+        
+        Object parentValue = propertyValues.getInternal(parentExpression);
+        
+        if (null == parentValue)
+        {
+            return null;
+        }
+
+        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        
+        if (null == parentHandler)
+        {
+            return null;
+        }
+        
+        // then remove the leaf property against its immediate parent
+        return parentHandler.propertyValues.removeInternal(leafProperty.getPropertyName());
     }
 
     private boolean isPropertyOfValues(ProxyDescriptor proxyDescriptor,
