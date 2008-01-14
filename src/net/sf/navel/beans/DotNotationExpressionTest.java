@@ -84,7 +84,8 @@ public class DotNotationExpressionTest
                 .getRoot(),
                 "Baz's parent should not be the root of the dot expression.");
         Assert.assertEquals(propertyExpression.expressionToLeaf(), "baz");
-        Assert.assertEquals(propertyExpression.expressionToRoot(), "foo.bar.baz");
+        Assert.assertEquals(propertyExpression.expressionToRoot(),
+                "foo.bar.baz");
     }
 
     @Test
@@ -155,13 +156,18 @@ public class DotNotationExpressionTest
         Assert.assertEquals(propertyExpression.getIndex(), 1,
                 "Baz should have a valid index value.");
     }
-    
+
     @Test
     public void testGetLeaf()
     {
-        DotNotationExpression dotExpression = new DotNotationExpression("foo.bar.baz");
-        
+        DotNotationExpression dotExpression = new DotNotationExpression(
+                "foo.bar.baz");
+
         Assert.assertNotNull(dotExpression.getLeaf(), "Leaf should be valid.");
         Assert.assertEquals(dotExpression.getLeaf().getPropertyName(), "baz");
+
+        Assert.assertEquals(dotExpression.getLeaf().expressionToRoot(),
+                "foo.bar.baz",
+                "Expression to root should match the original expression.");
     }
 }
