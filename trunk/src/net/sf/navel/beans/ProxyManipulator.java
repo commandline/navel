@@ -105,6 +105,9 @@ public class ProxyManipulator
      * 
      * @param bean
      *            Must be navel bean.
+     * @param flatten
+     *            If true, then the nested proxies will be flattened into the
+     *            output.
      * 
      * @return A shallow copy of the bean's internal state.
      */
@@ -242,9 +245,7 @@ public class ProxyManipulator
     }
 
     /**
-     * Utility to resolve the values for delegates properties since
-     * {@link #copyAll(Object)} ignores any attached {@link PropertyDelegate}
-     * instances. This methid does not currently resolve nested beans.
+     * Overload that assumes false for flattening out nested proxies.
      * 
      * @param bean
      *            Proxy to resolve.
@@ -252,13 +253,33 @@ public class ProxyManipulator
      *         {@link PropertyDelegate#get(PropertyValues, String)} for all the
      *         registered instances, empty if no delegates are registered.
      */
-    public static Map<String, Object> resolveDelegatedProperties(Object bean)
+    public static Map<String, Object> resolveAll(Object bean)
+    {
+        return ProxyManipulator.resolveAll(bean, false);
+    }
+
+    /**
+     * Utility to resolve the values for delegates properties since
+     * {@link #copyAll(Object)} ignores any attached {@link PropertyDelegate}
+     * instances. This methid does not currently resolve nested beans.
+     * 
+     * @param bean
+     *            Proxy to resolve.
+     * @param resolveNeste
+     *            If true, the nested proxies will also be resolved and
+     *            flattened into the output.
+     * @return A {@link Map} containing the results of calling
+     *         {@link PropertyDelegate#get(PropertyValues, String)} for all the
+     *         registered instances, empty if no delegates are registered.
+     */
+    public static Map<String, Object> resolveAll(Object bean,
+            boolean resolveNested)
     {
         SINGLETON.assertValidBean(bean);
 
         JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
 
-        return handler.propertyValues.resolveDelegateProperties();
+        return handler.propertyValues.resolveDelegates(resolveNested);
     }
 
     /**
