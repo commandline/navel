@@ -523,7 +523,7 @@ public class ProxyFactory
     {
         for (InterfaceDelegate delegate : delegates)
         {
-            attach(bean, delegate);
+            ProxyFactory.attach(bean, delegate);
         }
     }
 

@@ -468,18 +468,8 @@ public class PropertyValues implements Serializable
                     && propertyDelegates.get(dotExpression) != null;
         }
 
-        // otherwise, de-reference the parent to the leaf property in the
-        // expression
-        String parentExpression = leafProperty.getParent().expressionToRoot();
-
-        Object parentValue = getInternal(parentExpression);
-
-        if (null == parentValue)
-        {
-            return false;
-        }
-
-        JavaBeanHandler parentHandler = ProxyFactory.getHandler(parentValue);
+        JavaBeanHandler parentHandler = SingleValueResolver.getParentOf(this,
+                leafProperty);
 
         if (null == parentHandler)
         {
@@ -500,25 +490,48 @@ public class PropertyValues implements Serializable
                 && parentPropertyDelegates.get(leafPropertyName) != null;
     }
 
-    void attach(String propertyName, PropertyDelegate<?> delegate)
+    void attach(String dotExpression, PropertyDelegate<?> delegate)
     {
         checkImmutable();
 
-        if (propertyDelegates.get(propertyName) != null)
+        PropertyExpression leafProperty = new DotNotationExpression(
+                dotExpression).getLeaf();
+
+        // if the expression has no nested properties, look in this instance
+        if (leafProperty.isRoot())
         {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "PropertyDelegate already mapped for property, %1$s, on proxy, %2$s, overwriting!",
-                                    propertyName, proxyDescriptor));
+            warnReattach(propertyDelegates, leafProperty.getPropertyName(),
+                    proxyDescriptor);
+
+            validateAttach(proxyDescriptor, leafProperty.getPropertyName(),
+                    delegate);
+
+            propertyDelegates.put(leafProperty.getPropertyName(), delegate);
+
+            return;
         }
 
-        PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
-                .get(propertyName);
+        JavaBeanHandler parentHandler = SingleValueResolver.getParentOf(this,
+                leafProperty);
 
-        PropertyValidator.validate(propertyName, propertyDescriptor, delegate);
+        if (null == parentHandler)
+        {
+            LOGGER.warn(String.format(
+                    "Target of attachment, %1$s, is invalid.", leafProperty
+                            .getParent().expressionToRoot()));
 
-        propertyDelegates.put(propertyName, delegate);
+            return;
+        }
+
+        Map<String, PropertyDelegate<?>> parentDelegates = parentHandler.propertyValues.propertyDelegates;
+
+        warnReattach(parentDelegates, leafProperty.getPropertyName(),
+                parentHandler.propertyValues.proxyDescriptor);
+
+        validateAttach(parentHandler.propertyValues.proxyDescriptor,
+                leafProperty.getPropertyName(), delegate);
+
+        parentDelegates.put(leafProperty.getPropertyName(), delegate);
     }
 
     boolean detach(String propertyName)
@@ -603,5 +616,31 @@ public class PropertyValues implements Serializable
 
         throw new UnsupportedOperationException(
                 "This bean is immutable.  It was created with ProxyFactory.unmodifiableObject(), use ProxyFactory.copy() to create a copy safe to modify.");
+    }
+
+    private static void validateAttach(ProxyDescriptor proxyDescriptor,
+            String propertyName, PropertyDelegate<?> delegate)
+    {
+        PropertyDescriptor propertyDescriptor = proxyDescriptor.propertyDescriptors
+                .get(propertyName);
+
+        PropertyValidator.validate(propertyName, propertyDescriptor, delegate);
+    }
+
+    private static void warnReattach(
+            Map<String, PropertyDelegate<?>> propertyDelegates,
+            String propertyName, ProxyDescriptor proxyDescriptor)
+    {
+
+        if (propertyDelegates.get(propertyName) != null)
+        {
+            return;
+        }
+
+        LOGGER
+                .warn(String
+                        .format(
+                                "PropertyDelegate already mapped for property, %1$s, on proxy, %2$s, overwriting!",
+                                propertyName, proxyDescriptor));
     }
 }
