@@ -31,6 +31,7 @@ package net.sf.navel.beans;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -55,6 +56,10 @@ class PropertyValuesExpander
             Map<String, Object> values)
     {
         SINGLETON.expandNestedBeans(nestedProxies, values);
+        
+        SINGLETON.expandNestedList(values);
+        
+        SINGLETON.expandNestedArray(values);
     }
 
     static void resolve(Map<String, PropertyValues> nestedProxies,
@@ -89,6 +94,72 @@ class PropertyValuesExpander
 
             values.remove(entry.getKey());
         }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void expandNestedList(Map<String,Object> values)
+    {
+        Map<String,Object> copy = new HashMap<String, Object>(values);
+        
+        for (Entry<String,Object> entry : copy.entrySet())
+        {
+            if (!(entry.getValue() instanceof List))
+            {
+                continue;
+            }
+            
+            List<Object> nestedList = (List<Object>) entry.getValue();
+            
+            for (int index = 0; index < nestedList.size(); index++)
+            {
+                Object nestedElement = nestedList.get(index);
+
+                expandElement(entry.getKey(), index, values, nestedElement);
+            }
+        }
+    }
+    
+    private void expandNestedArray(Map<String,Object> values)
+    {
+        Map<String,Object> copy = new HashMap<String, Object>(values);
+        
+        for (Entry<String,Object> entry : copy.entrySet())
+        {
+            if (!(entry.getValue() instanceof Object[]))
+            {
+                continue;
+            }
+            
+            Object[] nestedArray = (Object[]) entry.getValue();
+            
+            for (int index = 0; index < nestedArray.length; index++)
+            {
+                Object nestedElement = nestedArray[index];
+
+                expandElement(entry.getKey(), index, values, nestedElement);
+            }
+        }
+    }
+    
+    private void expandElement(String key, int index, Map<String,Object> values, Object nestedElement)
+    {
+        if (null == nestedElement)
+        {
+            return;
+        }
+        
+        if (ProxyFactory.getHandler(nestedElement) == null)
+        {
+            return;
+        }
+        
+        Map<String,Object> nestedElementValues = ProxyManipulator.copyAll(nestedElement, true);
+        
+        nestedElementValues = prefixKeys(String.format("%1$s[%2$d]", key, index), nestedElementValues);
+        
+        values.putAll(nestedElementValues);
+        
+        values.remove(key);
     }
 
     private void resolveNestedBeans(Map<String, PropertyValues> nestedProxies,
