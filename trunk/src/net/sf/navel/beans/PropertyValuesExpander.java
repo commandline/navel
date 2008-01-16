@@ -68,16 +68,6 @@ class PropertyValuesExpander
         SINGLETON.resolveNestedBeans(nestedProxies, values);
     }
 
-    static void expandLists(Map<String, Object> values)
-    {
-        SINGLETON.expandNestedLists(values);
-    }
-
-    static void expandArrays(Map<String, Object> values)
-    {
-        SINGLETON.expandNestedArrays(values);
-    }
-
     private void expandNestedBeans(Map<String, PropertyValues> nestedProxies,
             Map<String, Object> values)
     {
