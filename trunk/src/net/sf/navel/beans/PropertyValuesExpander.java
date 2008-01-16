@@ -57,15 +57,25 @@ class PropertyValuesExpander
     {
         SINGLETON.expandNestedBeans(nestedProxies, values);
         
-        SINGLETON.expandNestedList(values);
+        SINGLETON.expandNestedLists(values);
         
-        SINGLETON.expandNestedArray(values);
+        SINGLETON.expandNestedArrays(values);
     }
 
     static void resolve(Map<String, PropertyValues> nestedProxies,
             Map<String, Object> values)
     {
         SINGLETON.resolveNestedBeans(nestedProxies, values);
+    }
+
+    static void expandLists(Map<String, Object> values)
+    {
+        SINGLETON.expandNestedLists(values);
+    }
+
+    static void expandArrays(Map<String, Object> values)
+    {
+        SINGLETON.expandNestedArrays(values);
     }
 
     private void expandNestedBeans(Map<String, PropertyValues> nestedProxies,
@@ -97,7 +107,7 @@ class PropertyValuesExpander
     }
     
     @SuppressWarnings("unchecked")
-    private void expandNestedList(Map<String,Object> values)
+    private void expandNestedLists(Map<String,Object> values)
     {
         Map<String,Object> copy = new HashMap<String, Object>(values);
         
@@ -119,7 +129,7 @@ class PropertyValuesExpander
         }
     }
     
-    private void expandNestedArray(Map<String,Object> values)
+    private void expandNestedArrays(Map<String,Object> values)
     {
         Map<String,Object> copy = new HashMap<String, Object>(values);
         
