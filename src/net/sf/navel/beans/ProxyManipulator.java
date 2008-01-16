@@ -301,7 +301,7 @@ public class ProxyManipulator
      *            The other bean to compare.
      * @return Whether the storage of the two beans is equivalent.
      */
-    public boolean valuesEqual(Object oneBean, Object anotherBean)
+    public static boolean valuesEqual(Object oneBean, Object anotherBean)
     {
         JavaBeanHandler oneHandler = ProxyFactory.getHandler(oneBean);
         JavaBeanHandler anotherHandler = ProxyFactory.getHandler(anotherBean);
@@ -314,6 +314,26 @@ public class ProxyManipulator
 
         return oneHandler.propertyValues
                 .valuesEqual(anotherHandler.propertyValues);
+    }
+    
+    /**
+     * Find any lists populated with Navel proxies and expand them.
+     * 
+     * @param values A {@link Map} that may have lists in its entries.
+     */
+    public void expandLists(Map<String,Object> values)
+    {
+        PropertyValuesExpander.expandLists(values);
+    }
+    
+    /**
+     * Find any arrays populated with Navel proxies and expand them.
+     * 
+     * @param values A {@link Map} that may have arrays in its entries.
+     */
+    public void expandArrays(Map<String,Object> values)
+    {
+        PropertyValuesExpander.expandArrays(values);
     }
 
     private JavaBeanHandler getRequiredHandler(Object bean)
