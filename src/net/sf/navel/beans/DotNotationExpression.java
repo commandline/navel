@@ -66,6 +66,12 @@ class DotNotationExpression
 
     DotNotationExpression(String expression)
     {
+        if (null == expression)
+        {
+            throw new InvalidExpressionException(
+                    "Cannot parse a null expression.");
+        }
+
         this.expression = expression;
         this.rootExpression = new PropertyExpression(this, null, expression);
 
@@ -97,6 +103,40 @@ class DotNotationExpression
         }
 
         this.depth = countingDepth;
+    }
+
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (null == obj || !(obj instanceof DotNotationExpression))
+        {
+            return false;
+        }
+
+        DotNotationExpression otherNotation = (DotNotationExpression) obj;
+
+        return expression.equals(otherNotation.expression);
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode()
+    {
+        return expression.hashCode();
+    }
+
+    /**
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return expression;
     }
 
     /**
@@ -271,6 +311,47 @@ class PropertyExpression
             this.isIndexed = false;
             this.elementIndex = null;
         }
+    }
+
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (null == obj || !(obj instanceof PropertyExpression))
+        {
+            return false;
+        }
+
+        PropertyExpression otherExpression = (PropertyExpression) obj;
+
+        return fullExpression.equals(otherExpression.fullExpression) ? localExpression
+                .equals(otherExpression.localExpression)
+                : false;
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode()
+    {
+        int result = 37;
+        
+        result += 17 * fullExpression.hashCode();
+        result += 17 * localExpression.hashCode();
+        
+        return result;
+    }
+
+    /**
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return localExpression;
     }
 
     /**

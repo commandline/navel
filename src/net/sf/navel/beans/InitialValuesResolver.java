@@ -95,7 +95,7 @@ class InitialValuesResolver
 
         resolveNested(properties, values);
 
-        InitialValuesListBuilder.filter(properties, values);
+        InitialValuesIndexedBuilder.filter(properties, values);
     }
 
     private void resolveNested(Map<String, PropertyDescriptor> properties,

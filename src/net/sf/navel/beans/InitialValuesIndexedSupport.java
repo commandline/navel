@@ -31,24 +31,22 @@ package net.sf.navel.beans;
 
 import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Utility class to aid introspecting List typed properties, used exclusively by
- * {@link InitialValuesListBuilder}.
+ * {@link InitialValuesIndexedBuilder}.
  * 
  * @author cmdln
  * 
  */
-class InitialValuesListTypeSupport
+class InitialValuesIndexedSupport
 {
 
-    private static final InitialValuesListTypeSupport SINGLETON = new InitialValuesListTypeSupport();
+    private static final InitialValuesIndexedSupport SINGLETON = new InitialValuesIndexedSupport();
 
-    private InitialValuesListTypeSupport()
+    private InitialValuesIndexedSupport()
     {
         // enforce Singleton pattern
     }
@@ -77,7 +75,9 @@ class InitialValuesListTypeSupport
 
         for (PropertyDescriptor descriptor : properties.values())
         {
+            // add annotated types
             addFromAnnotation(elementTypes, descriptor);
+            // add indexed types, either array or the element type
             addFromAlternateAccessor(elementTypes, descriptor);
         }
 
@@ -106,102 +106,27 @@ class InitialValuesListTypeSupport
     private void addFromAlternateAccessor(Map<String, Class<?>> elementTypes,
             PropertyDescriptor descriptor)
     {
-        Class<?> propertyType = descriptor.getPropertyType();
-
-        if (propertyType != null && !List.class.isAssignableFrom(propertyType))
-        {
-            return;
-        }
-
-        Method readMethod = findRead(descriptor, true);
-
-        if (null == readMethod)
-        {
-            return;
-        }
-
-        elementTypes.put(descriptor.getName(), readMethod.getReturnType());
-    }
-
-    private Method findRead(PropertyDescriptor descriptor,
-            boolean primitiveArgument)
-    {
-        Class<?> beanClass = findBeanClass(descriptor);
-
-        String name = descriptor.getName();
-
-        String methodName = "get";
-
-        methodName = methodName.concat(name.substring(0, 1).toUpperCase());
-        methodName = methodName.concat(name.substring(1));
-
-        try
-        {
-            if (primitiveArgument)
-            {
-                return beanClass.getMethod(methodName, int.class);
-            }
-            else
-            {
-                return beanClass.getMethod(methodName, Integer.class);
-            }
-        }
-        catch (SecurityException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
-        catch (NoSuchMethodException e)
-        {
-            if (primitiveArgument)
-            {
-                return findRead(descriptor, false);
-            }
-            else
-            {
-                return null;
-            }
-        }
-    }
-
-    private Class<?> findBeanClass(PropertyDescriptor descriptor)
-    {
-        Method method = descriptor.getWriteMethod();
-
-        // may be read only
-        if (null == method)
-        {
-            method = descriptor.getReadMethod();
-        }
-
-        if (method != null)
-        {
-            return method.getDeclaringClass();
-        }
-
+        // whether the descriptor is indexed is determined solely by presence of
+        // either of both of the get(:int), set(:int,:?) methods
         if (!(descriptor instanceof IndexedPropertyDescriptor))
         {
-            return null;
+            return;
         }
 
         IndexedPropertyDescriptor indexedDescriptor = (IndexedPropertyDescriptor) descriptor;
 
-        // may be indexed
-        method = indexedDescriptor.getIndexedWriteMethod();
-
-        // may be indexed read only
-        if (null == method)
+        // if this is not null, then it is an array type
+        if (indexedDescriptor.getPropertyType() != null)
         {
-            method = indexedDescriptor.getIndexedReadMethod();
+            assert indexedDescriptor.getPropertyType().isArray() : "An indexed descriptor can only have a non-null return if it is an array type";
+
+            elementTypes.put(descriptor.getName(), indexedDescriptor
+                    .getPropertyType());
+            
+            return;
         }
-
-        Class<?> parent = method.getDeclaringClass();
-
-        if (null == parent)
-        {
-
-            parent = indexedDescriptor.getReadMethod().getDeclaringClass();
-        }
-
-        return parent;
+        
+        // if there is no plain return type, then the indexed type indicates the element type
+        elementTypes.put(descriptor.getName(), indexedDescriptor.getIndexedPropertyType());
     }
 }
