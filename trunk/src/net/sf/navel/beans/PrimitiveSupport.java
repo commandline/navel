@@ -33,48 +33,50 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.navel.beans.support.ArrayManipulator;
-import net.sf.navel.beans.support.BooleanSupport;
-import net.sf.navel.beans.support.ByteSupport;
-import net.sf.navel.beans.support.CharacterSupport;
-import net.sf.navel.beans.support.DefaultPrimitive;
-import net.sf.navel.beans.support.DoubleSupport;
-import net.sf.navel.beans.support.FloatSupport;
-import net.sf.navel.beans.support.IntegerSupport;
-import net.sf.navel.beans.support.LongSupport;
-import net.sf.navel.beans.support.ShortSupport;
-
 import org.apache.log4j.Logger;
 
 /**
  * A utility class for dealing with properties of primitive types, including
  * arrays of primitives, which can be very tricky to reflect correctly.
- * Implemented as a Singleton for efficiency and simplicity--all methods should
- * remain re-entrant, i.e. should never rely on member data.
  * 
  * @author cmdln
  */
-class PrimitiveSupport
+enum PrimitiveSupport
 {
+
+    BOOLEAN(Boolean.FALSE, Boolean.class, boolean.class),
+
+    BYTE(Byte.valueOf((byte) 0), Byte.class, byte.class),
+
+    CHARACTER(Character.valueOf('\u0000'), Character.class, char.class),
+
+    DOUBLE(Double.valueOf(0.0d), Double.class, double.class),
+
+    FLOAT(Float.valueOf((float) 0.0), Float.class, float.class),
+
+    INTEGER(Integer.valueOf(0), Integer.class, int.class),
+
+    LONG(Long.valueOf(0L), Long.class, long.class),
+
+    SHORT(Short.valueOf((short) 0), Short.class, short.class);
+
     private static final Logger LOGGER = Logger
             .getLogger(PrimitiveSupport.class);
 
-    private static final PrimitiveSupport SINGLETON = new PrimitiveSupport();
+    private static final Map<Class<?>, PrimitiveSupport> byPrimitives = initPrimitives();
 
-    private final Map<Class<?>, ArrayManipulator> manipulators;
+    private final Class<?> wrapperType;
 
-    private final Map<Class<?>, DefaultPrimitive> defaults;
+    private final Class<?> primitiveType;
 
-    private final Map<Class<?>, Class<?>> wrappers;
+    private final Object defaultValue;
 
-    /**
-     * Prevent external instantiation.
-     */
-    private PrimitiveSupport()
+    private PrimitiveSupport(Object defaultValue, Class<?> wrapperType,
+            Class<?> primitiveType)
     {
-        manipulators = initManipulators();
-        defaults = initDefaults();
-        wrappers = initWrappers();
+        this.defaultValue = defaultValue;
+        this.wrapperType = wrapperType;
+        this.primitiveType = primitiveType;
     }
 
     /**
@@ -93,7 +95,29 @@ class PrimitiveSupport
     static void validate(String propertyName, Class<?> propertyType,
             Object propertyValue) throws InvalidPropertyValueException
     {
-        SINGLETON.validatePrimitive(propertyName, propertyType, propertyValue);
+        assert propertyType != null : "Cannot check null property type.";
+
+        Class<?> wrapperClass = byPrimitives.get(propertyType).wrapperType;
+
+        if (wrapperClass.isInstance(propertyValue))
+        {
+            return;
+        }
+
+        String valueType = "";
+
+        if (propertyValue != null)
+        {
+            valueType = String.format(" of type, %s,", propertyValue.getClass()
+                    .getName());
+        }
+
+        throw new InvalidPropertyValueException(
+                String
+                        .format(
+                                "Value, %1$s,%2$s is not a valid value for property, %3$s, of type, %4$s.",
+                                propertyValue, valueType, propertyName,
+                                propertyType.getName()));
     }
 
     /**
@@ -111,61 +135,19 @@ class PrimitiveSupport
      */
     static boolean isValid(Class<?> propertyType, Object propertyValue)
     {
-        return SINGLETON.isValidPrimitive(propertyType, propertyValue);
-    }
+        assert propertyType != null : "Cannot check null property type.";
 
-    /**
-     * Checks to see that the Class argument is one of the primitive array types
-     * supported by this class.
-     * 
-     * @param propertyType
-     *            Use a class, because the String from getName isn't descriptive
-     *            and my suspicion is it may change from JVM to JVM.
-     * @return Can this class work with the array type?
-     */
-    static boolean isPrimitiveArray(Class<?> propertyType)
-    {
-        return SINGLETON.manipulators.containsKey(propertyType);
-    }
+        Class<?> wrapperClass = byPrimitives.get(propertyType).wrapperType;
 
-    /**
-     * Gets an element out of a primitive array for the given index. Uses a
-     * batch of inner classes keyed to the various primitive array Class
-     * instances.
-     * 
-     * @param array
-     *            Object reference to the array.
-     * @param index
-     *            Index of desired element.
-     * @return Element at index, type as Object--dynamic proxies will cast on
-     *         the way out.
-     */
-    static Object getElement(Object array, int index)
-    {
-        ArrayManipulator manipulator = SINGLETON.manipulators.get(array
-                .getClass());
+        if (null == wrapperClass)
+        {
+            LOGGER.warn(String.format("No wrapper for ,%1$s.", propertyType
+                    .getName()));
 
-        return manipulator.getElement(array, index);
-    }
+            return false;
+        }
 
-    /**
-     * Sets an element into a primitive array for the given index. Uses a batch
-     * of inner classes keyed to the various primitive array Class instances.
-     * 
-     * @param array
-     *            Object reference to the array.
-     * @param index
-     *            Index of desired element.
-     * @param value
-     *            Value to set into the array, inner classes will cast
-     *            appropriately based on Class on array argument.
-     */
-    static void setElement(Object array, int index, Object value)
-    {
-        ArrayManipulator manipulator = SINGLETON.manipulators.get(array
-                .getClass());
-
-        manipulator.setElement(array, index, value);
+        return wrapperClass.isInstance(propertyValue);
     }
 
     /**
@@ -187,117 +169,45 @@ class PrimitiveSupport
      */
     static Object handleNull(Class<?> returnType, Object value)
     {
+        assert returnType != null : "Cannot handle null return type.";
+
         if (!returnType.isPrimitive() || (null != value))
         {
             return value;
         }
 
-        DefaultPrimitive defaultPrimitive = SINGLETON.defaults.get(returnType);
+        PrimitiveSupport defaultPrimitive = byPrimitives.get(returnType);
 
         if (null == defaultPrimitive)
         {
-            LOGGER.warn("Could not find DefaultPrimitive for "
-                    + returnType.getName());
+            LOGGER.warn(String.format(
+                    "Could not find DefaultPrimitive for type, %1$s.",
+                    returnType.getName()));
+
             return value;
         }
 
         if (LOGGER.isTraceEnabled())
         {
-            LOGGER.trace("Handling null for " + returnType.getName());
+            LOGGER.trace(String.format("Handling null for type, %1$s.",
+                    returnType.getName()));
             LOGGER.trace("Found DefaultPrimitive "
                     + defaultPrimitive.getClass().getName());
         }
 
-        return defaultPrimitive.getValue();
+        return defaultPrimitive.defaultValue;
     }
 
-    private Map<Class<?>, ArrayManipulator> initManipulators()
+    private static Map<Class<?>, PrimitiveSupport> initPrimitives()
     {
-        Map<Class<?>, ArrayManipulator> manipulators = new HashMap<Class<?>, ArrayManipulator>(
-                8);
-        manipulators.put(BooleanSupport.ARRAY_TYPE, BooleanSupport
-                .getInstance());
-        manipulators.put(ByteSupport.ARRAY_TYPE, ByteSupport.getInstance());
-        manipulators.put(ShortSupport.ARRAY_TYPE, ShortSupport.getInstance());
-        manipulators.put(IntegerSupport.ARRAY_TYPE, IntegerSupport
-                .getInstance());
-        manipulators.put(LongSupport.ARRAY_TYPE, LongSupport.getInstance());
-        manipulators.put(FloatSupport.ARRAY_TYPE, FloatSupport.getInstance());
-        manipulators.put(DoubleSupport.ARRAY_TYPE, DoubleSupport.getInstance());
-        manipulators.put(CharacterSupport.ARRAY_TYPE, CharacterSupport
-                .getInstance());
+        Map<Class<?>, PrimitiveSupport> temp = new HashMap<Class<?>, PrimitiveSupport>(
+                PrimitiveSupport.values().length);
 
-        return Collections.unmodifiableMap(manipulators);
-    }
-
-    private Map<Class<?>, DefaultPrimitive> initDefaults()
-    {
-        Map<Class<?>, DefaultPrimitive> defaults = new HashMap<Class<?>, DefaultPrimitive>(
-                8);
-
-        defaults.put(Boolean.TYPE, BooleanSupport.getInstance());
-        defaults.put(Byte.TYPE, ByteSupport.getInstance());
-        defaults.put(Short.TYPE, ShortSupport.getInstance());
-        defaults.put(Integer.TYPE, IntegerSupport.getInstance());
-        defaults.put(Long.TYPE, LongSupport.getInstance());
-        defaults.put(Float.TYPE, FloatSupport.getInstance());
-        defaults.put(Double.TYPE, DoubleSupport.getInstance());
-        defaults.put(Character.TYPE, CharacterSupport.getInstance());
-
-        return Collections.unmodifiableMap(defaults);
-    }
-
-    private Map<Class<?>, Class<?>> initWrappers()
-    {
-        Map<Class<?>, Class<?>> wrappers = new HashMap<Class<?>, Class<?>>(8);
-
-        wrappers.put(Boolean.TYPE, Boolean.class);
-        wrappers.put(Byte.TYPE, Byte.class);
-        wrappers.put(Short.TYPE, Short.class);
-        wrappers.put(Integer.TYPE, Integer.class);
-        wrappers.put(Long.TYPE, Long.class);
-        wrappers.put(Float.TYPE, Float.class);
-        wrappers.put(Double.TYPE, Double.class);
-        wrappers.put(Character.TYPE, Character.class);
-
-        return Collections.unmodifiableMap(wrappers);
-    }
-
-    private void validatePrimitive(String propertyName, Class<?> propertyType,
-            Object propertyValue) throws InvalidPropertyValueException
-    {
-        Class<?> wrapperClass = wrappers.get(propertyType);
-
-        if (!wrapperClass.isInstance(propertyValue))
+        for (PrimitiveSupport support : PrimitiveSupport.values())
         {
-            String valueType = "";
-
-            if (propertyValue != null)
-            {
-                valueType = String.format(" of type, %s,", propertyValue
-                        .getClass().getName());
-            }
-
-            throw new InvalidPropertyValueException(
-                    String
-                            .format(
-                                    "Value, %1$s,%2$s is not a valid value for property, %3$s, of type, %4$s.",
-                                    propertyValue, valueType, propertyName,
-                                    propertyType.getName()));
-        }
-    }
-
-    private boolean isValidPrimitive(Class<?> propertyType, Object propertyValue)
-    {
-        Class<?> wrapperClass = wrappers.get(propertyType);
-
-        if (null == wrapperClass)
-        {
-            LOGGER.warn("No wrapper for " + propertyType.getName() + ".");
-
-            return false;
+            temp.put(support.primitiveType, support);
         }
 
-        return wrapperClass.isInstance(propertyValue);
+        return Collections.unmodifiableMap(temp);
     }
 }

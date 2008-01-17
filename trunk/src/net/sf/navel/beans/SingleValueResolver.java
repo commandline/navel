@@ -30,6 +30,7 @@
 package net.sf.navel.beans;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Array;
 import java.util.List;
 
 import org.apache.log4j.LogManager;
@@ -237,20 +238,9 @@ class SingleValueResolver
             return;
         }
 
-        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
-        {
-            PrimitiveSupport.setElement(value, index, propertyValue);
+        assert value.getClass().isArray() : "At this point, all the rest of the code should ensure this.";
 
-            return;
-        }
-
-        expression.validateArray(value);
-
-        Object[] arrayValue = (Object[]) value;
-
-        expression.validateArrayBounds(arrayValue.length);
-
-        arrayValue[index] = propertyValue;
+        Array.set(value, index, propertyValue);
     }
 
     private Object getValue(PropertyValues propertyValues,
@@ -338,19 +328,10 @@ class SingleValueResolver
 
             return listValue.get(index);
         }
+        
+        assert value.getClass().isArray() : "At this point, all the rest of the code should ensure this.";
 
-        if (PrimitiveSupport.isPrimitiveArray(value.getClass()))
-        {
-            return PrimitiveSupport.getElement(value, index);
-        }
-
-        expression.validateArray(value);
-
-        Object[] arrayValue = (Object[]) value;
-
-        expression.validateArrayBounds(arrayValue.length);
-
-        return arrayValue[index];
+        return Array.get(value, index);
     }
 
     private Object resolveValue(PropertyValues propertyValues,
