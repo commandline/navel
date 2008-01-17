@@ -32,6 +32,7 @@ package net.sf.navel.beans;
 import java.beans.BeanInfo;
 import java.beans.IndexedPropertyDescriptor;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -407,16 +408,7 @@ public class BeanManipulator
                                     propertyName));
         }
 
-        if (PrimitiveSupport.isPrimitiveArray(array.getClass()))
-        {
-            return PrimitiveSupport.getElement(array, arrayIndex);
-        }
-        else
-        {
-            Object[] indexed = (Object[]) array;
-
-            return indexed[arrayIndex];
-        }
+        return Array.get(array, arrayIndex);
     }
 
     private boolean writeProperty(Object bean, String propertyName,

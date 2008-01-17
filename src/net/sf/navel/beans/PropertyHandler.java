@@ -29,13 +29,11 @@
  */
 package net.sf.navel.beans;
 
-import static net.sf.navel.beans.PrimitiveSupport.getElement;
 import static net.sf.navel.beans.PrimitiveSupport.handleNull;
-import static net.sf.navel.beans.PrimitiveSupport.isPrimitiveArray;
-import static net.sf.navel.beans.PrimitiveSupport.setElement;
 
 import java.beans.Introspector;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -197,8 +195,9 @@ class PropertyHandler implements Serializable
     private void handleIndexedWrite(String propertyName, Object[] args)
     {
         int index = getIndex(args[0], true);
+        Object elementValue = args[1];
 
-        Object value = propertyValues.get(propertyName);
+        Object indexedValue = propertyValues.get(propertyName);
 
         if (propertyValues.isAttached(propertyName))
         {
@@ -217,21 +216,32 @@ class PropertyHandler implements Serializable
                                                 .getProxyDescriptor(), delegate));
             }
 
-            delegate.set(propertyValues, propertyName, index, args[1]);
+            delegate.set(propertyValues, propertyName, index, elementValue);
 
             return;
         }
-
-        if (isPrimitiveArray(value.getClass()))
+        
+        if (indexedValue instanceof List)
         {
-            setElement(value, index, args[1]);
+            List<Object> listValue = (List<Object>) indexedValue;
+            
+            listValue.set(index, elementValue);
+            
+            return;
         }
-        else
-        {
-            Object[] indexed = (Object[]) value;
+        
+        Array.set(indexedValue, index, elementValue);
 
-            indexed[index] = args[1];
-        }
+//        if (isPrimitiveArray(value.getClass()))
+//        {
+//            setElement(value, index, args[1]);
+//        }
+//        else
+//        {
+//            Object[] indexed = (Object[]) value;
+//
+//            indexed[index] = args[1];
+//        }
     }
 
     private Object handleRead(Method method, Object[] args)
@@ -278,9 +288,9 @@ class PropertyHandler implements Serializable
     {
         int index = getIndex(args[0], false);
 
-        Object value = propertyValues.get(propertyName);
+        Object indexedValue = propertyValues.get(propertyName);
 
-        if (null == value)
+        if (null == indexedValue)
         {
             LOGGER.warn("Trying to read null array.");
             return null;
@@ -305,24 +315,33 @@ class PropertyHandler implements Serializable
 
             return delegate.get(propertyValues, propertyName, index);
         }
-
-        if (isPrimitiveArray(value.getClass()))
+        
+        if (indexedValue instanceof List)
         {
-            return getElement(value, index);
+            List<Object> listValue = (List<Object>) indexedValue;
+            
+            return listValue.get(index);
         }
+        
+        return Array.get(indexedValue, index);
 
-        if (List.class.isAssignableFrom(value.getClass()))
-        {
-            List indexed = (List) propertyValues.get(propertyName);
-
-            Object element = indexed.get(index);
-
-            return element;
-        }
-
-        Object[] indexed = (Object[]) propertyValues.get(propertyName);
-
-        return indexed[index];
+//        if (isPrimitiveArray(indexedValue.getClass()))
+//        {
+//            return getElement(indexedValue, index);
+//        }
+//
+//        if (List.class.isAssignableFrom(indexedValue.getClass()))
+//        {
+//            List indexed = (List) propertyValues.get(propertyName);
+//
+//            Object element = indexed.get(index);
+//
+//            return element;
+//        }
+//
+//        Object[] indexed = (Object[]) propertyValues.get(propertyName);
+//
+//        return indexed[index];
     }
 
     private Object handleBeing(Class<?> returnType, String methodName)
