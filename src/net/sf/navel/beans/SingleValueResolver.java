@@ -90,8 +90,16 @@ class SingleValueResolver
     static boolean isPropertyOf(PropertyValues propertyValues,
             String propertyExpression)
     {
-        return SINGLETON.isPropertyOfValues(
+        return SINGLETON.isPropertyOfDescriptor(
                 propertyValues.getProxyDescriptor(), new DotNotationExpression(
+                        propertyExpression).getRoot());
+    }
+
+    static boolean isPropertyOf(ProxyDescriptor proxyDescriptor,
+            String propertyExpression)
+    {
+        return SINGLETON.isPropertyOfDescriptor(
+                proxyDescriptor, new DotNotationExpression(
                         propertyExpression).getRoot());
     }
     
@@ -389,7 +397,7 @@ class SingleValueResolver
         return parentHandler.propertyValues.removeInternal(leafProperty.getPropertyName());
     }
 
-    private boolean isPropertyOfValues(ProxyDescriptor proxyDescriptor,
+    private boolean isPropertyOfDescriptor(ProxyDescriptor proxyDescriptor,
             PropertyExpression expression)
     {
         String shallowProperty = expression.getPropertyName();
@@ -426,7 +434,7 @@ class SingleValueResolver
                 }
             }
 
-            return isPropertyOfValues(new ProxyDescriptor(new Class<?>[]
+            return isPropertyOfDescriptor(new ProxyDescriptor(new Class<?>[]
             { nextType }), expression.getChild());
         }
 

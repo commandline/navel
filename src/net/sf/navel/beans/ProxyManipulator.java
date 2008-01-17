@@ -29,6 +29,7 @@
  */
 package net.sf.navel.beans;
 
+import java.beans.PropertyDescriptor;
 import java.util.Map;
 
 /**
@@ -243,7 +244,7 @@ public class ProxyManipulator
 
         handler.propertyValues.clear();
     }
-    
+
     public static Object resolve(Object bean, String propertyExpression)
     {
         SINGLETON.assertValidBean(bean);
@@ -292,6 +293,23 @@ public class ProxyManipulator
     }
 
     /**
+     * Utility method for digging out a target type based on an expression.
+     * 
+     * @param beanType
+     *            Ancestor type from which the property expression descends.
+     * @param dotExpression
+     *            A dot-notation property expression that indicates some target
+     *            property of interest.
+     * @return The type of the property specified by the dotExpression argument.
+     */
+    public static Class<?> typeOf(Class<?> beanType,
+            String dotExpression)
+    {
+        return SINGLETON.typeOf(beanType, new DotNotationExpression(
+                dotExpression).getRoot());
+    }
+
+    /**
      * Compares just the internal storage of two Navel beans for equivalence.
      * This is similar to the original equals semantic in Navel2.
      * 
@@ -314,6 +332,53 @@ public class ProxyManipulator
 
         return oneHandler.propertyValues
                 .valuesEqual(anotherHandler.propertyValues);
+    }
+
+    private Class<?> typeOf(Class<?> beanType, PropertyExpression expression)
+    {
+        ProxyDescriptor proxyDescriptor = new ProxyDescriptor(new Class<?>[]
+        { beanType });
+
+        PropertyDescriptor propertyDescriptor = proxyDescriptor
+                .getPropertyDescriptors().get(expression.getPropertyName());
+
+        if (null == propertyDescriptor)
+        {
+            throw new InvalidExpressionException(String.format(
+                    "The expressions, %1$s, is invalid at property, %2$s.",
+                    expression.getFullExpression().getExpression(), expression
+                            .expressionToRoot()));
+        }
+
+        Class<?> propertyType = propertyDescriptor.getPropertyType();
+
+        // if this is a leaf property, return the appropriate type
+        if (expression.isLeaf())
+        {
+            if (expression.isIndexed())
+            {
+                return BeanManipulator.getAppropriateBracketType(propertyDescriptor);
+            }
+            
+            return propertyType;
+        }
+
+        // otherwise, dig out the more specific type for a list or array
+        if (expression.isIndexed())
+        {
+            propertyType = BeanManipulator
+                    .getAppropriateBracketType(propertyDescriptor);
+
+            if (null == propertyType)
+            {
+                throw new InvalidExpressionException(String.format(
+                        "The expressions, %1$s, is invalid at property, %2$s.",
+                        expression.getFullExpression().getExpression(),
+                        expression.expressionToRoot()));
+            }
+        }
+
+        return typeOf(propertyType, expression.getChild());
     }
 
     private JavaBeanHandler getRequiredHandler(Object bean)
