@@ -31,6 +31,7 @@ package net.sf.navel.beans;
 
 import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +49,11 @@ import org.testng.annotations.Test;
  * @author thomas
  * 
  */
-public class InitialValuesListBuilderTest
+public class InitialValuesIndexedBuilderTest
 {
 
     private static final Logger LOGGER = LogManager
-            .getLogger(InitialValuesListBuilderTest.class);
+            .getLogger(InitialValuesIndexedBuilderTest.class);
 
     /*
      * Test method for 'net.sf.navel.beans.ListBuilder.filter(Class<?>, Map<String,
@@ -65,11 +66,13 @@ public class InitialValuesListBuilderTest
         Map<String, Object> rawValues = new TreeMap<String, Object>();
 
         TypesBean second = ProxyFactory.createAs(TypesBean.class);
+        second.setInteger(2);
         TypesBean third = ProxyFactory.createAs(TypesBean.class);
+        third.setInteger(3);
 
-        rawValues.put("typesList[0].boolean", true);
-        rawValues.put("typesList[1]", second);
-        rawValues.put("typesList[]", third);
+        rawValues.put("collection[0].boolean", true);
+        rawValues.put("collection[1]", second);
+        rawValues.put("collection[]", third);
 
         BeanInfo beanInfo = JavaBeanHandler.introspect(ListBean.class);
 
@@ -79,10 +82,10 @@ public class InitialValuesListBuilderTest
         Map<String, PropertyDescriptor> properties = PropertyValues
                 .mapProperties(beanInfo);
 
-        InitialValuesListBuilder.filter(properties, filteredValues);
+        InitialValuesIndexedBuilder.filter(properties, filteredValues);
 
         List<TypesBean> fooList = (List<TypesBean>) filteredValues
-                .get("typesList");
+                .get("collection");
 
         Assert.assertNotNull(fooList, "Should have valid list.");
         Assert.assertEquals(fooList.size(), 3,
@@ -103,24 +106,28 @@ public class InitialValuesListBuilderTest
     }
 
     @Test
-    public void testAdding()
+    public void testAddingIndexed()
     {
         Map<String, Object> rawValues = new HashMap<String, Object>();
 
         rawValues.put("listID", 1L);
         rawValues.put("boolean", false);
-        rawValues.put("typesList[].integer", 1);
-        rawValues.put("typesList[].boolean", true);
+        rawValues.put("collection[].integer", 1);
+        rawValues.put("collection[].boolean", true);
 
         ListBean listBean = ProxyFactory.createAs(ListBean.class, rawValues);
 
         Assert.assertNotNull(listBean, "Bean instance should be valid.");
         Assert.assertEquals(listBean.getListID(), 1L,
                 "Identity should be correct.");
-        Assert.assertEquals(listBean.getTypesList().size(), 1,
+        
+        Collection<?> collection = listBean.getCollection();
+        
+        Assert.assertEquals(collection.size(), 1,
                 "List property size should be correct.");
 
-        TypesBean first = listBean.getTypesList(0);
+        TypesBean[] typesArray = collection.toArray(new TypesBean[collection.size()]);
+        TypesBean first = typesArray[0];
 
         Assert.assertNotNull(first, "Should have valid first element.");
         Assert.assertEquals(1, first.getInteger(),
@@ -128,17 +135,22 @@ public class InitialValuesListBuilderTest
         Assert.assertEquals(first.getBoolean(), true,
                 "Should have correct first boolean value.");
 
-        rawValues.put("typesList[].integer", 2);
-        rawValues.put("typesList[].boolean", false);
+        rawValues.put("collection[].integer", 2);
+        rawValues.put("collection[].boolean", false);
 
         JavaBeanHandler listHandler = ProxyFactory.getHandler(listBean);
 
         listHandler.propertyValues.putAll(rawValues);
 
-        Assert.assertEquals(listBean.getTypesList().size(), 2,
+        collection = (Collection<?>) ProxyManipulator.get(
+                listBean, "collection");
+        
+        Assert.assertEquals(collection.size(), 2,
                 "List property size should be correct after putAll().");
+        
+        typesArray = collection.toArray(new TypesBean[collection.size()]);
 
-        first = listBean.getTypesList(0);
+        first = typesArray[0];
 
         Assert.assertNotNull(first, "Should still have valid single element.");
         Assert.assertEquals(first.getInteger(), 1,
@@ -148,7 +160,7 @@ public class InitialValuesListBuilderTest
     }
 
     @Test
-    public void testAnnotated()
+    public void testAddingAnnotated()
     {
         Map<String, Object> rawValues = new HashMap<String, Object>();
 
@@ -162,16 +174,105 @@ public class InitialValuesListBuilderTest
         Assert.assertNotNull(listBean, "Bean instance should be valid.");
         Assert.assertEquals(listBean.getListID(), 1L,
                 "Identity should be correct.");
-        Assert.assertEquals(listBean.getAnnotated().size(), 1,
+        
+        Collection<?> collection = listBean.getAnnotated();
+        
+        Assert.assertEquals(collection.size(), 1,
                 "List property size should be correct.");
 
-        TypesBean first = listBean.getAnnotated().get(0);
+        TypesBean[] typesArray = collection.toArray(new TypesBean[collection.size()]);
+        TypesBean first = typesArray[0];
 
         Assert.assertNotNull(first, "Should have valid first element.");
-        Assert.assertEquals(first.getInteger(), 1,
+        Assert.assertEquals(1, first.getInteger(),
                 "Should have correct first integer value.");
         Assert.assertEquals(first.getBoolean(), true,
                 "Should have correct first boolean value.");
+
+        rawValues.put("collection[].integer", 2);
+        rawValues.put("collection[].boolean", false);
+
+        JavaBeanHandler listHandler = ProxyFactory.getHandler(listBean);
+
+        listHandler.propertyValues.putAll(rawValues);
+
+        collection = listBean.getAnnotated();
+        
+        Assert.assertEquals(collection.size(), 2,
+                "List property size should be correct after putAll().");
+        
+        typesArray = collection.toArray(new TypesBean[collection.size()]);
+
+        first = typesArray[0];
+
+        Assert.assertNotNull(first, "Should still have valid single element.");
+        Assert.assertEquals(first.getInteger(), 1,
+                "Should have correct updated integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should have correct updated boolean value.");
+    }
+
+    @Test
+    public void testArray()
+    {
+        Map<String, Object> rawValues = new HashMap<String, Object>();
+
+        rawValues.put("listID", 1L);
+        rawValues.put("boolean", false);
+        rawValues.put("array", new TypesBean[2]);
+        rawValues.put("array[0].integer", 1);
+        rawValues.put("array[0].boolean", true);
+
+        ListBean listBean = ProxyFactory.createAs(ListBean.class, rawValues);
+
+        Assert.assertNotNull(listBean, "Bean instance should be valid.");
+        Assert.assertEquals(listBean.getListID(), 1L,
+                "Identity should be correct.");
+
+        TypesBean[] typesArray = listBean.getArray();
+        TypesBean first = typesArray[0];
+        
+        Assert.assertEquals(typesArray.length, 2,
+                "List property size should be correct.");
+        
+        Assert.assertNull(typesArray[1], "Second element should not be set, yet.");
+
+        Assert.assertNotNull(first, "Should have valid first element.");
+        Assert.assertEquals(1, first.getInteger(),
+                "Should have correct first integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should have correct first boolean value.");
+        
+        rawValues.clear();
+
+        rawValues.put("array[1].integer", 2);
+        rawValues.put("array[1].boolean", false);
+        
+        JavaBeanHandler listHandler = ProxyFactory.getHandler(listBean);
+
+        listHandler.propertyValues.putAll(rawValues);
+
+        typesArray = listBean.getArray();
+        first = typesArray[0];
+        
+        Assert.assertEquals(typesArray.length, 2,
+                "List property size should be correct after putAll().");
+        
+        Assert.assertNotNull(typesArray[1], "Second element should be set, now.");
+
+        Assert.assertNotNull(first, "Should still have valid single element.");
+        Assert.assertEquals(first.getInteger(), 1,
+                "Should have correct updated integer value.");
+        Assert.assertEquals(first.getBoolean(), true,
+                "Should have correct updated boolean value.");
+
+        Assert.assertEquals(typesArray[1].getInteger(), 2,
+                "Should have correct second integer value.");
+        Assert.assertEquals(typesArray[1].getBoolean(), false,
+                "Should have correct second boolean value.");
+        
+        Assert.assertNotNull(listBean.getArray(0), "Static access of first should work.");
+        Assert.assertNotNull(listBean.getArray(1), "Static access of second should work.");
     }
 
     @Test

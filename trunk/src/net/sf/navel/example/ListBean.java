@@ -29,6 +29,8 @@
  */
 package net.sf.navel.example;
 
+import java.beans.IndexedPropertyDescriptor;
+import java.beans.PropertyDescriptor;
 import java.util.List;
 
 import net.sf.navel.beans.CollectionType;
@@ -39,23 +41,59 @@ import net.sf.navel.beans.CollectionType;
  */
 public interface ListBean
 {
-    
+
     public long getListID();
-    
+
     public void setListID(long listID);
-    
+
     public boolean getBoolean();
-    
+
     public void setBoolean(boolean value);
 
-    public List<TypesBean> getTypesList();
+    /**
+     * Introspection won't see this but given how indexed gets/sets are handled
+     * under the hood, this should work statically.
+     */
+    public List<TypesBean> getCollection();
 
-    public void setTypesList(List<TypesBean> typesList);
+    /**
+     * This method should introspect into an {@link IndexedPropertyDescriptor}
+     * that returns null for {@link IndexedPropertyDescriptor#getPropertyType()}.
+     */
+    public TypesBean getCollection(int index);
 
-    public TypesBean getTypesList(int index);
+    /**
+     * This method should introspect into an {@link IndexedPropertyDescriptor}
+     * that returns null for {@link IndexedPropertyDescriptor#getPropertyType()}.
+     */
+    public void setCollection(int index, TypesBean typeBean);
 
-    public void setTypesList(int index, TypesBean typeBean);
-    
+    /**
+     * This method is necessary to provide a plain type tp
+     * {@link PropertyDescriptor#getPropertyType()}.
+     */
+    public TypesBean[] getArray();
+
+    /**
+     * This method should introspect into an {@link IndexedPropertyDescriptor}
+     * that returns an array type for
+     * {@link IndexedPropertyDescriptor#getPropertyType()}.
+     */
+    public void setArray(TypesBean[] array);
+
+    /**
+     * This method should introspect into an {@link IndexedPropertyDescriptor}
+     * that returns an array type for
+     * {@link IndexedPropertyDescriptor#getPropertyType()}.
+     */
+    public TypesBean getArray(int index);
+
+    public void setArray(int index, TypesBean array);
+
+    /**
+     * In the absence of indexed methods that indicate a specific element type,
+     * this annotation is required to make Collections transparent.
+     */
     @CollectionType(TypesBean.class)
     public List<TypesBean> getAnnotated();
 }
