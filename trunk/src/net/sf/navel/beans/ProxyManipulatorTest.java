@@ -41,6 +41,7 @@ import net.sf.navel.example.ListBean;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.StringBean;
 import net.sf.navel.example.TypesBean;
+import net.sf.navel.example.TypesConstructor;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -474,10 +475,11 @@ public class ProxyManipulatorTest
     @Test
     public void testResolveNested()
     {
+        ProxyFactory.register(TypesBean.class, new TypesConstructor());
+        
         NestedBean nested = ProxyFactory.createAs(NestedBean.class);
 
-        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class,
-                StringBean.class);
+        TypesBean typesBean = ProxyFactory.createAs(TypesBean.class);
 
         nested.setNested(typesBean);
 
@@ -486,6 +488,9 @@ public class ProxyManipulatorTest
 
         Assert.assertTrue(ProxyFactory.isAttached(typesBean, "string"),
                 "Should spot the property delegate.");
+        Assert
+                .assertFalse(ProxyFactory.isAttached(nested, "nested"),
+                        "Should be able to check the nested property, but should not show a delegate.");
         Assert.assertTrue(ProxyFactory.isAttached(nested, "nested.string"),
                 "Should spot the property delegate, using dot notation.");
 
@@ -558,7 +563,9 @@ public class ProxyManipulatorTest
     {
         Class<?> typeOf = ProxyManipulator.typeOf(beanType, property);
 
-        Assert.assertEquals(typeOf, expected, String.format("Property expression, %1$s, return the incorrect type.", property));
+        Assert.assertEquals(typeOf, expected, String.format(
+                "Property expression, %1$s, return the incorrect type.",
+                property));
     }
 
     @DataProvider(name = "copyAll")
@@ -569,19 +576,19 @@ public class ProxyManipulatorTest
         { 1, false }, new Object[]
         { 3, true } };
     }
-    
+
     @DataProvider(name = "typeOf")
     public Object[][] createTypeOf()
     {
-        return new Object[][] {
-                new Object[] { TypesBean.class, "boolean", boolean.class },
-                new Object[] { NestedBean.class, "nested.boolean", boolean.class },
-                new Object[] { ListBean.class, "collection", null },
-                new Object[] { ListBean.class, "collection[]", TypesBean.class },
-                new Object[] { ListBean.class, "collection[].boolean", boolean.class },
-                new Object[] { ListBean.class, "annotated", List.class },
-                new Object[] { ListBean.class, "annotated[]", TypesBean.class },
-                new Object[] { ListBean.class, "annotated[].boolean", boolean.class },
-        };
+        return new Object[][]
+        { new Object[]
+        { TypesBean.class, "boolean", boolean.class }, new Object[]
+        { NestedBean.class, "nested.boolean", boolean.class }, new Object[]
+        { ListBean.class, "collection", null }, new Object[]
+        { ListBean.class, "collection[]", TypesBean.class }, new Object[]
+        { ListBean.class, "collection[].boolean", boolean.class }, new Object[]
+        { ListBean.class, "annotated", List.class }, new Object[]
+        { ListBean.class, "annotated[]", TypesBean.class }, new Object[]
+        { ListBean.class, "annotated[].boolean", boolean.class }, };
     }
 }
