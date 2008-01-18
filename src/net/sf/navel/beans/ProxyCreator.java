@@ -46,14 +46,14 @@ import org.apache.log4j.Logger;
 
 /**
  * @author cmdln
- *
+ * 
  */
 class ProxyCreator
 {
 
     private static final Logger LOGGER = LogManager
             .getLogger(ProxyCreator.class);
-    
+
     private static final ProxyCreator SINGLETON = new ProxyCreator();
 
     private static final int MAX_NESTING_DEPTH = 10;
@@ -63,22 +63,22 @@ class ProxyCreator
     private static ThreadLocal<Integer> nestingDepth = new ThreadLocal<Integer>();
 
     private final Map<Class<?>, ConstructionDelegate> constructionDelegates = new HashMap<Class<?>, ConstructionDelegate>();
-    
+
     private ProxyCreator()
     {
         // enforce Singleton pattern
     }
-    
+
     static void register(Class<?> forType, ConstructionDelegate delegate)
     {
         SINGLETON.constructionDelegates.put(forType, delegate);
     }
-    
+
     static void registerDefault(ConstructionDelegate delegate)
     {
         SINGLETON.defaultConstructor = delegate;
     }
-    
+
     static ConstructionDelegate unregister(Class<?> forType)
     {
         if (!SINGLETON.constructionDelegates.containsKey(forType))
@@ -88,7 +88,7 @@ class ProxyCreator
 
         return SINGLETON.constructionDelegates.remove(forType);
     }
-    
+
     /**
      * Package private overload required to satisfy copy logic, allowing the
      * copy code in JavaBeanHandler to provide its own handler copy.
@@ -169,6 +169,11 @@ class ProxyCreator
         {
             decrementNesting();
         }
+    }
+
+    static Class<?>[] combineAdditionalTypes(Class<?>[] allTypes)
+    {
+        return SINGLETON.doBeforeInit(null, allTypes);
     }
 
     private static void incrementNesting()
@@ -265,7 +270,7 @@ class ProxyCreator
 
         // run the registered default
         Collection<Class<?>> additionalTypes = defaultConstructor
-                .additionalTypes(nestingDepth.get(), primaryType, primaryType,
+                .additionalTypes(getNestingDepth(), primaryType, primaryType,
                         allTypes, fixedArgCopy);
 
         // null is acceptable to indicate a no-op
@@ -293,7 +298,7 @@ class ProxyCreator
                 continue;
             }
 
-            additionalTypes = delegate.additionalTypes(nestingDepth.get(),
+            additionalTypes = delegate.additionalTypes(getNestingDepth(),
                     primaryType, singleType, allTypes, fixedArgCopy);
 
             // null is acceptable to indicate a no-op
@@ -382,6 +387,13 @@ class ProxyCreator
             // guard against duplication of the newly added
             uniqueTypes.add(additionalType);
         }
+    }
+
+    private int getNestingDepth()
+    {
+        // set to zero if this is called from combineAdditionalTypes
+        return nestingDepth == null || nestingDepth.get() == null ? 0
+                : nestingDepth.get();
     }
 
     /*
