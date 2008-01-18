@@ -302,8 +302,7 @@ public class ProxyManipulator
      *            property of interest.
      * @return The type of the property specified by the dotExpression argument.
      */
-    public static Class<?> typeOf(Class<?> beanType,
-            String dotExpression)
+    public static Class<?> typeOf(Class<?> beanType, String dotExpression)
     {
         return SINGLETON.typeOf(beanType, new DotNotationExpression(
                 dotExpression).getRoot());
@@ -336,8 +335,9 @@ public class ProxyManipulator
 
     private Class<?> typeOf(Class<?> beanType, PropertyExpression expression)
     {
-        ProxyDescriptor proxyDescriptor = new ProxyDescriptor(new Class<?>[]
-        { beanType });
+        ProxyDescriptor proxyDescriptor = new ProxyDescriptor(ProxyCreator
+                .combineAdditionalTypes(new Class<?>[]
+                { beanType }));
 
         PropertyDescriptor propertyDescriptor = proxyDescriptor
                 .getPropertyDescriptors().get(expression.getPropertyName());
@@ -357,9 +357,10 @@ public class ProxyManipulator
         {
             if (expression.isIndexed())
             {
-                return BeanManipulator.getAppropriateBracketType(propertyDescriptor);
+                return BeanManipulator
+                        .getAppropriateBracketType(propertyDescriptor);
             }
-            
+
             return propertyType;
         }
 
