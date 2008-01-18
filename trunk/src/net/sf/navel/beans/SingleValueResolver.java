@@ -415,8 +415,8 @@ class SingleValueResolver
                 }
             }
 
-            return isPropertyOfDescriptor(new ProxyDescriptor(new Class<?>[]
-            { nextType }), expression.getChild());
+            return isPropertyOfDescriptor(new ProxyDescriptor(ProxyCreator.combineAdditionalTypes(new Class<?>[]
+            { nextType })), expression.getChild());
         }
 
         return false;
