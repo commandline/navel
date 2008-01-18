@@ -458,6 +458,16 @@ public class PropertyValues implements Serializable
 
     boolean isAttached(String dotExpression)
     {
+
+        if (!isPropertyOf(dotExpression))
+        {
+            throw new InvalidExpressionException(
+                    String
+                            .format(
+                                    "The property, %1$s, is not a valid property of the bean, %2$s.",
+                                    dotExpression, proxyDescriptor));
+        }
+
         PropertyExpression leafProperty = new DotNotationExpression(
                 dotExpression).getLeaf();
 
