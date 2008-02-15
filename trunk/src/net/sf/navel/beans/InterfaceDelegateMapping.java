@@ -72,7 +72,8 @@ class InterfaceDelegateMapping implements Serializable
      *            Necessary to set onto each delegate so it can safely
      *            manipulate the internal state of the JavaBeanHandler.
      */
-    InterfaceDelegateMapping(ProxyDescriptor proxyDescriptor, PropertyValues values)
+    InterfaceDelegateMapping(ProxyDescriptor proxyDescriptor,
+            PropertyValues values)
     {
         this.values = values;
         this.proxyDescriptor = proxyDescriptor;
@@ -98,13 +99,16 @@ class InterfaceDelegateMapping implements Serializable
                     proxyDescriptor, delegatingInterface.getName()));
         }
 
-        if (delegations.get(delegatingInterface) != null)
+        if (LOGGER.isDebugEnabled())
         {
-            LOGGER
-                    .warn(String
-                            .format(
-                                    "InterfaceDelegate already mapped for interface, %1$s, on proxy, %2$s, overwriting!",
-                                    delegatingInterface, proxyDescriptor));
+            if (delegations.get(delegatingInterface) != null)
+            {
+                LOGGER
+                        .debug(String
+                                .format(
+                                        "InterfaceDelegate already mapped for interface, %1$s, on proxy, %2$s, overwriting!",
+                                        delegatingInterface, proxyDescriptor));
+            }
         }
 
         delegate.attach(values);
