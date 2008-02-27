@@ -32,6 +32,8 @@ package net.sf.navel.beans;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -80,9 +82,30 @@ class InterfaceDelegateMapping implements Serializable
 
         for (Class<?> delegatingInterface : proxyDescriptor.withDelegatableMethods)
         {
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace(String.format(
+                        "Adding interface, %1$s, as delegatable.",
+                        delegatingInterface.getName()));
+            }
+
             // initialize to null since this is just setting up the fixed key
             // set
             delegations.put(delegatingInterface, null);
+        }
+
+        if (LOGGER.isTraceEnabled())
+        {
+            Set<Class<?>> nonDelegatable = proxyDescriptor
+                    .getProxiedInterfaces();
+
+            nonDelegatable.removeAll(proxyDescriptor.withDelegatableMethods);
+
+            LOGGER
+                    .trace(String
+                            .format(
+                                    "The following interfaces were skipped because they lacked delegatable methods, %1$s.",
+                                    nonDelegatable));
         }
     }
 
@@ -92,12 +115,7 @@ class InterfaceDelegateMapping implements Serializable
 
         Class<?> delegatingInterface = delegate.getDelegatingInterface();
 
-        if (!delegations.containsKey(delegatingInterface))
-        {
-            throw new IllegalArgumentException(String.format(
-                    "The proxy, %1$s, does not implement the interface, %2$s.",
-                    proxyDescriptor, delegatingInterface.getName()));
-        }
+        validateInterfaceArgument(delegatingInterface);
 
         if (LOGGER.isDebugEnabled())
         {
@@ -117,7 +135,7 @@ class InterfaceDelegateMapping implements Serializable
 
     boolean isAttached(Class<?> interfaceType)
     {
-        if (!delegations.containsKey(interfaceType))
+        if (!proxyDescriptor.getProxiedInterfaces().contains(interfaceType))
         {
             throw new InvalidDelegateException(
                     String
@@ -126,18 +144,44 @@ class InterfaceDelegateMapping implements Serializable
                                     interfaceType.getName(), proxyDescriptor));
         }
 
+        validateInterfaceArgument(interfaceType);
+
         return delegations.get(interfaceType) != null;
     }
 
     boolean detach(Class<?> delegatingInterface)
     {
-        if (!delegations.containsKey(delegatingInterface))
-        {
-            throw new IllegalArgumentException(String.format(
-                    "The proxy, %1$s, does not implement the interface, %2$s.",
-                    proxyDescriptor, delegatingInterface.getName()));
-        }
+        validateInterfaceArgument(delegatingInterface);
 
         return delegations.remove(delegatingInterface) != null;
+    }
+
+    private void validateInterfaceArgument(Class<?> delegatingInterface)
+    {
+        if (delegations.containsKey(delegatingInterface))
+        {
+            return;
+        }
+
+        throw new IllegalArgumentException(
+                String
+                        .format(
+                                "The interface, %1$s, is not a valid delegating interface supported by the proxy!  Supported delegating interfaces, %2$s.  If it is in the total set of interfaces supported by the proxy it may lack at least one behavioral method: %3$s.",
+                                delegatingInterface.getName(),
+                                printClasses(delegations.keySet()),
+                                proxyDescriptor));
+
+    }
+
+    private String printClasses(Set<Class<?>> delegatingInterfaces)
+    {
+        Set<String> sortedInterfaces = new TreeSet<String>();
+
+        for (Class<?> additionalInterface : delegatingInterfaces)
+        {
+            sortedInterfaces.add(additionalInterface.getName());
+        }
+
+        return sortedInterfaces.toString();
     }
 }
