@@ -105,7 +105,7 @@ class InterfaceDelegateMapping implements Serializable
                     .trace(String
                             .format(
                                     "The following interfaces were skipped because they lacked delegatable methods, %1$s.",
-                                    nonDelegatable));
+                                    printClasses(nonDelegatable)));
         }
     }
 
