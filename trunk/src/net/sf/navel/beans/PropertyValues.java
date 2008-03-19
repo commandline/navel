@@ -673,6 +673,10 @@ public class PropertyValues implements Serializable
             Map<String, PropertyDelegate<?>> propertyDelegates,
             String propertyName, ProxyDescriptor proxyDescriptor)
     {
+        if (!LOGGER.isDebugEnabled())
+        {
+            return;
+        }
 
         if (propertyDelegates.get(propertyName) == null)
         {
@@ -680,7 +684,7 @@ public class PropertyValues implements Serializable
         }
 
         LOGGER
-                .warn(String
+                .debug(String
                         .format(
                                 "PropertyDelegate already mapped for property, %1$s, on proxy, %2$s, overwriting!",
                                 propertyName, proxyDescriptor));
