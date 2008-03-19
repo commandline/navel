@@ -107,9 +107,11 @@ class SingleValueResolver
     static JavaBeanHandler getParentOf(PropertyValues propertyValues, PropertyExpression propertyExpression)
     {
         // otherwise, de-reference the parent to the leaf property in the expression
-        String parentExpression = propertyExpression.getParent().expressionToRoot();
+        String parentPath = propertyExpression.getParent().expressionToRoot();
         
-        Object parentValue = propertyValues.getInternal(parentExpression);
+        DotNotationExpression parentExpression = new DotNotationExpression(parentPath);
+        
+        Object parentValue = SINGLETON.recurseValue(propertyValues, parentExpression.getRoot());
         
         if (null == parentValue)
         {
@@ -479,5 +481,30 @@ class SingleValueResolver
                                         .getName(), expression
                                         .expressionToRoot(), expression
                                         .getFullExpression().getExpression()));
+    }
+    
+    private Object recurseValue(PropertyValues currentValues, PropertyExpression currentProperty)
+    {
+        Object childValue = currentValues.getInternal(currentProperty.getPropertyName());
+        
+        if (null == childValue)
+        {
+            return null;
+        }
+        
+        if (currentProperty.isLeaf())
+        {
+            return childValue;
+        }
+        
+        JavaBeanHandler childHandler = ProxyFactory.getHandler(childValue);
+        
+        if (null == childHandler)
+        {
+            return null;
+        }
+        
+        
+        return recurseValue(childHandler.propertyValues, currentProperty.getChild());
     }
 }
