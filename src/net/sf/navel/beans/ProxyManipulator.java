@@ -333,6 +333,21 @@ public class ProxyManipulator
                 .valuesEqual(anotherHandler.propertyValues);
     }
 
+    /**
+     * Simple interrogates the underlying {@link PropertyValues} object to see
+     * if it is immutable.
+     * 
+     * @param bean
+     *            Must be a Navel bean.
+     * @return True only if the Navel been is immutable.
+     */
+    public static boolean isImmutable(Object bean)
+    {
+        JavaBeanHandler handler = SINGLETON.getRequiredHandler(bean);
+        
+        return handler.propertyValues.isImmutable();
+    }
+
     private Class<?> typeOf(Class<?> beanType, PropertyExpression expression)
     {
         ProxyDescriptor proxyDescriptor = new ProxyDescriptor(ProxyCreator
