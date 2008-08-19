@@ -270,7 +270,7 @@ public final class PropertyExpression
      * When performing an indexed access based on this expression, if the index
      * value is invalid, throw an exception.
      */
-    void validateIndex()
+    public void validateIndex()
     {
         if (getIndex() != -1)
         {
@@ -288,7 +288,7 @@ public final class PropertyExpression
      * When performing an indexed access based on this expression, if the index
      * value is invalid for the size, throw an exception.
      */
-    void validateListBounds(int size)
+    public void validateListBounds(int size)
     {
         if (getIndex() < size)
         {
@@ -306,7 +306,7 @@ public final class PropertyExpression
      * When performing an indexed access based on this expression, if the target
      * value is not an array, throw an exception.
      */
-    void validateArray(Object value)
+    public void validateArray(Object value)
     {
         if (value.getClass().isArray())
         {
@@ -324,7 +324,7 @@ public final class PropertyExpression
      * When performing an indexed access based on this expression, if the index
      * value is invalid for the length, throw an exception.
      */
-    void validateArrayBounds(int length)
+    public void validateArrayBounds(int length)
     {
         if (getIndex() < length)
         {
@@ -342,7 +342,7 @@ public final class PropertyExpression
      * When performing an indexed access based on this expression, if the target
      * value is null and the expression is indexed, throw an exception.
      */
-    void validateInterimForIndexed(Object interimValue)
+    public void validateInterimForIndexed(Object interimValue)
     {
         if (null != interimValue || !isIndexed())
         {
