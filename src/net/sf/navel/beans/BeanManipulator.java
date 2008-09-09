@@ -427,10 +427,16 @@ public class BeanManipulator
                 suppressExceptions);
     }
 
+    // TODO re-factor to use property expression support
     private boolean writeProperty(String[] propertyTokens, int tokenIndex,
             Object bean, Object value, boolean suppressExceptions)
     {
         String propertyName = propertyTokens[tokenIndex];
+
+        if (null == bean)
+        {
+            throw new IllegalArgumentException(String.format("Cannot write property, %1$s, for a null bean.", propertyName));
+        }
 
         PropertyDescriptor property = AbstractReflectionManipulator
                 .findProperty(bean.getClass(), propertyName);
