@@ -55,8 +55,8 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @param value
@@ -65,13 +65,13 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      */
     @Override
     boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value,
+            PropertyExpression propertyExpression, Object bean, Object value,
             boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
             LOGGER.trace("Inside SimplePropertyManipulator.handleWrite() for "
-                    + propertyName + "/" + property.getName()
+                    + propertyExpression.expressionToRoot() + "/" + property.getName()
                     + " for bean of type " + bean.getClass().getName() + ".");
         }
 
@@ -81,7 +81,7 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
         {
             if (LOGGER.isTraceEnabled())
             {
-                LOGGER.trace("No write method available for " + propertyName
+                LOGGER.trace("No write method available for " + propertyExpression.expressionToRoot()
                         + "/" + property.getName() + " for bean of type "
                         + bean.getClass().getName());
             }
@@ -100,14 +100,14 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @return The value read from the bean argument.
      */
     @Override
-    Object handleRead(PropertyDescriptor property, String propertyName,
+    Object handleRead(PropertyDescriptor property, PropertyExpression propertyExpressions,
             Object bean, boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
