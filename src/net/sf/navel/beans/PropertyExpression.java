@@ -225,7 +225,7 @@ public final class PropertyExpression
     {
         if (null == elementIndex)
         {
-            throw new IllegalStateException("Index is unset or invalid.");
+            throw new InvalidExpressionException("Index is unset or invalid.");
         }
 
         return (int) elementIndex;

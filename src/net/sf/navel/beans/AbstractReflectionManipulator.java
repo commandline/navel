@@ -140,15 +140,15 @@ abstract class AbstractReflectionManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @param value
      *            The value to write.
      */
     abstract boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value,
+            PropertyExpression propertyExpression, Object bean, Object value,
             boolean suppressExceptions);
 
     /**
@@ -159,14 +159,14 @@ abstract class AbstractReflectionManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @return The value read from the bean argument.
      */
     abstract Object handleRead(PropertyDescriptor property,
-            String propertyName, Object bean, boolean suppressExceptions);
+            PropertyExpression propertyExoression, Object bean, boolean suppressExceptions);
 
     /**
      * Utility method to find a PropertyDescriptor by name or partial name.
@@ -176,17 +176,18 @@ abstract class AbstractReflectionManipulator
      * 
      * @param beanClass
      *            Bean type to examine.
-     * @param propertyName
-     *            Property name, may be some sort of expression as long as it
-     *            starts with a valid property name.
+     * @param propertyExpression
+     *            Path expression of the property.
      */
     static final PropertyDescriptor findProperty(Class<?> beanClass,
-            String propertyName)
+            PropertyExpression propertyExpression)
     {
-        if (null == beanClass || null == propertyName)
+        if (null == beanClass || null == propertyExpression)
         {
             return null;
         }
+        
+        String propertyName = propertyExpression.getPropertyName();
 
         PropertyDescriptor[] properties = getProperties(beanClass);
 

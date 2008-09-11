@@ -200,6 +200,7 @@ public class BeanManipulator
             final PropertyExpression propertyExpression,
             final Map<String, Object> values, boolean suppressExceptions)
     {
+        // TODO fix this
         if (propertyExpression.isIndexed())
         {
             throw new UnsupportedOperationException(
@@ -208,13 +209,10 @@ public class BeanManipulator
 
         if (propertyExpression.isLeaf())
         {
-            return SINGLETON.getNestedBean(
-                    propertyExpression.getPropertyName(), values);
+            return SINGLETON.getNestedBean(propertyExpression, values);
         }
 
-        String shallowProperty = propertyExpression.getExpression();
-
-        Object nestedBean = SINGLETON.getNestedBean(shallowProperty, values);
+        Object nestedBean = SINGLETON.getNestedBean(propertyExpression, values);
 
         if (null == nestedBean)
         {
@@ -357,9 +355,12 @@ public class BeanManipulator
         {
             String sourceName = sourceEntry.getKey();
 
+            DotNotationExpression dotPath = new DotNotationExpression(
+                    sourceName);
+
             Object sourceValue = sourceEntry.getValue();
 
-            boolean wrote = writeProperty(bean, sourceName, sourceValue,
+            boolean wrote = writeProperty(dotPath.getRoot(), bean, sourceValue,
                     suppressExceptions);
 
             if (wrote)
@@ -371,33 +372,22 @@ public class BeanManipulator
         return affected;
     }
 
-    private Object getNestedBean(String propertyName, Map<String, Object> values)
+    private Object getNestedBean(PropertyExpression currentExpression,
+            Map<String, Object> values)
     {
-        String shallowProperty = propertyName;
-
-        boolean indexedProperty = false;
-
-        if (shallowProperty.endsWith("]") && shallowProperty.indexOf('[') != -1)
+        if (!currentExpression.isIndexed())
         {
-            shallowProperty = propertyName.substring(0, propertyName
-                    .indexOf('['));
-
-            indexedProperty = true;
+            return values.get(currentExpression.getPropertyName());
         }
 
-        if (!indexedProperty)
-        {
-            return values.get(shallowProperty);
-        }
-
-        Object array = values.get(shallowProperty);
+        Object array = values.get(currentExpression.getPropertyName());
 
         if (null == array)
         {
             return null;
         }
 
-        Integer arrayIndex = DotNotationExpression.getIndex(propertyName);
+        Integer arrayIndex = currentExpression.getIndex();
 
         if (null == arrayIndex)
         {
@@ -405,45 +395,30 @@ public class BeanManipulator
                     String
                             .format(
                                     "The index value in the expression, %1$s, was missing or invalid.",
-                                    propertyName));
+                                    currentExpression.getExpression()));
         }
 
         return Array.get(array, arrayIndex);
     }
 
-    private boolean writeProperty(Object bean, String propertyName,
-            Object propertyValue, boolean suppressExceptions)
-    {
-        String[] propertyTokens = propertyName.split("\\.");
-
-        if (0 == propertyTokens.length)
-        {
-            LOGGER.debug("Empty property name.");
-
-            return false;
-        }
-
-        return writeProperty(propertyTokens, 0, bean, propertyValue,
-                suppressExceptions);
-    }
-
-    // TODO re-factor to use property expression support
-    private boolean writeProperty(String[] propertyTokens, int tokenIndex,
+    private boolean writeProperty(PropertyExpression currentExpression,
             Object bean, Object value, boolean suppressExceptions)
     {
-        String propertyName = propertyTokens[tokenIndex];
-
         if (null == bean)
         {
-            throw new IllegalArgumentException(String.format("Cannot write property, %1$s, for a null bean.", propertyName));
+            throw new IllegalArgumentException(String.format(
+                    "Cannot write property, %1$s, for a null bean.",
+                    currentExpression.expressionToRoot()));
         }
 
         PropertyDescriptor property = AbstractReflectionManipulator
-                .findProperty(bean.getClass(), propertyName);
+                .findProperty(bean.getClass(), currentExpression);
 
+        // TODO is property is an interface construct and keep going
         if (null == property)
         {
-            LOGGER.debug("No property for " + propertyName + ".");
+            LOGGER.debug("No property for "
+                    + currentExpression.expressionToRoot() + ".");
 
             return false;
         }
@@ -451,25 +426,26 @@ public class BeanManipulator
         AbstractReflectionManipulator manipulator = AbstractReflectionManipulator
                 .getPropertyManipulator(property.getClass());
 
-        if (1 == propertyTokens.length - tokenIndex)
+        if (currentExpression.isLeaf())
         {
-            return manipulator.handleWrite(property, propertyName, bean, value,
-                    suppressExceptions);
+            return manipulator.handleWrite(property, currentExpression, bean,
+                    value, suppressExceptions);
         }
         else
         {
-            Object nestedBean = manipulator.handleRead(property, propertyName,
-                    bean, suppressExceptions);
+            Object nestedBean = manipulator.handleRead(property,
+                    currentExpression, bean, suppressExceptions);
 
             if (null == nestedBean)
             {
-                LOGGER.debug("Nested bean target was null, " + propertyName);
+                LOGGER.debug("Nested bean target was null, "
+                        + currentExpression.expressionToRoot());
 
                 return false;
             }
 
             // recurse on the nested property
-            return writeProperty(propertyTokens, tokenIndex + 1, nestedBean,
+            return writeProperty(currentExpression.getChild(), nestedBean,
                     value, suppressExceptions);
         }
     }
@@ -492,11 +468,14 @@ public class BeanManipulator
             return;
         }
 
+        DotNotationExpression dotPath = new DotNotationExpression(property
+                .getName());
+
         // just want to get at some shared code, rather than duplicating it
         AbstractReflectionManipulator manipulator = AbstractReflectionManipulator
                 .getPropertyManipulator(PropertyDescriptor.class);
 
-        Object value = manipulator.handleRead(property, property.getName(),
+        Object value = manipulator.handleRead(property, dotPath.getRoot(),
                 bean, suppressExceptions);
 
         if (null != value)

@@ -55,8 +55,8 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @param value
@@ -65,7 +65,8 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
      */
     @Override
     boolean handleWrite(PropertyDescriptor property,
-            String propertyName, Object bean, Object value, boolean suppressExceptions)
+            PropertyExpression propertyExpression, Object bean, Object value,
+            boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -78,11 +79,11 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                     String
                             .format(
                                     "Cannot perform indexed write on a non-indexed property, %1$s, of bean, %2$s!",
-                                    propertyName, bean));
+                                    propertyExpression.expressionToRoot(), bean));
         }
 
-        Integer index = DotNotationExpression.getIndex(propertyName);
-
+        Integer index = getIndex(propertyExpression, suppressExceptions);
+        
         if (null == index)
         {
             return false;
@@ -92,7 +93,7 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
 
         Method writeMethod = indexedProperty.getIndexedWriteMethod();
         return invokeWriteMethod(writeMethod, bean, new Object[]
-        { Integer.valueOf(index), value }, suppressExceptions);
+        { index, value }, suppressExceptions);
     }
 
     /**
@@ -103,15 +104,16 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
      * 
      * @param property
      *            Descriptor for the target property.
-     * @param propertyName
-     *            Name of the property, may be an expression of some sort.
+     * @param propertyExpression
+     *            Path expression of the property.
      * @param bean
      *            The bean to write to.
      * @return The value read from the bean argument.
      */
     @Override
-    Object handleRead(PropertyDescriptor property, String propertyName,
-            Object bean, boolean suppressExceptions)
+    Object handleRead(PropertyDescriptor property,
+            PropertyExpression propertyExpression, Object bean,
+            boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -124,10 +126,10 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                     String
                             .format(
                                     "Cannot perform indexed read on a non-indexed property, %1$s, of bean, %2$s!",
-                                    propertyName, bean));
+                                    propertyExpression.expressionToRoot(), bean));
         }
 
-        Integer index = DotNotationExpression.getIndex(propertyName);
+        Integer index = getIndex(propertyExpression, suppressExceptions);
 
         if (null == index)
         {
@@ -135,7 +137,7 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
             {
                 LOGGER.debug(String.format(
                         "No index found for indexed read of property, %1$s.",
-                        propertyName));
+                        propertyExpression.expressionToRoot()));
             }
 
             return null;
@@ -145,6 +147,27 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
 
         Method readMethod = indexedProperty.getIndexedReadMethod();
         return invokeReadMethod(readMethod, bean, new Object[]
-        { Integer.valueOf(index) }, suppressExceptions);
+        { index }, suppressExceptions);
+    }
+    
+    Integer getIndex(PropertyExpression propertyExpression, boolean suppressExceptions)
+    {
+        Integer index = null;
+
+        try
+        {
+            index = propertyExpression.getIndex();
+        }
+        catch (InvalidExpressionException e)
+        {
+            if (!suppressExceptions)
+            {
+                throw e;
+            }
+            
+            index  = null;
+        }
+        
+        return index;
     }
 }

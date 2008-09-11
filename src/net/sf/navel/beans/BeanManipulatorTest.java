@@ -308,7 +308,7 @@ public class BeanManipulatorTest
         values.put("floats[1.0d]", new Float(64.0));
         values.put("types[bar].boolean", Boolean.TRUE);
 
-        populate(indexedBean, values);
+        populate(indexedBean, values, true);
 
         Assert.assertNull(indexedBean.getArray(0),
                 "First String element should not be set.");
