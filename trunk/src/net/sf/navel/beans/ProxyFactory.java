@@ -269,6 +269,34 @@ public class ProxyFactory
     }
 
     /**
+     * Find out for a set of interfaces what additional interfaces would be
+     * implemented were these types constructed and backed by a proxy.
+     * 
+     * @param primaryType
+     *            Required, the primary type of interest.
+     * @param secondaryTypes
+     *            Optional, any additional types if known.
+     * @return Full array of types, useful to introspect in the absence of an
+     *         already existing proxy.
+     */
+    public static Class<?>[] additionalTypes(Class<?> primaryType,
+            Class<?>[] secondaryTypes)
+    {
+        Class<?>[] allTypes = null == secondaryTypes ? new Class<?>[1]
+                : new Class[secondaryTypes.length + 1];
+
+        allTypes[0] = primaryType;
+
+        if (secondaryTypes != null && secondaryTypes.length > 0)
+        {
+            System.arraycopy(secondaryTypes, 0, allTypes, 1,
+                    secondaryTypes.length);
+        }
+
+        return ProxyCreator.combineAdditionalTypes(allTypes);
+    }
+
+    /**
      * Overload that assumes shallow copy.
      * 
      * @param <T>
