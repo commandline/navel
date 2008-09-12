@@ -200,6 +200,29 @@ public class BeanManipulator
      * Support method to help in dealing with introspection, reflection of
      * JavaBeans.
      * 
+     * @param bean
+     *            Target bean of any type.
+     * @param propertyName
+     *            Name of a property to check via introspection.
+     * @return Whether the named property belongs to the bean class.
+     */
+    public static boolean isPropertyOf(Object bean, String propertyName)
+    {
+        if (null == bean)
+        {
+            throw new IllegalArgumentException(
+                    "Cannot check against a null reference!");
+        }
+
+        Class<?> beanType = bean.getClass();
+
+        return isPropertyOf(beanType, propertyName);
+    }
+
+    /**
+     * Support method to help in dealing with introspection, reflection of
+     * JavaBeans.
+     * 
      * @param beanType
      *            Target bean type, be careful not to pass the <em>proxy</em>
      *            type from a dynamic proxy backing a bean.
