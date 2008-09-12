@@ -356,6 +356,22 @@ public class BeanManipulatorTest
     }
 
     @Test
+    public void testIndexedIsProperty()
+    {
+        assert BeanManipulator.isPropertyOf(IndexedBean.class, "array[0]") : "array[0] should be a property.";
+        assert BeanManipulator.isPropertyOf(IndexedBean.class, "floats[0]") : "floats[0] should be a property.";
+        assert BeanManipulator.isPropertyOf(IndexedBean.class,
+                "types[0].boolean") : "types[0].boolean should be a property.";
+
+        assert BeanManipulator.isPropertyOf(SourceBean.class,
+                "indexed.array[0]") : "indexed.array[0] should be a property.";
+        assert BeanManipulator.isPropertyOf(SourceBean.class,
+                "indexed.floats[0]") : "indexed.floats[0] should be a property.";
+        assert BeanManipulator.isPropertyOf(SourceBean.class,
+                "indexed.types[0].boolean") : "indexed.types[0].boolean should be a property.";
+    }
+
+    @Test
     public void testIsProperty()
     {
         Assert.assertTrue(BeanManipulator.isPropertyOf(TypesBean.class,
