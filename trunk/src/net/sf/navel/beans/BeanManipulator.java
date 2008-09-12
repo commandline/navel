@@ -196,59 +196,6 @@ public class BeanManipulator
                 propertyName).getRoot(), values, suppressExceptions);
     }
 
-    private Object resolveSingleValue(
-            final PropertyExpression propertyExpression,
-            final Map<String, Object> values, boolean suppressExceptions)
-    {
-        // TODO fix this
-        if (propertyExpression.isIndexed())
-        {
-            throw new UnsupportedOperationException(
-                    "BeanManipulator does not currently support de-referencing List or array properties.");
-        }
-
-        if (propertyExpression.isLeaf())
-        {
-            return SINGLETON.getNestedBean(propertyExpression, values);
-        }
-
-        Object nestedBean = SINGLETON.getNestedBean(propertyExpression, values);
-
-        if (null == nestedBean)
-        {
-            return null;
-        }
-
-        Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
-                suppressExceptions);
-
-        return resolveSingleValue(propertyExpression.getChild(), subValues,
-                suppressExceptions);
-    }
-
-    /**
-     * Support method to help in dealing with introspection, reflection of
-     * JavaBeans.
-     * 
-     * @param bean
-     *            Target bean of any type.
-     * @param propertyName
-     *            Name of a property to check via introspection.
-     * @return Whether the named property belongs to the bean class.
-     */
-    public static boolean isPropertyOf(Object bean, String propertyName)
-    {
-        if (null == bean)
-        {
-            throw new IllegalArgumentException(
-                    "Cannot check against a null reference!");
-        }
-
-        Class<?> beanType = bean.getClass();
-
-        return isPropertyOf(beanType, propertyName);
-    }
-
     /**
      * Support method to help in dealing with introspection, reflection of
      * JavaBeans.
@@ -263,6 +210,23 @@ public class BeanManipulator
     public static boolean isPropertyOf(Class<?> beanType, String propertyName)
     {
         return SINGLETON.isPropertyOfBean(beanType, new DotNotationExpression(
+                propertyName).getRoot());
+    }
+
+    /**
+     * Parse and traverse the provided property name and try to determine its
+     * type.
+     * 
+     * @param beanType
+     *            Target bean type, be careful not to pass the <em>proxy</em>
+     *            type from a dynamic proxy backing a bean.
+     * @param propertyName
+     *            Name of a property to check via introspection.
+     * @return The type if it can be found or null if not.
+     */
+    public static Class<?> typeOf(Class<?> beanType, String propertyName)
+    {
+        return SINGLETON.typeOfBean(beanType, new DotNotationExpression(
                 propertyName).getRoot());
     }
 
@@ -319,6 +283,39 @@ public class BeanManipulator
         }
 
         return false;
+    }
+
+    private Class<?> typeOfBean(Class<?> beanType, PropertyExpression expression)
+    {
+        String shallowProperty = expression.getPropertyName();
+
+        BeanInfo beanInfo = JavaBeanHandler.introspect(beanType);
+
+        for (PropertyDescriptor propertyDescriptor : beanInfo
+                .getPropertyDescriptors())
+        {
+            // keep going if this is not the property we are looking for or
+            // a parent property
+            if (!propertyDescriptor.getName().equals(shallowProperty))
+            {
+                continue;
+            }
+
+            Class<?> nestedType = expression.isIndexed() ? BeanManipulator
+                    .getAppropriateBracketType(propertyDescriptor)
+                    : propertyDescriptor.getPropertyType();
+
+            // if this is a leafy property, we're done
+            if (expression.isLeaf())
+            {
+                return nestedType;
+            }
+
+            // otherwise, recurse on the nested property
+            return typeOfBean(nestedType, expression.getChild());
+        }
+
+        return null;
     }
 
     // TODO add deep description
@@ -482,5 +479,35 @@ public class BeanManipulator
         {
             values.put(property.getName(), value);
         }
+    }
+
+    private Object resolveSingleValue(
+            final PropertyExpression propertyExpression,
+            final Map<String, Object> values, boolean suppressExceptions)
+    {
+        // TODO fix this
+        if (propertyExpression.isIndexed())
+        {
+            throw new UnsupportedOperationException(
+                    "BeanManipulator does not currently support de-referencing List or array properties.");
+        }
+
+        if (propertyExpression.isLeaf())
+        {
+            return SINGLETON.getNestedBean(propertyExpression, values);
+        }
+
+        Object nestedBean = SINGLETON.getNestedBean(propertyExpression, values);
+
+        if (null == nestedBean)
+        {
+            return null;
+        }
+
+        Map<String, Object> subValues = SINGLETON.describeBean(nestedBean,
+                suppressExceptions);
+
+        return resolveSingleValue(propertyExpression.getChild(), subValues,
+                suppressExceptions);
     }
 }

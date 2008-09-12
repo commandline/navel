@@ -314,7 +314,7 @@ public class ProxyFactoryTest
         
         Assert.assertEquals(idBean.getID(), 1000);
         Assert.assertEquals(copy.getID(), 2000);
-        Assert.assertFalse(BeanManipulator.isPropertyOf(copy, "boolean"));
+        Assert.assertFalse(ProxyFactory.getHandler(copy).propertyValues.isPropertyOf("boolean"));
     }
 
     @Test
