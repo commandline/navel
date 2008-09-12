@@ -386,19 +386,47 @@ public class BeanManipulatorTest
         Assert.assertFalse(BeanManipulator.isPropertyOf(NestedBean.class,
                 "nested.bolean"),
                 "Should correctly identify nested as invalid.");
+    }
 
-        Object bean = ProxyFactory.create(TypesBean.class);
+    @Test
+    public void testIndexedTypeOf()
+    {
+        Assert
+                .assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                        "array[0]"), String.class,
+                        "array[0] should be of type String.");
+        Assert
+                .assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                        "floats[0]"), float.class,
+                        "floats[0] should be of type float.");
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                "types[0].boolean"), boolean.class,
+                "types[0].boolean should be of type boolean.");
 
-        Assert.assertTrue(BeanManipulator.isPropertyOf(bean, "boolean"),
-                "Should correctly identify name as valid.");
-        Assert.assertFalse(BeanManipulator.isPropertyOf(bean, "bolean"),
-                "Should correctly identify name as invalid.");
+        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
+                "indexed.array[0]"), String.class,
+                "indexed.array[0] should be of type String.");
+        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
+                "indexed.floats[0]"), float.class,
+                "indexed.floats[0] should be of type float.");
+        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
+                "indexed.types[0].boolean"), boolean.class,
+                "indexed.types[0].boolean should be of type boolean.");
+    }
 
-        bean = ProxyFactory.create(NestedBean.class);
+    @Test
+    public void testTypeOf()
+    {
+        Assert.assertEquals(BeanManipulator.typeOf(TypesBean.class, "boolean"),
+                boolean.class, "Should correctly identify type as boolean.");
+        Assert.assertNull(BeanManipulator.typeOf(TypesBean.class, "bolean"),
+                "Should not be able to find bad property name's type.");
 
-        Assert.assertTrue(BeanManipulator.isPropertyOf(bean, "nested.boolean"),
-                "Should correctly identify nested as valid.");
-        Assert.assertFalse(BeanManipulator.isPropertyOf(bean, "nested.bolean"),
-                "Should correctly identify nested as invalid.");
+        Assert.assertEquals(BeanManipulator.typeOf(NestedBean.class,
+                "nested.boolean"), boolean.class,
+                "Should correctly identify nested as boolean.");
+        Assert.assertNull(BeanManipulator.typeOf(NestedBean.class,
+                "nested.bolean"),
+                "Should not be able to find bad nested property name's type.");
     }
 }
