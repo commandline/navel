@@ -290,7 +290,7 @@ public class BeanManipulator
     private boolean isPropertyOfBean(Class<?> beanType,
             PropertyExpression expression)
     {
-        String shallowProperty = expression.getExpression();
+        String shallowProperty = expression.getPropertyName();
 
         BeanInfo beanInfo = JavaBeanHandler.introspect(beanType);
 

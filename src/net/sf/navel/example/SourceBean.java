@@ -40,6 +40,7 @@ public class SourceBean implements Serializable
     private short bar;
     private int baz;
     private float quux;
+    private IndexedBean indexed;
 
     public byte getFoo()
     {
@@ -79,5 +80,15 @@ public class SourceBean implements Serializable
     public void setQuux(float value)
     {
         quux = value;
+    }
+    
+    public IndexedBean getIndexed()
+    {
+        return indexed;
+    }
+    
+    public void setIndexed(IndexedBean indexed)
+    {
+        this.indexed = indexed;
     }
 }
