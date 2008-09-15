@@ -41,7 +41,7 @@ import org.apache.log4j.Logger;
  * 
  * @author cmdln
  */
-enum PrimitiveSupport
+public enum PrimitiveSupport
 {
 
     BOOLEAN(Boolean.FALSE, Boolean.class, boolean.class),
@@ -65,6 +65,8 @@ enum PrimitiveSupport
 
     private static final Map<Class<?>, PrimitiveSupport> byPrimitives = initPrimitives();
 
+    private static final Map<Class<?>, PrimitiveSupport> byWrappers = initWrappers();
+
     private final Class<?> wrapperType;
 
     private final Class<?> primitiveType;
@@ -77,6 +79,54 @@ enum PrimitiveSupport
         this.defaultValue = defaultValue;
         this.wrapperType = wrapperType;
         this.primitiveType = primitiveType;
+    }
+
+    /**
+     * Lookup for when the caller has the primitive type and needs access to the
+     * members of the associated enum.
+     * 
+     * @param primitiveType
+     *            Must be non-null and the class for a primitive type.
+     * @return May be null if there is no associated enum value.
+     */
+    public static PrimitiveSupport getForPrimitive(Class<?> primitiveType)
+    {
+        if (null == primitiveType)
+        {
+            throw new IllegalArgumentException("Type to check must be valid!");
+        }
+
+        if (!primitiveType.isPrimitive())
+        {
+            throw new IllegalArgumentException(String.format(
+                    "The type, %1$s, is not a primitive type.", primitiveType
+                            .getName()));
+        }
+
+        return byPrimitives.get(primitiveType);
+    }
+
+    /**
+     * @return Value to use for the uninitialized value of the primitive type
+     *         member.
+     */
+    public Object getDefaultValue()
+    {
+        return defaultValue;
+    }
+
+    /**
+     * Lookup for when the caller has the wrapper type and needs access to the
+     * members of the associated enum.
+     * 
+     * @param warpperType
+     *            May be any type but if not a valid primitive wrapper, null
+     *            will be returned.
+     * @return May be null if there is no associated enum value.
+     */
+    public static PrimitiveSupport getForWrapper(Class<?> wrapperType)
+    {
+        return byWrappers.get(wrapperType);
     }
 
     /**
@@ -206,6 +256,19 @@ enum PrimitiveSupport
         for (PrimitiveSupport support : PrimitiveSupport.values())
         {
             temp.put(support.primitiveType, support);
+        }
+
+        return Collections.unmodifiableMap(temp);
+    }
+
+    private static Map<Class<?>, PrimitiveSupport> initWrappers()
+    {
+        Map<Class<?>, PrimitiveSupport> temp = new HashMap<Class<?>, PrimitiveSupport>(
+                PrimitiveSupport.values().length);
+
+        for (PrimitiveSupport support : PrimitiveSupport.values())
+        {
+            temp.put(support.wrapperType, support);
         }
 
         return Collections.unmodifiableMap(temp);
