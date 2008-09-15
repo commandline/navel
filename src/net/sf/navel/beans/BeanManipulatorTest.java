@@ -32,6 +32,7 @@ package net.sf.navel.beans;
 import static net.sf.navel.beans.BeanManipulator.describe;
 import static net.sf.navel.beans.BeanManipulator.populate;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -312,6 +313,26 @@ public class BeanManipulatorTest
 
         LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues
                 .copyValues(false));
+    }
+    
+    @Test
+    public void testPutIndexed()
+    {
+        IndexedBean bean = ProxyFactory.createAs(IndexedBean.class);
+
+        BeanManipulator.putValue(bean, "array", new String[] { "foo", "bar" });
+        
+        Assert.assertEquals(bean.getArray().length, 2);
+        Assert.assertEquals(bean.getArray()[0], "foo");
+        Assert.assertEquals(bean.getArray()[1], "bar");
+        
+        BeanManipulator.putValue(bean, "array[1]", "baz");
+        
+        Assert.assertEquals(bean.getArray()[1], "baz");
+        
+        Object array = BeanManipulator.resolveValue("array", BeanManipulator.describe(bean));
+        
+        assert Arrays.deepEquals((String[]) array, new String[] { "foo", "baz"});
     }
 
     /**
