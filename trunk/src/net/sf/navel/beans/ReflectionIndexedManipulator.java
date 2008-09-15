@@ -82,18 +82,25 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                                     propertyExpression.expressionToRoot(), bean));
         }
 
-        Integer index = getIndex(propertyExpression, suppressExceptions);
-        
-        if (null == index)
+        if (propertyExpression.isIndexed())
         {
-            return false;
+
+            Integer index = getIndex(propertyExpression, suppressExceptions);
+
+            if (null == index)
+            {
+                return false;
+            }
+
+            IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
+
+            Method writeMethod = indexedProperty.getIndexedWriteMethod();
+            return invokeWriteMethod(writeMethod, bean, new Object[]
+            { index, value }, suppressExceptions);
         }
 
-        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
-
-        Method writeMethod = indexedProperty.getIndexedWriteMethod();
-        return invokeWriteMethod(writeMethod, bean, new Object[]
-        { index, value }, suppressExceptions);
+        return super.handleWrite(property, propertyExpression, bean, value,
+                suppressExceptions);
     }
 
     /**
@@ -129,28 +136,39 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
                                     propertyExpression.expressionToRoot(), bean));
         }
 
-        Integer index = getIndex(propertyExpression, suppressExceptions);
-
-        if (null == index)
+        if (propertyExpression.isIndexed())
         {
-            if (LOGGER.isDebugEnabled())
+
+            Integer index = getIndex(propertyExpression, suppressExceptions);
+
+            if (null == index)
             {
-                LOGGER.debug(String.format(
-                        "No index found for indexed read of property, %1$s.",
-                        propertyExpression.expressionToRoot()));
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER
+                            .debug(String
+                                    .format(
+                                            "No index found for indexed read of property, %1$s.",
+                                            propertyExpression
+                                                    .expressionToRoot()));
+                }
+
+                return null;
             }
 
-            return null;
+            IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
+
+            Method readMethod = indexedProperty.getIndexedReadMethod();
+            return invokeReadMethod(readMethod, bean, new Object[]
+            { index }, suppressExceptions);
         }
 
-        IndexedPropertyDescriptor indexedProperty = (IndexedPropertyDescriptor) property;
-
-        Method readMethod = indexedProperty.getIndexedReadMethod();
-        return invokeReadMethod(readMethod, bean, new Object[]
-        { index }, suppressExceptions);
+        return super.handleRead(property, propertyExpression, bean,
+                suppressExceptions);
     }
-    
-    Integer getIndex(PropertyExpression propertyExpression, boolean suppressExceptions)
+
+    Integer getIndex(PropertyExpression propertyExpression,
+            boolean suppressExceptions)
     {
         Integer index = null;
 
@@ -164,10 +182,10 @@ class ReflectionIndexedManipulator extends ReflectionSimpleManipulator
             {
                 throw e;
             }
-            
-            index  = null;
+
+            index = null;
         }
-        
+
         return index;
     }
 }
