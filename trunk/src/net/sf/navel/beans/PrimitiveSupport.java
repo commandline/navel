@@ -107,6 +107,24 @@ public enum PrimitiveSupport
     }
 
     /**
+     * @return The primitive type member for the association between auto-box
+     *         types.
+     */
+    public Class<?> getPrimitiveType()
+    {
+        return primitiveType;
+    }
+
+    /**
+     * @return The wrapper type member for the association between auto-box
+     *         types.
+     */
+    public Class<?> getWrapperType()
+    {
+        return wrapperType;
+    }
+
+    /**
      * @return Value to use for the uninitialized value of the primitive type
      *         member.
      */
