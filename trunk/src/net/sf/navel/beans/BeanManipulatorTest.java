@@ -281,6 +281,39 @@ public class BeanManipulatorTest
                         "Boolean property of first types element should be set correctly.");
     }
 
+    @Test
+    public void testPut()
+    {
+        SourceBean bean = new SourceBean();
+        bean.setArray(new String[3]);
+        
+        BeanManipulator.putValue(bean, "array[0]", "foo");
+        BeanManipulator.putValue(bean, "array[1]", "bar");
+        BeanManipulator.putValue(bean, "array[2]", "baz");
+
+        Assert.assertEquals(bean.getArray(), new String[] { "foo", "bar", "baz" },
+                "Nested boolean should be set correctly.");
+    }
+
+    @Test
+    public void testPutNested()
+    {
+        NestedBean bean = ProxyFactory.createAs(NestedBean.class);
+        bean.setNested(ProxyFactory.createAs(TypesBean.class));
+
+        // test convert values from a String to a Boolean
+        BeanManipulator.putValue(bean, "nested.boolean", "true");
+        BeanManipulator.putValue(bean, "nested.long", Long.valueOf(128));
+
+        Assert.assertEquals(true, bean.getNested().getBoolean(),
+                "Nested boolean should be set correctly.");
+        Assert.assertEquals(128L, bean.getNested().getLong(),
+                "Nested long should be set correctly.");
+
+        LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues
+                .copyValues(false));
+    }
+
     /**
      * Test population of indexed properties with a bad value for the index
      * inside the braces.
