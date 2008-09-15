@@ -157,6 +157,48 @@ public class BeanManipulator
     }
 
     /**
+     * Put a single value into the target bean, assumes that exceptions should be suppressed.
+     * 
+     * @param bean
+     *            Target into which the value will be put, if the property name
+     *            is applicable.
+     * @param property
+     *            Single property expression to set the specified value.
+     * @param value
+     *            Value to set if the property expression is valid for the
+     *            target.
+     * @return True if the property is value and the put succeeds.
+     */
+    public static boolean putValue(Object bean, String property, Object value)
+    {
+        return SINGLETON.writeProperty(new DotNotationExpression(property).getRoot(), bean, value,
+                true);
+    }
+
+    /**
+     * Put a single value into the target bean.
+     * 
+     * @param bean
+     *            Target into which the value will be put, if the property name
+     *            is applicable.
+     * @param property
+     *            Single property expression to set the specified value.
+     * @param value
+     *            Value to set if the property expression is valid for the
+     *            target.
+     * @param suppressException
+     *            If true, no error will be thrown if the property expression is
+     *            invalid.
+     * @return True if the property is value and the put succeeds.
+     */
+    public static boolean putValue(Object bean, String property, Object value,
+            boolean suppressException)
+    {
+        return SINGLETON.writeProperty(new DotNotationExpression(property).getRoot(), bean, value,
+                suppressException);
+    }
+
+    /**
      * Overload that suppresses exceptions.
      * 
      * @param propertyName
