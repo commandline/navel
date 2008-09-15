@@ -403,6 +403,16 @@ public class BeanManipulatorTest
                 "types[0].boolean"), boolean.class,
                 "types[0].boolean should be of type boolean.");
 
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class, "array"),
+                String[].class, "array should be of type String[].");
+
+        Assert.assertEquals(BeanManipulator
+                .typeOf(SourceBean.class, "array[0]"), String.class,
+                "array[0] should be of type String.");
+
+        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class, "array"),
+                String[].class, "array should be of type String[].");
+
         Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
                 "indexed.array[0]"), String.class,
                 "indexed.array[0] should be of type String.");
@@ -412,6 +422,10 @@ public class BeanManipulatorTest
         Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
                 "indexed.types[0].boolean"), boolean.class,
                 "indexed.types[0].boolean should be of type boolean.");
+
+        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
+                "indexed.array"), String[].class,
+                "indexed.array should be of type String[].");
     }
 
     @Test

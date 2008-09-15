@@ -328,6 +328,11 @@ public class BeanManipulator
                     .getAppropriateBracketType(propertyDescriptor)
                     : propertyDescriptor.getPropertyType();
 
+            assert nestedType != null : String
+                    .format(
+                            "If property descriptor can be found for expression, %1$s, type should be discoverable.",
+                            expression.expressionToRoot());
+
             // if this is a leafy property, we're done
             if (expression.isLeaf())
             {
