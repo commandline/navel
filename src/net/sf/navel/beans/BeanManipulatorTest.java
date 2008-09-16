@@ -34,10 +34,12 @@ import static net.sf.navel.beans.BeanManipulator.populate;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.navel.example.BadBeanImpl;
 import net.sf.navel.example.IndexedBean;
+import net.sf.navel.example.ListBean;
 import net.sf.navel.example.NestedBean;
 import net.sf.navel.example.PropertyNames;
 import net.sf.navel.example.ReadWriteBean;
@@ -447,55 +449,85 @@ public class BeanManipulatorTest
     }
 
     @Test(dataProvider = "typesOf")
-    public void testTypesOf(Class<?> beanType, String property, Class<?> expected)
+    public void testTypesOf(Class<?> beanType, String property,
+            Class<?> expected)
     {
-        Assert.assertEquals(BeanManipulator.typeOf(beanType, property), expected, String.format("%1$s should be of correct type.", property));
+        Assert.assertEquals(BeanManipulator.typeOf(beanType, property),
+                expected, String.format("%1$s should be of correct type.",
+                        property));
     }
-    
+
+    @Test
+    public void testTypesOfList()
+    {
+        Assert.assertEquals(BeanManipulator.typeOf(ListBean.class,
+                "unannotated"), List.class);
+        Assert.assertEquals(BeanManipulator.typeOf(ListBean.class,
+                "unannotated[]"), null);
+        Assert
+                .assertEquals(BeanManipulator.typeOf(ListBean.class,
+                        "annotated"), List.class);
+        Assert.assertEquals(BeanManipulator.typeOf(ListBean.class,
+                "annotated[]"), TypesBean.class);
+    }
+
     @DataProvider(name = "typesOf")
     public Object[][] buildTypesOf()
     {
-        return new Object[][] {
+        return new Object[][]
+        {
 
-                // simple type
-                new Object[] { TypesBean.class, "boolean", boolean.class },
+        // simple type
+                new Object[]
+                { TypesBean.class, "boolean", boolean.class },
 
                 // nested simple type
-                new Object[] { NestedBean.class, "nested.boolean", boolean.class },
-                
+                new Object[]
+                { NestedBean.class, "nested.boolean", boolean.class },
+
                 // array itself
-                new Object[] { IndexedBean.class, "array", String[].class },
-                
+                new Object[]
+                { IndexedBean.class, "array", String[].class },
+
                 // component type, no index
-                new Object[] { IndexedBean.class, "array[]", String.class },
-                
+                new Object[]
+                { IndexedBean.class, "array[]", String.class },
+
                 // component type, with index
-                new Object[] { IndexedBean.class, "array[0]", String.class },
-                
+                new Object[]
+                { IndexedBean.class, "array[0]", String.class },
+
                 // component type, no index
-                new Object[] { IndexedBean.class, "floats[]", float.class },
+                new Object[]
+                { IndexedBean.class, "floats[]", float.class },
 
                 // nested property of a component type
-                new Object[] { IndexedBean.class, "types[].boolean", boolean.class },
-                
+                new Object[]
+                { IndexedBean.class, "types[].boolean", boolean.class },
+
                 // array itself on concrete class
-                new Object[] { SourceBean.class, "array", String[].class },
-                
+                new Object[]
+                { SourceBean.class, "array", String[].class },
+
                 // component type of same array on concrete class
-                new Object[] { SourceBean.class, "array[]", String.class },
-                
+                new Object[]
+                { SourceBean.class, "array[]", String.class },
+
                 // array type on nested property
-                new Object[] { SourceBean.class, "indexed.array", String[].class },
-                
+                new Object[]
+                { SourceBean.class, "indexed.array", String[].class },
+
                 // component type on nested property
-                new Object[] { SourceBean.class, "indexed.array[]", String.class },
-                
+                new Object[]
+                { SourceBean.class, "indexed.array[]", String.class },
+
                 // component type on nested property
-                new Object[] { SourceBean.class, "indexed.floats[]", float.class },
-                
+                new Object[]
+                { SourceBean.class, "indexed.floats[]", float.class },
+
                 // component type on nested property
-                new Object[] { SourceBean.class, "indexed.types[].boolean", boolean.class },
-        };
+                new Object[]
+                { SourceBean.class, "indexed.types[].boolean", boolean.class }, };
     }
 
     @Test
