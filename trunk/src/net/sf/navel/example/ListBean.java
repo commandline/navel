@@ -89,6 +89,10 @@ public interface ListBean
     public TypesBean getArray(int index);
 
     public void setArray(int index, TypesBean array);
+    
+    public List<TypesBean> getUnannotated();
+    
+    public void setUnannotated(List<TypesBean> list);
 
     /**
      * In the absence of indexed methods that indicate a specific element type,
@@ -96,4 +100,6 @@ public interface ListBean
      */
     @CollectionType(TypesBean.class)
     public List<TypesBean> getAnnotated();
+    
+    public void setAnnotated(List<TypesBean> list);
 }
