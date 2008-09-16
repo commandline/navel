@@ -63,4 +63,12 @@ public interface IndexedBean extends Serializable
     TypesBean getTypes(int index);
 
     void setTypes(int index, TypesBean value);
+    
+    Long getVariantOnly(int index);
+    
+    void setVariantOnly(int index, Long element);
+    
+    Long[] getArrayOnly();
+    
+    void setArrayOnly(Long[] array);
 }
