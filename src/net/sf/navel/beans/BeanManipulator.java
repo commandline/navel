@@ -57,6 +57,16 @@ import org.apache.log4j.Logger;
 public class BeanManipulator
 {
 
+    private static class VariantMethodsOnly
+    {
+    };
+
+    /**
+     * Returned from {@link #typeOf(Class, String)} when the property name is
+     * for an indexed property that provides no access to the array itself.
+     */
+    public static final Class<?> VARIANT_METHODS_ONLY = BeanManipulator.VariantMethodsOnly.class;
+
     /*----------------------------------------*
      * constants
      *----------------------------------------*/
@@ -157,7 +167,8 @@ public class BeanManipulator
     }
 
     /**
-     * Put a single value into the target bean, assumes that exceptions should be suppressed.
+     * Put a single value into the target bean, assumes that exceptions should
+     * be suppressed.
      * 
      * @param bean
      *            Target into which the value will be put, if the property name
@@ -171,8 +182,8 @@ public class BeanManipulator
      */
     public static boolean putValue(Object bean, String property, Object value)
     {
-        return SINGLETON.writeProperty(new DotNotationExpression(property).getRoot(), bean, value,
-                true);
+        return SINGLETON.writeProperty(new DotNotationExpression(property)
+                .getRoot(), bean, value, true);
     }
 
     /**
@@ -194,8 +205,8 @@ public class BeanManipulator
     public static boolean putValue(Object bean, String property, Object value,
             boolean suppressException)
     {
-        return SINGLETON.writeProperty(new DotNotationExpression(property).getRoot(), bean, value,
-                suppressException);
+        return SINGLETON.writeProperty(new DotNotationExpression(property)
+                .getRoot(), bean, value, suppressException);
     }
 
     /**
@@ -302,7 +313,21 @@ public class BeanManipulator
         {
             IndexedPropertyDescriptor indexedPropertyDescriptor = (IndexedPropertyDescriptor) propertyDescriptor;
 
-            return indexedPropertyDescriptor.getIndexedPropertyType();
+            Class<?> indexedType = indexedPropertyDescriptor
+                    .getIndexedPropertyType();
+
+            return indexedType;
+        }
+
+        if (propertyDescriptor.getPropertyType().isArray())
+        {
+            Class<?> arrayType = propertyDescriptor.getPropertyType();
+
+            assert arrayType != null : "If the indexed type of an indexed property is null, the property type must be valid.";
+
+            assert arrayType.isArray() : "The property type, if valid, of an indexed property must be an array type.";
+
+            return arrayType.getComponentType();
         }
 
         CollectionType collectionType = propertyDescriptor.getReadMethod()
@@ -339,9 +364,24 @@ public class BeanManipulator
                 return true;
             }
 
-            Class<?> nestedType = expression.isIndexed() ? BeanManipulator
-                    .getAppropriateBracketType(propertyDescriptor)
-                    : propertyDescriptor.getPropertyType();
+            Class<?> nestedType = null;
+
+            if (expression.isIndexed())
+            {
+                // gets the component type of an indexed property or the
+                // CollectionType of a List property
+                nestedType = BeanManipulator
+                        .getAppropriateBracketType(propertyDescriptor);
+            }
+            else
+            {
+                nestedType = propertyDescriptor.getPropertyType();
+
+                if (null == nestedType)
+                {
+                    assert propertyDescriptor instanceof IndexedPropertyDescriptor : "The only way a plain property type can be null if the property name matches, is if this is an indexed property without the array methods.";
+                }
+            }
 
             // otherwise, recurse on the nested property
             return isPropertyOfBean(nestedType, expression.getChild());
@@ -352,7 +392,7 @@ public class BeanManipulator
 
     private Class<?> typeOfBean(Class<?> beanType, PropertyExpression expression)
     {
-        String shallowProperty = expression.getPropertyName();
+        String propertyName = expression.getPropertyName();
 
         BeanInfo beanInfo = JavaBeanHandler.introspect(beanType);
 
@@ -361,19 +401,31 @@ public class BeanManipulator
         {
             // keep going if this is not the property we are looking for or
             // a parent property
-            if (!propertyDescriptor.getName().equals(shallowProperty))
+            if (!propertyDescriptor.getName().equals(propertyName))
             {
                 continue;
             }
 
-            Class<?> nestedType = expression.isIndexed() ? BeanManipulator
-                    .getAppropriateBracketType(propertyDescriptor)
-                    : propertyDescriptor.getPropertyType();
+            Class<?> nestedType = null;
 
-            assert nestedType != null : String
-                    .format(
-                            "If property descriptor can be found for expression, %1$s, type should be discoverable.",
-                            expression.expressionToRoot());
+            if (expression.isIndexed())
+            {
+                // gets the component type of an indexed property or the
+                // CollectionType of a List property
+                nestedType = BeanManipulator
+                        .getAppropriateBracketType(propertyDescriptor);
+            }
+            else
+            {
+                nestedType = propertyDescriptor.getPropertyType();
+
+                if (null == nestedType)
+                {
+                    assert propertyDescriptor instanceof IndexedPropertyDescriptor : "The only way a plain property type can be null if the property name matches, is if this is an indexed property without the array methods.";
+                
+                    return VARIANT_METHODS_ONLY;
+                }
+            }
 
             // if this is a leafy property, we're done
             if (expression.isLeaf())

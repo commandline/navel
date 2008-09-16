@@ -47,6 +47,7 @@ import net.sf.navel.example.TypesBean;
 
 import org.apache.log4j.Logger;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -287,13 +288,13 @@ public class BeanManipulatorTest
     {
         SourceBean bean = new SourceBean();
         bean.setArray(new String[3]);
-        
+
         BeanManipulator.putValue(bean, "array[0]", "foo");
         BeanManipulator.putValue(bean, "array[1]", "bar");
         BeanManipulator.putValue(bean, "array[2]", "baz");
 
-        Assert.assertEquals(bean.getArray(), new String[] { "foo", "bar", "baz" },
-                "Nested boolean should be set correctly.");
+        Assert.assertEquals(bean.getArray(), new String[]
+        { "foo", "bar", "baz" }, "Nested boolean should be set correctly.");
     }
 
     @Test
@@ -314,25 +315,28 @@ public class BeanManipulatorTest
         LOGGER.debug(ProxyFactory.getHandler(bean).propertyValues
                 .copyValues(false));
     }
-    
+
     @Test
     public void testPutIndexed()
     {
         IndexedBean bean = ProxyFactory.createAs(IndexedBean.class);
 
-        BeanManipulator.putValue(bean, "array", new String[] { "foo", "bar" });
-        
+        BeanManipulator.putValue(bean, "array", new String[]
+        { "foo", "bar" });
+
         Assert.assertEquals(bean.getArray().length, 2);
         Assert.assertEquals(bean.getArray()[0], "foo");
         Assert.assertEquals(bean.getArray()[1], "bar");
-        
+
         BeanManipulator.putValue(bean, "array[1]", "baz");
-        
+
         Assert.assertEquals(bean.getArray()[1], "baz");
-        
-        Object array = BeanManipulator.resolveValue("array", BeanManipulator.describe(bean));
-        
-        assert Arrays.deepEquals((String[]) array, new String[] { "foo", "baz"});
+
+        Object array = BeanManipulator.resolveValue("array", BeanManipulator
+                .describe(bean));
+
+        assert Arrays.deepEquals((String[]) array, new String[]
+        { "foo", "baz" });
     }
 
     /**
@@ -442,57 +446,79 @@ public class BeanManipulatorTest
                 "Should correctly identify nested as invalid.");
     }
 
-    @Test
-    public void testIndexedTypeOf()
+    @Test(dataProvider = "typesOf")
+    public void testTypesOf(Class<?> beanType, String property, Class<?> expected)
     {
-        Assert
-                .assertEquals(BeanManipulator.typeOf(IndexedBean.class,
-                        "array[0]"), String.class,
-                        "array[0] should be of type String.");
-        Assert
-                .assertEquals(BeanManipulator.typeOf(IndexedBean.class,
-                        "floats[0]"), float.class,
-                        "floats[0] should be of type float.");
-        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
-                "types[0].boolean"), boolean.class,
-                "types[0].boolean should be of type boolean.");
+        Assert.assertEquals(BeanManipulator.typeOf(beanType, property), expected, String.format("%1$s should be of correct type.", property));
+    }
+    
+    @DataProvider(name = "typesOf")
+    public Object[][] buildTypesOf()
+    {
+        return new Object[][] {
 
-        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class, "array"),
-                String[].class, "array should be of type String[].");
+                // simple type
+                new Object[] { TypesBean.class, "boolean", boolean.class },
 
-        Assert.assertEquals(BeanManipulator
-                .typeOf(SourceBean.class, "array[0]"), String.class,
-                "array[0] should be of type String.");
+                // nested simple type
+                new Object[] { NestedBean.class, "nested.boolean", boolean.class },
+                
+                // array itself
+                new Object[] { IndexedBean.class, "array", String[].class },
+                
+                // component type, no index
+                new Object[] { IndexedBean.class, "array[]", String.class },
+                
+                // component type, with index
+                new Object[] { IndexedBean.class, "array[0]", String.class },
+                
+                // component type, no index
+                new Object[] { IndexedBean.class, "floats[]", float.class },
 
-        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class, "array"),
-                String[].class, "array should be of type String[].");
-
-        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
-                "indexed.array[0]"), String.class,
-                "indexed.array[0] should be of type String.");
-        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
-                "indexed.floats[0]"), float.class,
-                "indexed.floats[0] should be of type float.");
-        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
-                "indexed.types[0].boolean"), boolean.class,
-                "indexed.types[0].boolean should be of type boolean.");
-
-        Assert.assertEquals(BeanManipulator.typeOf(SourceBean.class,
-                "indexed.array"), String[].class,
-                "indexed.array should be of type String[].");
+                // nested property of a component type
+                new Object[] { IndexedBean.class, "types[].boolean", boolean.class },
+                
+                // array itself on concrete class
+                new Object[] { SourceBean.class, "array", String[].class },
+                
+                // component type of same array on concrete class
+                new Object[] { SourceBean.class, "array[]", String.class },
+                
+                // array type on nested property
+                new Object[] { SourceBean.class, "indexed.array", String[].class },
+                
+                // component type on nested property
+                new Object[] { SourceBean.class, "indexed.array[]", String.class },
+                
+                // component type on nested property
+                new Object[] { SourceBean.class, "indexed.floats[]", float.class },
+                
+                // component type on nested property
+                new Object[] { SourceBean.class, "indexed.types[].boolean", boolean.class },
+        };
     }
 
     @Test
-    public void testTypeOf()
+    public void testPartialIndexedMethods()
     {
-        Assert.assertEquals(BeanManipulator.typeOf(TypesBean.class, "boolean"),
-                boolean.class, "Should correctly identify type as boolean.");
+
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                "variantOnly"), BeanManipulator.VARIANT_METHODS_ONLY);
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                "variantOnly[]"), Long.class);
+
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                "arrayOnly"), Long[].class);
+        Assert.assertEquals(BeanManipulator.typeOf(IndexedBean.class,
+                "arrayOnly[]"), Long.class);
+    }
+
+    @Test
+    public void testFailedTypesOf()
+    {
         Assert.assertNull(BeanManipulator.typeOf(TypesBean.class, "bolean"),
                 "Should not be able to find bad property name's type.");
 
-        Assert.assertEquals(BeanManipulator.typeOf(NestedBean.class,
-                "nested.boolean"), boolean.class,
-                "Should correctly identify nested as boolean.");
         Assert.assertNull(BeanManipulator.typeOf(NestedBean.class,
                 "nested.bolean"),
                 "Should not be able to find bad nested property name's type.");
