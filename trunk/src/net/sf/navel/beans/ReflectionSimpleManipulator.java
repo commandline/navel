@@ -71,8 +71,9 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
         if (LOGGER.isTraceEnabled())
         {
             LOGGER.trace("Inside SimplePropertyManipulator.handleWrite() for "
-                    + propertyExpression.expressionToRoot() + "/" + property.getName()
-                    + " for bean of type " + bean.getClass().getName() + ".");
+                    + propertyExpression.expressionToRoot() + "/"
+                    + property.getName() + " for bean of type "
+                    + bean.getClass().getName() + ".");
         }
 
         Method writeMethod = property.getWriteMethod();
@@ -81,8 +82,9 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
         {
             if (LOGGER.isTraceEnabled())
             {
-                LOGGER.trace("No write method available for " + propertyExpression.expressionToRoot()
-                        + "/" + property.getName() + " for bean of type "
+                LOGGER.trace("No write method available for "
+                        + propertyExpression.expressionToRoot() + "/"
+                        + property.getName() + " for bean of type "
                         + bean.getClass().getName());
             }
 
@@ -107,8 +109,9 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      * @return The value read from the bean argument.
      */
     @Override
-    Object handleRead(PropertyDescriptor property, PropertyExpression propertyExpressions,
-            Object bean, boolean suppressExceptions)
+    Object handleRead(PropertyDescriptor property,
+            PropertyExpression propertyExpressions, Object bean,
+            boolean suppressExceptions)
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -133,8 +136,8 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      *            Arguments.
      * @returns Whether the target property was written.
      */
-    final boolean invokeWriteMethod(Method method, Object bean,
-            Object[] args, boolean suppressExceptions)
+    final boolean invokeWriteMethod(Method method, Object bean, Object[] args,
+            boolean suppressExceptions)
     {
         if (null == method)
         {
@@ -232,12 +235,12 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
      *            Arguments.
      * @return Property value.
      */
-    final Object invokeReadMethod(Method method, Object bean,
-            Object[] args, boolean suppressExceptions)
+    final Object invokeReadMethod(Method method, Object bean, Object[] args,
+            boolean suppressExceptions)
     {
         assert bean != null : "Invocation target cannot be null.";
         assert args != null : "Arguments cannot be null.";
-        
+
         if (null == method)
         {
             LOGGER.debug("No read method available.");
@@ -284,9 +287,12 @@ class ReflectionSimpleManipulator extends AbstractReflectionManipulator
     {
         if (suppressExceptions)
         {
-            LOGGER.warn(message);
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug(message);
 
-            LogHelper.traceWarn(LOGGER, cause);
+                LogHelper.traceDebug(LOGGER, cause);
+            }
         }
         else
         {
